@@ -8,6 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { CheckCircle } from "lucide-react";
 import { formatPrice } from "@/lib/currency";
+import { LoadingScreen } from "@/components/LoadingScreen";
 
 const OrderConfirmation = () => {
   const { orderId } = useParams();
@@ -49,9 +50,7 @@ const OrderConfirmation = () => {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
-        <div className="flex-1 flex items-center justify-center">
-          <p className="text-muted-foreground">Loading order details...</p>
-        </div>
+        <LoadingScreen message="Loading order details..." />
         <Footer />
       </div>
     );

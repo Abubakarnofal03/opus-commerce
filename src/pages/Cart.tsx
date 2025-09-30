@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Trash2, Plus, Minus } from "lucide-react";
 import { getGuestCart, updateGuestCartQuantity, removeFromGuestCart, GuestCartItem } from "@/lib/cartUtils";
 import { formatPrice } from "@/lib/currency";
+import { LoadingScreen } from "@/components/LoadingScreen";
 
 const Cart = () => {
   const [user, setUser] = useState<any>(null);
@@ -88,9 +89,7 @@ const Cart = () => {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
-        <div className="flex-1 flex items-center justify-center">
-          <p className="text-muted-foreground">Loading cart...</p>
-        </div>
+        <LoadingScreen message="Loading your cart..." />
         <Footer />
       </div>
     );

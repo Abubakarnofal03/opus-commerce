@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ShoppingCart, Star } from "lucide-react";
 import { addToGuestCart } from "@/lib/cartUtils";
 import { formatPrice } from "@/lib/currency";
+import { LoadingScreen } from "@/components/LoadingScreen";
 import {
   Select,
   SelectContent,
@@ -122,6 +123,16 @@ const Shop = () => {
       setSearchParams({ category: value });
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <LoadingScreen message="Loading products..." />
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">

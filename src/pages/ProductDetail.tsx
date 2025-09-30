@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Minus, Plus, ShoppingCart, X } from "lucide-react";
 import { addToGuestCart } from "@/lib/cartUtils";
 import { formatPrice } from "@/lib/currency";
+import { LoadingScreen } from "@/components/LoadingScreen";
 import {
   Carousel,
   CarouselContent,
@@ -129,9 +130,7 @@ const ProductDetail = () => {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
-        <div className="flex-1 flex items-center justify-center">
-          <p className="text-muted-foreground">Loading product...</p>
-        </div>
+        <LoadingScreen message="Loading product details..." />
         <Footer />
       </div>
     );

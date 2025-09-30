@@ -18,6 +18,7 @@ import { BannerDialog } from "@/components/admin/BannerDialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatPrice } from "@/lib/currency";
+import { LoadingScreen } from "@/components/LoadingScreen";
 
 const Admin = () => {
   const [user, setUser] = useState<any>(null);
@@ -145,7 +146,13 @@ const Admin = () => {
   };
 
   if (!isAdmin) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <LoadingScreen message="Verifying admin access..." />
+        <Footer />
+      </div>
+    );
   }
 
   return (

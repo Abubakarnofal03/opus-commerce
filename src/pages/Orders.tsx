@@ -8,6 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { formatPrice } from "@/lib/currency";
+import { LoadingScreen } from "@/components/LoadingScreen";
 
 const Orders = () => {
   const [user, setUser] = useState<any>(null);
@@ -53,9 +54,7 @@ const Orders = () => {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
-        <div className="flex-1 flex items-center justify-center">
-          <p className="text-muted-foreground">Loading orders...</p>
-        </div>
+        <LoadingScreen message="Loading your orders..." />
         <Footer />
       </div>
     );
