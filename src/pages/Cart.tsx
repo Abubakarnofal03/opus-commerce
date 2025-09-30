@@ -8,22 +8,23 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Trash2, Plus, Minus } from "lucide-react";
+import { getGuestCart, updateGuestCartQuantity, removeFromGuestCart, GuestCartItem } from "@/lib/cartUtils";
 
 const Cart = () => {
   const [user, setUser] = useState<any>(null);
+  const [guestCart, setGuestCart] = useState<GuestCartItem[]>([]);
   const { toast } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
       if (!session) {
-        navigate('/auth');
-      } else {
-        setUser(session.user);
+        setGuestCart(getGuestCart());
       }
     });
-  }, [navigate]);
+  }, []);
 
   const { data: cartItems, isLoading } = useQuery({
     queryKey: ['cart', user?.id],
@@ -66,12 +67,23 @@ const Cart = () => {
     },
   });
 
-  const total = cartItems?.reduce(
-    (sum, item) => sum + (item.products?.price || 0) * item.quantity,
-    0
-  ) || 0;
+  const handleGuestQuantityUpdate = (productId: string, quantity: number) => {
+    updateGuestCartQuantity(productId, quantity);
+    setGuestCart(getGuestCart());
+  };
 
-  if (isLoading) {
+  const handleGuestRemove = (productId: string) => {
+    removeFromGuestCart(productId);
+    setGuestCart(getGuestCart());
+    toast({ title: "Item removed from cart" });
+  };
+
+  const items = user ? cartItems : guestCart;
+  const total = user 
+    ? cartItems?.reduce((sum, item) => sum + (item.products?.price || 0) * item.quantity, 0) || 0
+    : guestCart.reduce((sum, item) => sum + item.product_price * item.quantity, 0);
+
+  if (isLoading && user) {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
@@ -87,13 +99,13 @@ const Cart = () => {
     <div className="min-h-screen flex flex-col">
       <Navbar />
       
-      <main className="flex-1 py-12">
+      <main className="flex-1 py-8 md:py-12">
         <div className="container mx-auto px-4">
-          <h1 className="font-display text-4xl font-bold mb-8 text-center gold-accent pb-8">
+          <h1 className="font-display text-3xl md:text-4xl font-bold mb-6 md:mb-8 text-center gold-accent pb-6 md:pb-8">
             Shopping Cart
           </h1>
 
-          {!cartItems || cartItems.length === 0 ? (
+          {!items || items.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-muted-foreground mb-4">Your cart is empty</p>
               <Button onClick={() => navigate('/shop')}>
@@ -101,91 +113,115 @@ const Cart = () => {
               </Button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
               <div className="lg:col-span-2 space-y-4">
-                {cartItems.map((item) => (
-                  <Card key={item.id}>
-                    <CardContent className="p-6">
-                      <div className="flex gap-4">
-                        {item.products?.images?.[0] && (
-                          <div className="w-24 h-24 bg-muted rounded overflow-hidden flex-shrink-0">
-                            <img
-                              src={item.products.images[0]}
-                              alt={item.products.name}
-                              className="w-full h-full object-cover"
-                            />
+                {items.map((item: any) => {
+                  const isGuest = !user;
+                  const productData = isGuest ? {
+                    name: item.product_name,
+                    price: item.product_price,
+                    image: item.product_image,
+                  } : {
+                    name: item.products?.name,
+                    price: item.products?.price,
+                    image: item.products?.images?.[0],
+                  };
+
+                  return (
+                    <Card key={isGuest ? item.product_id : item.id}>
+                      <CardContent className="p-4 md:p-6">
+                        <div className="flex gap-3 md:gap-4">
+                          {productData.image && (
+                            <div className="w-20 h-20 md:w-24 md:h-24 bg-muted rounded overflow-hidden flex-shrink-0">
+                              <img
+                                src={productData.image}
+                                alt={productData.name}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-display text-base md:text-lg font-semibold mb-1 truncate">
+                              {productData.name}
+                            </h3>
+                            <p className="text-accent font-bold mb-2">
+                              ${productData.price}
+                            </p>
+                            <div className="flex items-center space-x-2">
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => {
+                                  if (isGuest) {
+                                    handleGuestQuantityUpdate(item.product_id, Math.max(1, item.quantity - 1));
+                                  } else {
+                                    updateQuantity.mutate({ id: item.id, quantity: Math.max(1, item.quantity - 1) });
+                                  }
+                                }}
+                              >
+                                <Minus className="h-3 w-3" />
+                              </Button>
+                              <span className="w-10 text-center font-semibold text-sm">
+                                {item.quantity}
+                              </span>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => {
+                                  if (isGuest) {
+                                    handleGuestQuantityUpdate(item.product_id, item.quantity + 1);
+                                  } else {
+                                    updateQuantity.mutate({ id: item.id, quantity: item.quantity + 1 });
+                                  }
+                                }}
+                              >
+                                <Plus className="h-3 w-3" />
+                              </Button>
+                            </div>
                           </div>
-                        )}
-                        <div className="flex-1">
-                          <h3 className="font-display text-lg font-semibold mb-1">
-                            {item.products?.name}
-                          </h3>
-                          <p className="text-accent font-bold mb-2">
-                            ${item.products?.price}
-                          </p>
-                          <div className="flex items-center space-x-2">
+                          <div className="flex flex-col items-end justify-between">
                             <Button
-                              variant="outline"
+                              variant="ghost"
                               size="icon"
-                              onClick={() =>
-                                updateQuantity.mutate({
-                                  id: item.id,
-                                  quantity: Math.max(1, item.quantity - 1),
-                                })
-                              }
+                              className="h-8 w-8"
+                              onClick={() => {
+                                if (isGuest) {
+                                  handleGuestRemove(item.product_id);
+                                } else {
+                                  removeItem.mutate(item.id);
+                                }
+                              }}
                             >
-                              <Minus className="h-4 w-4" />
+                              <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
-                            <span className="w-12 text-center font-semibold">
-                              {item.quantity}
-                            </span>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              onClick={() =>
-                                updateQuantity.mutate({
-                                  id: item.id,
-                                  quantity: item.quantity + 1,
-                                })
-                              }
-                            >
-                              <Plus className="h-4 w-4" />
-                            </Button>
+                            <p className="font-bold text-sm md:text-base">
+                              ${(productData.price * item.quantity).toFixed(2)}
+                            </p>
                           </div>
                         </div>
-                        <div className="flex flex-col items-end justify-between">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => removeItem.mutate(item.id)}
-                          >
-                            <Trash2 className="h-5 w-5 text-destructive" />
-                          </Button>
-                          <p className="font-bold">
-                            ${((item.products?.price || 0) * item.quantity).toFixed(2)}
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
 
               <div>
                 <Card>
-                  <CardContent className="p-6">
-                    <h2 className="font-display text-2xl font-bold mb-4">Order Summary</h2>
+                  <CardContent className="p-4 md:p-6">
+                    <h2 className="font-display text-xl md:text-2xl font-bold mb-4">Order Summary</h2>
                     <div className="space-y-2 mb-4">
-                      <div className="flex justify-between">
+                      <div className="flex justify-between text-sm md:text-base">
                         <span>Subtotal</span>
                         <span>${total.toFixed(2)}</span>
                       </div>
-                      <div className="flex justify-between">
+                      <div className="flex justify-between text-sm md:text-base">
                         <span>Shipping</span>
                         <span>FREE</span>
                       </div>
                       <div className="border-t pt-2 mt-2">
-                        <div className="flex justify-between font-bold text-lg">
+                        <div className="flex justify-between font-bold text-base md:text-lg">
                           <span>Total</span>
                           <span className="text-accent">${total.toFixed(2)}</span>
                         </div>

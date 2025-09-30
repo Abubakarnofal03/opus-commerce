@@ -8,6 +8,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ShoppingCart } from "lucide-react";
+import { addToGuestCart } from "@/lib/cartUtils";
 import {
   Select,
   SelectContent,
@@ -67,12 +68,14 @@ const Shop = () => {
   });
 
   const addToCart = useMutation({
-    mutationFn: async (productId: string) => {
+    mutationFn: async (product: any) => {
       if (!user) {
-        toast({
-          title: "Please login",
-          description: "You need to be logged in to add items to cart",
-          variant: "destructive",
+        addToGuestCart({
+          product_id: product.id,
+          quantity: 1,
+          product_name: product.name,
+          product_price: product.price,
+          product_image: product.images?.[0],
         });
         return;
       }
@@ -81,7 +84,7 @@ const Shop = () => {
         .from('cart_items')
         .select('*')
         .eq('user_id', user.id)
-        .eq('product_id', productId)
+        .eq('product_id', product.id)
         .maybeSingle();
 
       if (existingItem) {
@@ -95,7 +98,7 @@ const Shop = () => {
           .from('cart_items')
           .insert({
             user_id: user.id,
-            product_id: productId,
+            product_id: product.id,
             quantity: 1,
           });
         if (error) throw error;
@@ -123,31 +126,31 @@ const Shop = () => {
       <Navbar />
       
       <main className="flex-1">
-        <section className="py-12 bg-muted/30">
+        <section className="py-8 md:py-12 bg-muted/30">
           <div className="container mx-auto px-4">
-            <h1 className="font-display text-4xl md:text-5xl font-bold text-center mb-4 gold-accent pb-8">
+            <h1 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-3 md:mb-4 gold-accent pb-6 md:pb-8">
               Our Collection
             </h1>
-            <p className="text-center text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-center text-muted-foreground max-w-2xl mx-auto text-sm md:text-base px-4">
               Explore our curated selection of premium products
             </p>
           </div>
         </section>
 
-        <section className="py-12">
+        <section className="py-8 md:py-12">
           <div className="container mx-auto px-4">
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 md:gap-8">
               {/* Filters Sidebar */}
-              <div className="lg:col-span-1 space-y-6">
+              <div className="lg:col-span-1 space-y-4 md:space-y-6">
                 <Card>
-                  <CardContent className="p-6">
-                    <h3 className="font-display text-lg font-semibold mb-4">Filters</h3>
+                  <CardContent className="p-4 md:p-6">
+                    <h3 className="font-display text-base md:text-lg font-semibold mb-3 md:mb-4">Filters</h3>
                     
-                    <div className="space-y-6">
+                    <div className="space-y-4 md:space-y-6">
                       <div>
-                        <label className="text-sm font-medium mb-3 block">Category</label>
+                        <label className="text-xs md:text-sm font-medium mb-2 md:mb-3 block">Category</label>
                         <Select value={selectedCategory || "all"} onValueChange={handleCategoryChange}>
-                          <SelectTrigger className="w-full">
+                          <SelectTrigger className="w-full text-sm">
                             <SelectValue placeholder="All Categories" />
                           </SelectTrigger>
                           <SelectContent>
@@ -162,7 +165,7 @@ const Shop = () => {
                       </div>
 
                       <div>
-                        <label className="text-sm font-medium mb-3 block">
+                        <label className="text-xs md:text-sm font-medium mb-2 md:mb-3 block">
                           Price Range: ${priceRange[0]} - ${priceRange[1]}
                         </label>
                         <Slider
@@ -190,7 +193,7 @@ const Shop = () => {
                     <p className="text-muted-foreground">No products found with the selected filters.</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                     {products?.map((product) => (
                       <Card key={product.id} className="hover-lift overflow-hidden group">
                         <div className="aspect-square bg-muted relative overflow-hidden">
@@ -202,26 +205,35 @@ const Shop = () => {
                             />
                           )}
                         </div>
-                        <CardContent className="p-4">
-                          <p className="text-xs text-muted-foreground mb-1">
+                        <CardContent className="p-3 md:p-4">
+                          <p className="text-xs text-muted-foreground mb-1 truncate">
                             {product.categories?.name}
                           </p>
-                          <h3 className="font-display text-lg font-semibold mb-2 truncate">
+                          <h3 className="font-display text-base md:text-lg font-semibold mb-1 md:mb-2 truncate">
                             {product.name}
                           </h3>
-                          <p className="text-xl font-bold text-accent mb-3">
+                          <p className="text-lg md:text-xl font-bold text-accent mb-1 md:mb-2">
                             ${product.price}
                           </p>
+                          {product.stock_quantity !== undefined && product.stock_quantity < 10 && product.stock_quantity > 0 && (
+                            <p className="text-xs text-orange-500 mb-2">
+                              Only {product.stock_quantity} left in stock!
+                            </p>
+                          )}
+                          {product.stock_quantity === 0 && (
+                            <p className="text-xs text-destructive mb-2">Out of stock</p>
+                          )}
                           <div className="grid grid-cols-2 gap-2">
                             <Button 
                               variant="outline" 
                               size="sm"
-                              onClick={() => addToCart.mutate(product.id)}
-                              disabled={addToCart.isPending}
+                              onClick={() => addToCart.mutate(product)}
+                              disabled={addToCart.isPending || product.stock_quantity === 0}
+                              className="text-xs md:text-sm"
                             >
-                              <ShoppingCart className="h-4 w-4" />
+                              <ShoppingCart className="h-3 w-3 md:h-4 md:w-4" />
                             </Button>
-                            <Button asChild size="sm">
+                            <Button asChild size="sm" className="text-xs md:text-sm">
                               <Link to={`/product/${product.slug}`}>
                                 View
                               </Link>

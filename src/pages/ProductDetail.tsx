@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Minus, Plus, ShoppingCart } from "lucide-react";
+import { addToGuestCart } from "@/lib/cartUtils";
 
 const ProductDetail = () => {
   const { slug } = useParams();
@@ -55,7 +56,13 @@ const ProductDetail = () => {
   const addToCart = useMutation({
     mutationFn: async () => {
       if (!user) {
-        navigate('/auth');
+        addToGuestCart({
+          product_id: product.id,
+          quantity,
+          product_name: product.name,
+          product_price: product.price,
+          product_image: product.images?.[0],
+        });
         return;
       }
 
@@ -100,10 +107,6 @@ const ProductDetail = () => {
   });
 
   const handleBuyNow = async () => {
-    if (!user) {
-      navigate('/auth');
-      return;
-    }
     await addToCart.mutateAsync();
     navigate('/checkout');
   };
@@ -136,11 +139,11 @@ const ProductDetail = () => {
     <div className="min-h-screen flex flex-col">
       <Navbar />
       
-      <main className="flex-1 py-12">
+      <main className="flex-1 py-8 md:py-12">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
             {/* Image Carousel */}
-            <div className="space-y-4">
+            <div className="space-y-3 md:space-y-4">
               {product.images && product.images.length > 0 && (
                 <>
                   <div className="aspect-square bg-muted rounded-lg overflow-hidden">
@@ -167,87 +170,96 @@ const ProductDetail = () => {
               )}
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-4 md:space-y-6">
               <div>
-                <p className="text-sm text-muted-foreground mb-2">
+                <p className="text-xs md:text-sm text-muted-foreground mb-2">
                   {product.categories?.name}
                 </p>
-                <h1 className="font-display text-4xl font-bold mb-4">
+                <h1 className="font-display text-2xl md:text-3xl lg:text-4xl font-bold mb-3 md:mb-4">
                   {product.name}
                 </h1>
-                <p className="text-3xl font-bold text-accent">
+                <p className="text-2xl md:text-3xl font-bold text-accent">
                   ${product.price}
                 </p>
               </div>
 
               {product.description && (
                 <div>
-                  <h2 className="font-semibold text-lg mb-2">Description</h2>
-                  <p className="text-muted-foreground leading-relaxed">
+                  <h2 className="font-semibold text-base md:text-lg mb-2">Description</h2>
+                  <p className="text-sm md:text-base text-muted-foreground leading-relaxed">
                     {product.description}
                   </p>
                 </div>
               )}
 
+              {product.stock_quantity !== undefined && product.stock_quantity < 10 && (
+                <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg p-3">
+                  {product.stock_quantity > 0 ? (
+                    <p className="text-sm font-medium text-orange-700 dark:text-orange-400">
+                      Hurry! Only {product.stock_quantity} {product.stock_quantity === 1 ? 'item' : 'items'} left in stock
+                    </p>
+                  ) : (
+                    <p className="text-sm font-medium text-destructive">
+                      Out of stock
+                    </p>
+                  )}
+                </div>
+              )}
+
               <div>
-                <h2 className="font-semibold text-lg mb-2">Quantity</h2>
-                <div className="flex items-center space-x-4">
+                <h2 className="font-semibold text-base md:text-lg mb-2">Quantity</h2>
+                <div className="flex items-center space-x-3 md:space-x-4">
                   <Button
                     variant="outline"
                     size="icon"
+                    className="h-9 w-9 md:h-10 md:w-10"
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
                   >
-                    <Minus className="h-4 w-4" />
+                    <Minus className="h-3 w-3 md:h-4 md:w-4" />
                   </Button>
-                  <span className="text-xl font-semibold w-12 text-center">
+                  <span className="text-lg md:text-xl font-semibold w-10 md:w-12 text-center">
                     {quantity}
                   </span>
                   <Button
                     variant="outline"
                     size="icon"
+                    className="h-9 w-9 md:h-10 md:w-10"
                     onClick={() => setQuantity(Math.min(product.stock_quantity || 99, quantity + 1))}
+                    disabled={product.stock_quantity === 0}
                   >
-                    <Plus className="h-4 w-4" />
+                    <Plus className="h-3 w-3 md:h-4 md:w-4" />
                   </Button>
                 </div>
               </div>
 
-              <div className="space-y-3 pt-4">
+              <div className="space-y-3 pt-2 md:pt-4">
                 <Button
-                  className="w-full"
+                  className="w-full text-sm md:text-base"
                   size="lg"
                   onClick={handleBuyNow}
-                  disabled={addToCart.isPending}
+                  disabled={addToCart.isPending || product.stock_quantity === 0}
                 >
                   Buy Now
                 </Button>
                 <Button
-                  className="w-full"
+                  className="w-full text-sm md:text-base"
                   variant="outline"
                   size="lg"
                   onClick={() => addToCart.mutate()}
-                  disabled={addToCart.isPending}
+                  disabled={addToCart.isPending || product.stock_quantity === 0}
                 >
-                  <ShoppingCart className="mr-2 h-5 w-5" />
+                  <ShoppingCart className="mr-2 h-4 w-4 md:h-5 md:w-5" />
                   Add to Cart
                 </Button>
               </div>
-
-              {product.stock_quantity !== undefined && (
-                <p className="text-sm text-muted-foreground">
-                  {product.stock_quantity > 0
-                    ? `${product.stock_quantity} items in stock`
-                    : "Out of stock"}
-                </p>
-              )}
             </div>
           </div>
 
           {/* Related Products */}
           {relatedProducts && relatedProducts.length > 0 && (
-            <div className="mt-20">
-              <h2 className="font-display text-3xl font-bold mb-8 text-center">Related Products</h2>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="mt-12 md:mt-20">
+              <h2 className="font-display text-2xl md:text-3xl font-bold mb-6 md:mb-8 text-center">Related Products</h2>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
                 {relatedProducts.map((relatedProduct) => (
                   <Card key={relatedProduct.id} className="hover-lift overflow-hidden">
                     <div className="aspect-square bg-muted relative overflow-hidden">
@@ -259,14 +271,14 @@ const ProductDetail = () => {
                         />
                       )}
                     </div>
-                    <CardContent className="p-4">
-                      <h3 className="font-display text-base font-semibold mb-2 truncate">
+                    <CardContent className="p-3 md:p-4">
+                      <h3 className="font-display text-sm md:text-base font-semibold mb-1 md:mb-2 truncate">
                         {relatedProduct.name}
                       </h3>
-                      <p className="text-lg font-bold text-accent mb-3">
+                      <p className="text-base md:text-lg font-bold text-accent mb-2 md:mb-3">
                         ${relatedProduct.price}
                       </p>
-                      <Button asChild className="w-full" size="sm">
+                      <Button asChild className="w-full text-xs md:text-sm" size="sm">
                         <Link to={`/product/${relatedProduct.slug}`}>
                           View Details
                         </Link>
