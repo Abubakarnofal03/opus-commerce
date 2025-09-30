@@ -4,6 +4,7 @@ import { ShoppingCart, User, Menu, X, LogOut } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { getGuestCart } from "@/lib/cartUtils";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -52,13 +53,35 @@ export const Navbar = () => {
     setIsAdmin(!!data);
   };
 
-  const fetchCartCount = async (userId: string) => {
-    const { count } = await supabase
-      .from('cart_items')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', userId);
-    setCartCount(count || 0);
+  const fetchCartCount = async (userId?: string) => {
+    if (userId) {
+      const { count } = await supabase
+        .from('cart_items')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId);
+      setCartCount(count || 0);
+    } else {
+      // Guest user - use session storage
+      const guestCart = getGuestCart();
+      setCartCount(guestCart.length);
+    }
   };
+
+  // Update cart count for guest users when cart changes
+  useEffect(() => {
+    if (!user) {
+      const updateGuestCart = () => {
+        const guestCart = getGuestCart();
+        setCartCount(guestCart.length);
+      };
+      
+      window.addEventListener('storage', updateGuestCart);
+      // Check on mount
+      updateGuestCart();
+      
+      return () => window.removeEventListener('storage', updateGuestCart);
+    }
+  }, [user]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -92,40 +115,38 @@ export const Navbar = () => {
 
           {/* Actions */}
           <div className="hidden md:flex items-center space-x-4">
+            <Link to="/cart" className="relative">
+              <Button variant="ghost" size="icon">
+                <ShoppingCart className="h-5 w-5" />
+                {cartCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-accent text-accent-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {cartCount}
+                  </span>
+                )}
+              </Button>
+            </Link>
             {user ? (
-              <>
-                <Link to="/cart" className="relative">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon">
-                    <ShoppingCart className="h-5 w-5" />
-                    {cartCount > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-accent text-accent-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                        {cartCount}
-                      </span>
-                    )}
+                    <User className="h-5 w-5" />
                   </Button>
-                </Link>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <User className="h-5 w-5" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => navigate('/orders')}>
-                      My Orders
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => navigate('/orders')}>
+                    My Orders
+                  </DropdownMenuItem>
+                  {isAdmin && (
+                    <DropdownMenuItem onClick={() => navigate('/admin')}>
+                      Admin Dashboard
                     </DropdownMenuItem>
-                    {isAdmin && (
-                      <DropdownMenuItem onClick={() => navigate('/admin')}>
-                        Admin Dashboard
-                      </DropdownMenuItem>
-                    )}
-                    <DropdownMenuItem onClick={handleLogout}>
-                      <LogOut className="mr-2 h-4 w-4" />
-                      Logout
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </>
+                  )}
+                  <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             ) : (
               <Button onClick={() => navigate('/auth')} variant="default">
                 Sign In
