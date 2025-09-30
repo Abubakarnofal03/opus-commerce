@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { ImageUpload } from "./ImageUpload";
 
 interface BannerDialogProps {
   open: boolean;
@@ -112,16 +113,13 @@ export function BannerDialog({ open, onOpenChange, banner, onSuccess }: BannerDi
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="image">Image URL *</Label>
-            <Input
-              id="image"
-              value={formData.image_url}
-              onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-              placeholder="https://example.com/banner-image.jpg"
-              required
-            />
-          </div>
+          <ImageUpload
+            label="Banner Image *"
+            value={formData.image_url}
+            onChange={(value) => setFormData({ ...formData, image_url: value as string })}
+            multiple={false}
+            folder="banners"
+          />
 
           <div className="space-y-2">
             <Label htmlFor="link">Link URL</Label>

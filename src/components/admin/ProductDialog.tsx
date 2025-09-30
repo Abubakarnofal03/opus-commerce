@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { ImageUpload } from "./ImageUpload";
 
 interface ProductDialogProps {
   open: boolean;
@@ -27,7 +28,7 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
     stock_quantity: "",
     category_id: "",
     sku: "",
-    images: "",
+    images: [] as string[],
     is_featured: false,
   });
 
@@ -41,7 +42,7 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
         stock_quantity: product.stock_quantity?.toString() || "",
         category_id: product.category_id || "",
         sku: product.sku || "",
-        images: product.images?.join(", ") || "",
+        images: product.images || [],
         is_featured: product.is_featured || false,
       });
     } else {
@@ -53,7 +54,7 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
         stock_quantity: "",
         category_id: "",
         sku: "",
-        images: "",
+        images: [],
         is_featured: false,
       });
     }
@@ -72,7 +73,7 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
         stock_quantity: parseInt(formData.stock_quantity),
         category_id: formData.category_id || null,
         sku: formData.sku || null,
-        images: formData.images ? formData.images.split(",").map(img => img.trim()) : [],
+        images: formData.images,
         is_featured: formData.is_featured,
       };
 
@@ -193,15 +194,13 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
             </Select>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="images">Image URLs (comma separated)</Label>
-            <Textarea
-              id="images"
-              value={formData.images}
-              onChange={(e) => setFormData({ ...formData, images: e.target.value })}
-              placeholder="https://example.com/image1.jpg, https://example.com/image2.jpg"
-            />
-          </div>
+          <ImageUpload
+            label="Product Images"
+            value={formData.images}
+            onChange={(value) => setFormData({ ...formData, images: value as string[] })}
+            multiple={true}
+            folder="products"
+          />
 
           <div className="flex items-center space-x-2">
             <input

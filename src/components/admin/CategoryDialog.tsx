@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { ImageUpload } from "./ImageUpload";
 
 interface CategoryDialogProps {
   open: boolean;
@@ -111,15 +112,13 @@ export function CategoryDialog({ open, onOpenChange, category, onSuccess }: Cate
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="image">Image URL</Label>
-            <Input
-              id="image"
-              value={formData.image_url}
-              onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-              placeholder="https://example.com/category-image.jpg"
-            />
-          </div>
+          <ImageUpload
+            label="Category Image"
+            value={formData.image_url}
+            onChange={(value) => setFormData({ ...formData, image_url: value as string })}
+            multiple={false}
+            folder="categories"
+          />
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
