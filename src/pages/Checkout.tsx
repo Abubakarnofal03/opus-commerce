@@ -2,10 +2,9 @@ import { useEffect, useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -13,14 +12,16 @@ import { supabase } from "@/integrations/supabase/client";
 
 const Checkout = () => {
   const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    address: "",
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "+92",
+    addressLine1: "",
+    addressLine2: "",
     city: "",
     state: "",
-    zip: "",
-    phone: "",
-    notes: "",
+    postalCode: "",
   });
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -28,33 +29,33 @@ const Checkout = () => {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) {
-        navigate('/auth');
-      } else {
-        setUser(session.user);
-        loadProfile(session.user.id);
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        // Auto-fill from profile if logged in
+        supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .maybeSingle()
+          .then(({ data: profile }) => {
+            if (profile) {
+              setFormData(prev => ({
+                ...prev,
+                firstName: profile.full_name?.split(' ')[0] || '',
+                lastName: profile.full_name?.split(' ')[1] || '',
+                email: profile.email || session.user.email || '',
+                phone: profile.phone || '+92',
+                addressLine1: profile.address || '',
+                city: profile.city || '',
+                state: profile.state || '',
+                postalCode: profile.zip_code || '',
+              }));
+            }
+          });
       }
     });
-  }, [navigate]);
-
-  const loadProfile = async (userId: string) => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-    
-    if (data) {
-      setFormData({
-        address: data.address || "",
-        city: data.city || "",
-        state: data.state || "",
-        zip: data.zip_code || "",
-        phone: data.phone || "",
-        notes: "",
-      });
-    }
-  };
+  }, []);
 
   const { data: cartItems } = useQuery({
     queryKey: ['cart', user?.id],
@@ -77,20 +78,30 @@ const Checkout = () => {
 
   const placeOrder = useMutation({
     mutationFn: async () => {
-      if (!user || !cartItems || cartItems.length === 0) return;
+      // Validate required fields
+      if (!formData.firstName || !formData.lastName || !formData.phone || 
+          !formData.addressLine1 || !formData.city || !formData.state || !formData.postalCode) {
+        throw new Error("Please fill in all required fields");
+      }
+
+      if (!cartItems || cartItems.length === 0) {
+        throw new Error("Your cart is empty");
+      }
 
       // Create order
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
-          user_id: user.id,
-          total_amount: total,
-          shipping_address: formData.address,
+          user_id: user?.id || null,
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          email: formData.email,
+          phone: formData.phone,
+          shipping_address: formData.addressLine1 + (formData.addressLine2 ? `, ${formData.addressLine2}` : ''),
           shipping_city: formData.city,
           shipping_state: formData.state,
-          shipping_zip: formData.zip,
-          phone: formData.phone,
-          notes: formData.notes,
+          shipping_zip: formData.postalCode,
+          total_amount: total,
           status: 'pending',
         })
         .select()
@@ -99,7 +110,7 @@ const Checkout = () => {
       if (orderError) throw orderError;
 
       // Create order items
-      const orderItems = cartItems.map(item => ({
+      const orderItems = cartItems.map((item) => ({
         order_id: order.id,
         product_id: item.product_id,
         quantity: item.quantity,
@@ -112,25 +123,15 @@ const Checkout = () => {
 
       if (itemsError) throw itemsError;
 
-      // Clear cart
-      const { error: clearError } = await supabase
-        .from('cart_items')
-        .delete()
-        .eq('user_id', user.id);
+      // Clear cart if user is logged in
+      if (user) {
+        const { error: clearError } = await supabase
+          .from('cart_items')
+          .delete()
+          .eq('user_id', user.id);
 
-      if (clearError) throw clearError;
-
-      // Update profile
-      await supabase
-        .from('profiles')
-        .update({
-          address: formData.address,
-          city: formData.city,
-          state: formData.state,
-          zip_code: formData.zip,
-          phone: formData.phone,
-        })
-        .eq('id', user.id);
+        if (clearError) throw clearError;
+      }
 
       return order.id;
     },
@@ -138,40 +139,36 @@ const Checkout = () => {
       queryClient.invalidateQueries({ queryKey: ['cart'] });
       toast({
         title: "Order placed successfully!",
-        description: "Your order has been confirmed. Thank you for shopping with us.",
+        description: "Thank you for your order. We'll process it shortly.",
       });
-      navigate('/orders');
+      navigate(`/order-confirmation/${orderId}`);
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: "Error placing order",
         description: error.message,
         variant: "destructive",
       });
     },
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.address || !formData.city || !formData.state || !formData.zip || !formData.phone) {
-      toast({
-        title: "Error",
-        description: "Please fill in all required fields",
-        variant: "destructive",
-      });
-      return;
-    }
-    placeOrder.mutate();
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData(prev => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
   };
 
-  if (!cartItems || cartItems.length === 0) {
+  if (!user && (!cartItems || cartItems.length === 0)) {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <p className="text-muted-foreground mb-4">Your cart is empty</p>
-            <Button onClick={() => navigate('/shop')}>Continue Shopping</Button>
+            <Button onClick={() => navigate('/shop')}>
+              Continue Shopping
+            </Button>
           </div>
         </div>
         <Footer />
@@ -192,92 +189,124 @@ const Checkout = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
               <Card>
-                <CardHeader>
-                  <CardTitle>Shipping Information</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="address">Address *</Label>
+                <CardContent className="p-6">
+                  <h2 className="font-display text-2xl font-bold mb-6">Shipping Information</h2>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="firstName">First Name *</Label>
                       <Input
-                        id="address"
-                        value={formData.address}
-                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                        id="firstName"
+                        name="firstName"
+                        value={formData.firstName}
+                        onChange={handleInputChange}
                         required
                       />
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="city">City *</Label>
-                        <Input
-                          id="city"
-                          value={formData.city}
-                          onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="state">State *</Label>
-                        <Input
-                          id="state"
-                          value={formData.state}
-                          onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                          required
-                        />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="zip">ZIP Code *</Label>
-                        <Input
-                          id="zip"
-                          value={formData.zip}
-                          onChange={(e) => setFormData({ ...formData, zip: e.target.value })}
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="phone">Phone *</Label>
-                        <Input
-                          id="phone"
-                          type="tel"
-                          value={formData.phone}
-                          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                          required
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="notes">Order Notes (Optional)</Label>
-                      <Textarea
-                        id="notes"
-                        value={formData.notes}
-                        onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                        placeholder="Any special instructions for delivery"
+                    <div>
+                      <Label htmlFor="lastName">Last Name *</Label>
+                      <Input
+                        id="lastName"
+                        name="lastName"
+                        value={formData.lastName}
+                        onChange={handleInputChange}
+                        required
                       />
                     </div>
-                  </form>
+                    <div>
+                      <Label htmlFor="email">Email (Optional)</Label>
+                      <Input
+                        id="email"
+                        name="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="phone">Phone Number *</Label>
+                      <Input
+                        id="phone"
+                        name="phone"
+                        type="tel"
+                        value={formData.phone}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <Label htmlFor="addressLine1">Address Line 1 *</Label>
+                      <Input
+                        id="addressLine1"
+                        name="addressLine1"
+                        value={formData.addressLine1}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <Label htmlFor="addressLine2">Address Line 2 (Optional)</Label>
+                      <Input
+                        id="addressLine2"
+                        name="addressLine2"
+                        value={formData.addressLine2}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="city">City *</Label>
+                      <Input
+                        id="city"
+                        name="city"
+                        value={formData.city}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="state">State/Province *</Label>
+                      <Input
+                        id="state"
+                        name="state"
+                        value={formData.state}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <Label htmlFor="postalCode">Postal Code *</Label>
+                      <Input
+                        id="postalCode"
+                        name="postalCode"
+                        value={formData.postalCode}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </div>
 
             <div>
               <Card>
-                <CardHeader>
-                  <CardTitle>Order Summary</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
+                <CardContent className="p-6">
+                  <h2 className="font-display text-2xl font-bold mb-4">Order Summary</h2>
+                  
+                  <div className="space-y-4 mb-6">
                     {cartItems?.map((item) => (
                       <div key={item.id} className="flex justify-between text-sm">
                         <span>
-                          {item.products?.name} x {item.quantity}
+                          {item.products?.name} × {item.quantity}
                         </span>
-                        <span>${((item.products?.price || 0) * item.quantity).toFixed(2)}</span>
+                        <span className="font-semibold">
+                          ${((item.products?.price || 0) * item.quantity).toFixed(2)}
+                        </span>
                       </div>
                     ))}
                   </div>
-                  <div className="border-t pt-4 space-y-2">
+
+                  <div className="space-y-2 mb-4">
                     <div className="flex justify-between">
                       <span>Subtotal</span>
                       <span>${total.toFixed(2)}</span>
@@ -286,24 +315,27 @@ const Checkout = () => {
                       <span>Shipping</span>
                       <span>FREE</span>
                     </div>
-                    <div className="flex justify-between font-bold text-lg pt-2 border-t">
-                      <span>Total</span>
-                      <span className="text-accent">${total.toFixed(2)}</span>
+                    <div className="border-t pt-2 mt-2">
+                      <div className="flex justify-between font-bold text-lg">
+                        <span>Total</span>
+                        <span className="text-accent">${total.toFixed(2)}</span>
+                      </div>
                     </div>
                   </div>
-                  <div className="pt-4">
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Payment Method: Cash on Delivery (COD)
-                    </p>
-                    <Button
-                      className="w-full"
-                      size="lg"
-                      onClick={handleSubmit}
-                      disabled={placeOrder.isPending}
-                    >
-                      {placeOrder.isPending ? "Placing Order..." : "Place Order"}
-                    </Button>
+
+                  <div className="bg-muted/30 p-4 rounded-lg mb-6">
+                    <p className="text-sm font-semibold mb-1">Payment Method</p>
+                    <p className="text-sm text-muted-foreground">Cash on Delivery (COD)</p>
                   </div>
+
+                  <Button
+                    className="w-full"
+                    size="lg"
+                    onClick={() => placeOrder.mutate()}
+                    disabled={placeOrder.isPending}
+                  >
+                    {placeOrder.isPending ? "Processing..." : "Place Order"}
+                  </Button>
                 </CardContent>
               </Card>
             </div>

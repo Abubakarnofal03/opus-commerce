@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,6 +34,22 @@ const ProductDetail = () => {
       if (error) throw error;
       return data;
     },
+  });
+
+  const { data: relatedProducts } = useQuery({
+    queryKey: ['related-products', product?.category_id],
+    queryFn: async () => {
+      if (!product?.category_id) return [];
+      const { data, error } = await supabase
+        .from('products')
+        .select('*, categories(*)')
+        .eq('category_id', product.category_id)
+        .neq('id', product.id)
+        .limit(4);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!product,
   });
 
   const addToCart = useMutation({
@@ -122,15 +139,31 @@ const ProductDetail = () => {
       <main className="flex-1 py-12">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+            {/* Image Carousel */}
             <div className="space-y-4">
-              {product.images?.[0] && (
-                <div className="aspect-square bg-muted rounded-lg overflow-hidden">
-                  <img
-                    src={product.images[0]}
-                    alt={product.name}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
+              {product.images && product.images.length > 0 && (
+                <>
+                  <div className="aspect-square bg-muted rounded-lg overflow-hidden">
+                    <img
+                      src={product.images[0]}
+                      alt={product.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  {product.images.length > 1 && (
+                    <div className="grid grid-cols-4 gap-2">
+                      {product.images.map((image, index) => (
+                        <div key={index} className="aspect-square bg-muted rounded overflow-hidden cursor-pointer hover:opacity-80">
+                          <img
+                            src={image}
+                            alt={`${product.name} ${index + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
               )}
             </div>
 
@@ -209,6 +242,41 @@ const ProductDetail = () => {
               )}
             </div>
           </div>
+
+          {/* Related Products */}
+          {relatedProducts && relatedProducts.length > 0 && (
+            <div className="mt-20">
+              <h2 className="font-display text-3xl font-bold mb-8 text-center">Related Products</h2>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                {relatedProducts.map((relatedProduct) => (
+                  <Card key={relatedProduct.id} className="hover-lift overflow-hidden">
+                    <div className="aspect-square bg-muted relative overflow-hidden">
+                      {relatedProduct.images?.[0] && (
+                        <img
+                          src={relatedProduct.images[0]}
+                          alt={relatedProduct.name}
+                          className="w-full h-full object-cover"
+                        />
+                      )}
+                    </div>
+                    <CardContent className="p-4">
+                      <h3 className="font-display text-base font-semibold mb-2 truncate">
+                        {relatedProduct.name}
+                      </h3>
+                      <p className="text-lg font-bold text-accent mb-3">
+                        ${relatedProduct.price}
+                      </p>
+                      <Button asChild className="w-full" size="sm">
+                        <Link to={`/product/${relatedProduct.slug}`}>
+                          View Details
+                        </Link>
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </main>
 
