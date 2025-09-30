@@ -148,23 +148,18 @@ const Index = () => {
                 >
                   <Card className="hover-lift overflow-hidden">
                     <div className="aspect-square bg-muted relative overflow-hidden">
-                      {category.image_url ? (
+                      {category.image_url && (
                         <img 
                           src={category.image_url} 
                           alt={category.name}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
-                      ) : (
-                        <div className="flex items-center justify-center h-full">
-                          <h3 className="font-display text-3xl font-bold group-hover:text-accent transition-colors">
-                            {category.name}
-                          </h3>
-                        </div>
                       )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-primary/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                      <div className="absolute bottom-0 left-0 right-0 p-6 text-white transform translate-y-full group-hover:translate-y-0 transition-transform">
-                        <h3 className="font-display text-2xl font-bold mb-2">{category.name}</h3>
-                        <p className="text-sm">{category.description}</p>
+                      <div className="absolute inset-0 bg-primary/40 group-hover:bg-primary/60 transition-colors" />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <h3 className="font-display text-3xl md:text-4xl font-bold text-white text-center px-4">
+                          {category.name}
+                        </h3>
                       </div>
                     </div>
                   </Card>
