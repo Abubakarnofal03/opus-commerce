@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Card, CardContent } from "@/components/ui/card";
@@ -25,11 +25,11 @@ const Shop = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  useState(() => {
+  useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
     });
-  });
+  }, []);
 
   const { data: categories } = useQuery({
     queryKey: ['categories'],
