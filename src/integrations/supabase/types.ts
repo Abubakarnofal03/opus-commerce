@@ -335,6 +335,50 @@ export type Database = {
         }
         Relationships: []
       }
+      sales: {
+        Row: {
+          created_at: string
+          discount_percentage: number
+          end_date: string
+          id: string
+          is_active: boolean
+          is_global: boolean
+          product_id: string | null
+          start_date: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          discount_percentage: number
+          end_date: string
+          id?: string
+          is_active?: boolean
+          is_global?: boolean
+          product_id?: string | null
+          start_date?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          discount_percentage?: number
+          end_date?: string
+          id?: string
+          is_active?: boolean
+          is_global?: boolean
+          product_id?: string | null
+          start_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string | null

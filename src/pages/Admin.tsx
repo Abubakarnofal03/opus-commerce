@@ -15,6 +15,7 @@ import { Package, ShoppingBag, DollarSign, Plus, Pencil, Trash2, Image as ImageI
 import { ProductDialog } from "@/components/admin/ProductDialog";
 import { CategoryDialog } from "@/components/admin/CategoryDialog";
 import { BannerDialog } from "@/components/admin/BannerDialog";
+import { SaleDialog } from "@/components/admin/SaleDialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatPrice } from "@/lib/currency";
@@ -259,10 +260,13 @@ const Admin = () => {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>Products</CardTitle>
-                  <Button onClick={() => setProductDialog({ open: true, product: null })}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Product
-                  </Button>
+                  <div className="flex gap-2">
+                    <SaleDialog />
+                    <Button onClick={() => setProductDialog({ open: true, product: null })}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Product
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <Table>

@@ -4,6 +4,8 @@ import { Footer } from "@/components/Footer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Link, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,12 +21,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
+import { calculateSalePrice } from "@/lib/saleUtils";
 
 const Shop = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedCategory = searchParams.get("category");
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 50000]);
+  const [minPrice, setMinPrice] = useState("0");
+  const [maxPrice, setMaxPrice] = useState("50000");
   const [user, setUser] = useState<any>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -47,14 +50,27 @@ const Shop = () => {
     },
   });
 
+  const { data: sales } = useQuery({
+    queryKey: ['sales'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('sales')
+        .select('*')
+        .eq('is_active', true)
+        .gt('end_date', new Date().toISOString());
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const { data: products, isLoading } = useQuery({
-    queryKey: ['products', selectedCategory, priceRange],
+    queryKey: ['products', selectedCategory, minPrice, maxPrice],
     queryFn: async () => {
       let query = supabase
         .from('products')
         .select('*, categories(*)')
-        .gte('price', priceRange[0])
-        .lte('price', priceRange[1]);
+        .gte('price', parseFloat(minPrice))
+        .lte('price', parseFloat(maxPrice));
 
       if (selectedCategory) {
         const category = categories?.find(c => c.slug === selectedCategory);
@@ -179,16 +195,33 @@ const Shop = () => {
 
                       <div>
                         <label className="text-xs md:text-sm font-medium mb-2 md:mb-3 block">
-                          Price Range: {formatPrice(priceRange[0])} - {formatPrice(priceRange[1])}
+                          Price Range
                         </label>
-                        <Slider
-                          min={0}
-                          max={50000}
-                          step={100}
-                          value={priceRange}
-                          onValueChange={(value) => setPriceRange(value as [number, number])}
-                          className="mt-2"
-                        />
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <Label className="text-xs">Min</Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              value={minPrice}
+                              onChange={(e) => setMinPrice(e.target.value)}
+                              className="text-sm"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Max</Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              value={maxPrice}
+                              onChange={(e) => setMaxPrice(e.target.value)}
+                              className="text-sm"
+                            />
+                          </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          {formatPrice(parseFloat(minPrice))} - {formatPrice(parseFloat(maxPrice))}
+                        </p>
                       </div>
                     </div>
                   </CardContent>
@@ -207,14 +240,24 @@ const Shop = () => {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-                     {products?.map((product) => (
-                      <Card key={product.id} className="glass-card glass-hover overflow-hidden rounded-xl group relative">
-                        {product.is_featured && (
-                          <Badge className="absolute top-2 left-2 z-10 bg-accent text-accent-foreground">
-                            <Star className="h-3 w-3 mr-1" fill="currentColor" />
-                            Featured
-                          </Badge>
-                        )}
+                     {products?.map((product) => {
+                      const productSale = sales?.find(s => s.product_id === product.id);
+                      const globalSale = sales?.find(s => s.is_global);
+                      const { finalPrice, discount } = calculateSalePrice(product.price, productSale, globalSale);
+                      
+                      return (
+                        <Card key={product.id} className="glass-card glass-hover overflow-hidden rounded-xl group relative">
+                          {discount && (
+                            <Badge className="absolute top-2 left-2 z-10 bg-destructive text-destructive-foreground">
+                              {discount}% OFF
+                            </Badge>
+                          )}
+                          {product.is_featured && !discount && (
+                            <Badge className="absolute top-2 left-2 z-10 bg-accent text-accent-foreground">
+                              <Star className="h-3 w-3 mr-1" fill="currentColor" />
+                              Featured
+                            </Badge>
+                          )}
                         <div className="aspect-square bg-muted relative overflow-hidden">
                           {product.images?.[0] && (
                             <img
@@ -228,39 +271,53 @@ const Shop = () => {
                           <p className="text-xs text-muted-foreground mb-1 truncate">
                             {product.categories?.name}
                           </p>
-                          <h3 className="font-display text-base md:text-lg font-semibold mb-1 md:mb-2 truncate">
-                            {product.name}
-                          </h3>
-                          <p className="text-lg md:text-xl font-bold text-accent mb-1 md:mb-2">
-                            {formatPrice(product.price)}
-                          </p>
+                            <h3 className="font-display text-base md:text-lg font-semibold mb-1 md:mb-2 truncate">
+                              {product.name}
+                            </h3>
+                            <div className="mb-1 md:mb-2">
+                              {discount ? (
+                                <div className="flex items-center gap-2">
+                                  <p className="text-lg md:text-xl font-bold text-destructive">
+                                    {formatPrice(finalPrice)}
+                                  </p>
+                                  <p className="text-sm text-muted-foreground line-through">
+                                    {formatPrice(product.price)}
+                                  </p>
+                                </div>
+                              ) : (
+                                <p className="text-lg md:text-xl font-bold text-accent">
+                                  {formatPrice(product.price)}
+                                </p>
+                              )}
+                            </div>
                           {product.stock_quantity !== undefined && product.stock_quantity < 10 && product.stock_quantity > 0 && (
                             <p className="text-xs text-orange-500 mb-2">
                               Only {product.stock_quantity} left in stock!
                             </p>
                           )}
-                          {product.stock_quantity === 0 && (
-                            <p className="text-xs text-destructive mb-2">Out of stock</p>
-                          )}
-                          <div className="grid grid-cols-2 gap-2">
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => addToCart.mutate(product)}
-                              disabled={addToCart.isPending || product.stock_quantity === 0}
-                              className="text-xs md:text-sm"
-                            >
-                              <ShoppingCart className="h-3 w-3 md:h-4 md:w-4" />
-                            </Button>
-                            <Button asChild size="sm" className="text-xs md:text-sm">
-                              <Link to={`/product/${product.slug}`}>
-                                View
-                              </Link>
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                            {product.stock_quantity === 0 && (
+                              <p className="text-xs text-destructive mb-2">Out of stock</p>
+                            )}
+                            <div className="grid grid-cols-2 gap-2">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => addToCart.mutate(product)}
+                                disabled={addToCart.isPending || product.stock_quantity === 0}
+                                className="text-xs md:text-sm"
+                              >
+                                <ShoppingCart className="h-3 w-3 md:h-4 md:w-4" />
+                              </Button>
+                              <Button asChild size="sm" className="text-xs md:text-sm">
+                                <Link to={`/product/${product.slug}`}>
+                                  View
+                                </Link>
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
                   </div>
                 )}
               </div>
