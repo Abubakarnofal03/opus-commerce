@@ -28,9 +28,21 @@ const Shop = () => {
   const selectedCategory = searchParams.get("category");
   const [minPrice, setMinPrice] = useState("0");
   const [maxPrice, setMaxPrice] = useState("50000");
+  const [debouncedMinPrice, setDebouncedMinPrice] = useState("0");
+  const [debouncedMaxPrice, setDebouncedMaxPrice] = useState("50000");
   const [user, setUser] = useState<any>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Debounce price changes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedMinPrice(minPrice);
+      setDebouncedMaxPrice(maxPrice);
+    }, 500); // Wait 500ms after user stops typing
+
+    return () => clearTimeout(timer);
+  }, [minPrice, maxPrice]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -64,13 +76,13 @@ const Shop = () => {
   });
 
   const { data: products, isLoading } = useQuery({
-    queryKey: ['products', selectedCategory, minPrice, maxPrice],
+    queryKey: ['products', selectedCategory, debouncedMinPrice, debouncedMaxPrice],
     queryFn: async () => {
       let query = supabase
         .from('products')
         .select('*, categories(*)')
-        .gte('price', parseFloat(minPrice))
-        .lte('price', parseFloat(maxPrice));
+        .gte('price', parseFloat(debouncedMinPrice))
+        .lte('price', parseFloat(debouncedMaxPrice));
 
       if (selectedCategory) {
         const category = categories?.find(c => c.slug === selectedCategory);
@@ -220,7 +232,7 @@ const Shop = () => {
                           </div>
                         </div>
                         <p className="text-xs text-muted-foreground mt-2">
-                          {formatPrice(parseFloat(minPrice))} - {formatPrice(parseFloat(maxPrice))}
+                          Showing: {formatPrice(parseFloat(debouncedMinPrice))} - {formatPrice(parseFloat(debouncedMaxPrice))}
                         </p>
                       </div>
                     </div>
