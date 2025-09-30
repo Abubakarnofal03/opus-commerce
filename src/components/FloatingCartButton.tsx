@@ -57,7 +57,7 @@ export const FloatingCartButton = () => {
     >
       <Button
         size="lg"
-        className="relative h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all"
+        className="relative h-14 w-14 rounded-full glass-button glass-hover"
       >
         <ShoppingCart className="h-6 w-6" />
         {cartCount > 0 && (

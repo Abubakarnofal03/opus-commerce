@@ -87,7 +87,7 @@ const Index = () => {
         <section className="py-16 bg-muted/30">
           <div className="container mx-auto px-4">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <Card className="hover-lift">
+              <Card className="glass-card glass-hover rounded-xl">
                 <CardContent className="p-6 flex items-center space-x-4">
                   <ShieldCheck className="h-12 w-12 text-accent flex-shrink-0" />
                   <div>
@@ -96,7 +96,7 @@ const Index = () => {
                   </div>
                 </CardContent>
               </Card>
-              <Card className="hover-lift">
+              <Card className="glass-card glass-hover rounded-xl">
                 <CardContent className="p-6 flex items-center space-x-4">
                   <CreditCard className="h-12 w-12 text-accent flex-shrink-0" />
                   <div>
@@ -105,7 +105,7 @@ const Index = () => {
                   </div>
                 </CardContent>
               </Card>
-              <Card className="hover-lift">
+              <Card className="glass-card glass-hover rounded-xl">
                 <CardContent className="p-6 flex items-center space-x-4">
                   <Truck className="h-12 w-12 text-accent flex-shrink-0" />
                   <div>
@@ -114,7 +114,7 @@ const Index = () => {
                   </div>
                 </CardContent>
               </Card>
-              <Card className="hover-lift">
+              <Card className="glass-card glass-hover rounded-xl">
                 <CardContent className="p-6 flex items-center space-x-4">
                   <Award className="h-12 w-12 text-accent flex-shrink-0" />
                   <div>
@@ -146,7 +146,7 @@ const Index = () => {
                   to={`/shop?category=${category.slug}`} 
                   className="group"
                 >
-                  <Card className="hover-lift overflow-hidden">
+                  <Card className="glass-card glass-hover overflow-hidden rounded-xl">
                     <div className="aspect-square bg-muted relative overflow-hidden">
                       {category.image_url && (
                         <img 
@@ -183,7 +183,7 @@ const Index = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {featuredProducts?.map((product) => (
-                <Card key={product.id} className="hover-lift overflow-hidden border-border group">
+                <Card key={product.id} className="glass-card glass-hover overflow-hidden rounded-xl group">
                   <div className="aspect-square bg-muted relative overflow-hidden">
                     {product.images?.[0] && (
                       <img

@@ -14,7 +14,7 @@ export const WhatsAppButton = () => {
     >
       <Button
         size="icon"
-        className="h-14 w-14 rounded-full bg-[#25D366] hover:bg-[#20BA5A] shadow-lg"
+        className="h-14 w-14 rounded-full bg-[#25D366] hover:bg-[#20BA5A] glass-button glass-hover backdrop-blur-xl"
       >
         <MessageCircle className="h-6 w-6 text-white" />
       </Button>

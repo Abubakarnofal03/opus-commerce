@@ -294,7 +294,7 @@ const ProductDetail = () => {
               <h2 className="font-display text-2xl md:text-3xl font-bold mb-6 md:mb-8 text-center">Related Products</h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
                 {relatedProducts.map((relatedProduct) => (
-                  <Card key={relatedProduct.id} className="hover-lift overflow-hidden">
+                  <Card key={relatedProduct.id} className="glass-card glass-hover overflow-hidden rounded-xl">
                     <div className="aspect-square bg-muted relative overflow-hidden">
                       {relatedProduct.images?.[0] && (
                         <img

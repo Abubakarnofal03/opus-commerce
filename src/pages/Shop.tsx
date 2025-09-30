@@ -144,7 +144,7 @@ const Shop = () => {
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 md:gap-8">
               {/* Filters Sidebar */}
               <div className="lg:col-span-1 space-y-4 md:space-y-6">
-                <Card>
+                <Card className="glass-card rounded-xl">
                   <CardContent className="p-4 md:p-6">
                     <h3 className="font-display text-base md:text-lg font-semibold mb-3 md:mb-4">Filters</h3>
                     
@@ -197,7 +197,7 @@ const Shop = () => {
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                      {products?.map((product) => (
-                      <Card key={product.id} className="hover-lift overflow-hidden group relative">
+                      <Card key={product.id} className="glass-card glass-hover overflow-hidden rounded-xl group relative">
                         {product.is_featured && (
                           <Badge className="absolute top-2 left-2 z-10 bg-accent text-accent-foreground">
                             <Star className="h-3 w-3 mr-1" fill="currentColor" />

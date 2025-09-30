@@ -54,21 +54,21 @@ const Contact = () => {
         <section className="py-20">
           <div className="container mx-auto px-4">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
-              <Card>
+              <Card className="glass-card glass-hover rounded-xl">
                 <CardContent className="pt-6 text-center">
                   <Mail className="h-12 w-12 text-accent mx-auto mb-4" />
                   <h3 className="font-semibold mb-2">Email</h3>
                   <p className="text-muted-foreground">info@theshoppingcart.com</p>
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="glass-card glass-hover rounded-xl">
                 <CardContent className="pt-6 text-center">
                   <Phone className="h-12 w-12 text-accent mx-auto mb-4" />
                   <h3 className="font-semibold mb-2">Phone</h3>
                   <p className="text-muted-foreground">+92 324 1693025</p>
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="glass-card glass-hover rounded-xl">
                 <CardContent className="pt-6 text-center">
                   <MapPin className="h-12 w-12 text-accent mx-auto mb-4" />
                   <h3 className="font-semibold mb-2">Location</h3>
@@ -78,7 +78,7 @@ const Contact = () => {
             </div>
 
             <div className="max-w-2xl mx-auto">
-              <Card>
+              <Card className="glass-card rounded-xl">
                 <CardHeader>
                   <CardTitle className="font-display text-2xl">Send us a message</CardTitle>
                 </CardHeader>

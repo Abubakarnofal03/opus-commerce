@@ -129,7 +129,7 @@ const Cart = () => {
                   };
 
                   return (
-                    <Card key={isGuest ? item.product_id : item.id}>
+                    <Card key={isGuest ? item.product_id : item.id} className="glass-card glass-hover rounded-xl">
                       <CardContent className="p-4 md:p-6">
                         <div className="flex gap-3 md:gap-4">
                           {productData.image && (
@@ -209,7 +209,7 @@ const Cart = () => {
               </div>
 
               <div>
-                <Card>
+                <Card className="glass-card rounded-xl">
                   <CardContent className="p-4 md:p-6">
                     <h2 className="font-display text-xl md:text-2xl font-bold mb-4">Order Summary</h2>
                     <div className="space-y-2 mb-4">

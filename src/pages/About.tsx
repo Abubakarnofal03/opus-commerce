@@ -64,7 +64,7 @@ const About = () => {
                 demand excellence in every aspect of their lifestyle.
               </p>
 
-              <div className="bg-muted/50 p-8 rounded-lg mt-12">
+              <div className="bg-muted/50 glass-card p-8 rounded-xl mt-12">
                 <p className="text-center italic text-lg">
                   "Luxury is in each detail. It's in the quality, the craftsmanship, and the experience."
                 </p>
