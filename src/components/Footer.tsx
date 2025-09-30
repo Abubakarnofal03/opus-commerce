@@ -7,7 +7,7 @@ export const Footer = () => {
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
-            <h3 className="font-display text-xl font-bold mb-4">LuxeStore</h3>
+            <h3 className="font-display text-xl font-bold mb-4">The Shopping Cart</h3>
             <p className="text-sm mb-4">Premium lifestyle products for the discerning customer.</p>
             <div className="flex space-x-4">
               <a href="#" className="hover:text-accent transition-colors">
@@ -48,7 +48,7 @@ export const Footer = () => {
           </div>
         </div>
         <div className="border-t border-primary-foreground/20 mt-8 pt-8 text-center text-sm">
-          <p>&copy; 2024 LuxeStore. All rights reserved.</p>
+          <p>&copy; 2024 The Shopping Cart. All rights reserved.</p>
         </div>
       </div>
     </footer>

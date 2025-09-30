@@ -58,21 +58,21 @@ const Contact = () => {
                 <CardContent className="pt-6 text-center">
                   <Mail className="h-12 w-12 text-accent mx-auto mb-4" />
                   <h3 className="font-semibold mb-2">Email</h3>
-                  <p className="text-muted-foreground">support@luxeliving.com</p>
+                  <p className="text-muted-foreground">info@theshoppingcart.com</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="pt-6 text-center">
                   <Phone className="h-12 w-12 text-accent mx-auto mb-4" />
                   <h3 className="font-semibold mb-2">Phone</h3>
-                  <p className="text-muted-foreground">+1 (555) 123-4567</p>
+                  <p className="text-muted-foreground">+92 324 1693025</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="pt-6 text-center">
                   <MapPin className="h-12 w-12 text-accent mx-auto mb-4" />
                   <h3 className="font-semibold mb-2">Location</h3>
-                  <p className="text-muted-foreground">New York, NY 10001</p>
+                  <p className="text-muted-foreground">Pakistan</p>
                 </CardContent>
               </Card>
             </div>

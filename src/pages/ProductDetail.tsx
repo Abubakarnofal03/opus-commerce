@@ -7,13 +7,27 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Minus, Plus, ShoppingCart } from "lucide-react";
+import { Minus, Plus, ShoppingCart, X } from "lucide-react";
 import { addToGuestCart } from "@/lib/cartUtils";
+import { formatPrice } from "@/lib/currency";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
+import {
+  Dialog,
+  DialogContent,
+} from "@/components/ui/dialog";
 
 const ProductDetail = () => {
   const { slug } = useParams();
   const [quantity, setQuantity] = useState(1);
   const [user, setUser] = useState<any>(null);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [zoomDialogOpen, setZoomDialogOpen] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -146,24 +160,43 @@ const ProductDetail = () => {
             <div className="space-y-3 md:space-y-4">
               {product.images && product.images.length > 0 && (
                 <>
-                  <div className="aspect-square bg-muted rounded-lg overflow-hidden">
-                    <img
-                      src={product.images[0]}
-                      alt={product.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  {product.images.length > 1 && (
-                    <div className="grid grid-cols-4 gap-2">
-                      {product.images.map((image, index) => (
-                        <div key={index} className="aspect-square bg-muted rounded overflow-hidden cursor-pointer hover:opacity-80">
-                          <img
-                            src={image}
-                            alt={`${product.name} ${index + 1}`}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      ))}
+                  {product.images.length > 1 ? (
+                    <Carousel className="w-full">
+                      <CarouselContent>
+                        {product.images.map((image, index) => (
+                          <CarouselItem key={index}>
+                            <div 
+                              className="aspect-square bg-muted rounded-lg overflow-hidden cursor-zoom-in"
+                              onClick={() => {
+                                setSelectedImageIndex(index);
+                                setZoomDialogOpen(true);
+                              }}
+                            >
+                              <img
+                                src={image}
+                                alt={`${product.name} ${index + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          </CarouselItem>
+                        ))}
+                      </CarouselContent>
+                      <CarouselPrevious className="left-2" />
+                      <CarouselNext className="right-2" />
+                    </Carousel>
+                  ) : (
+                    <div 
+                      className="aspect-square bg-muted rounded-lg overflow-hidden cursor-zoom-in"
+                      onClick={() => {
+                        setSelectedImageIndex(0);
+                        setZoomDialogOpen(true);
+                      }}
+                    >
+                      <img
+                        src={product.images[0]}
+                        alt={product.name}
+                        className="w-full h-full object-cover"
+                      />
                     </div>
                   )}
                 </>
@@ -179,7 +212,7 @@ const ProductDetail = () => {
                   {product.name}
                 </h1>
                 <p className="text-2xl md:text-3xl font-bold text-accent">
-                  ${product.price}
+                  {formatPrice(product.price)}
                 </p>
               </div>
 
@@ -276,7 +309,7 @@ const ProductDetail = () => {
                         {relatedProduct.name}
                       </h3>
                       <p className="text-base md:text-lg font-bold text-accent mb-2 md:mb-3">
-                        ${relatedProduct.price}
+                        {formatPrice(relatedProduct.price)}
                       </p>
                       <Button asChild className="w-full text-xs md:text-sm" size="sm">
                         <Link to={`/product/${relatedProduct.slug}`}>
@@ -291,6 +324,27 @@ const ProductDetail = () => {
           )}
         </div>
       </main>
+
+      {/* Image Zoom Dialog */}
+      <Dialog open={zoomDialogOpen} onOpenChange={setZoomDialogOpen}>
+        <DialogContent className="max-w-4xl w-full p-0 overflow-hidden">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute right-4 top-4 z-50 rounded-full bg-background/80 hover:bg-background"
+            onClick={() => setZoomDialogOpen(false)}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+          {product.images && product.images[selectedImageIndex] && (
+            <img
+              src={product.images[selectedImageIndex]}
+              alt={`${product.name} ${selectedImageIndex + 1}`}
+              className="w-full h-auto max-h-[90vh] object-contain"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Footer />
     </div>

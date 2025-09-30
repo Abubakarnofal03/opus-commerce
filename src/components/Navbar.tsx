@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { getGuestCart } from "@/lib/cartUtils";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -94,7 +95,7 @@ export const Navbar = () => {
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           <Link to="/" className="flex items-center space-x-2">
-            <h1 className="text-2xl font-display font-bold">Luxe Living</h1>
+            <h1 className="text-2xl font-display font-bold">The Shopping Cart</h1>
           </Link>
 
           {/* Desktop Navigation */}
@@ -115,6 +116,7 @@ export const Navbar = () => {
 
           {/* Actions */}
           <div className="hidden md:flex items-center space-x-4">
+            <ThemeToggle />
             <Link to="/cart" className="relative">
               <Button variant="ghost" size="icon">
                 <ShoppingCart className="h-5 w-5" />

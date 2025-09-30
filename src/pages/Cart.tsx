@@ -9,6 +9,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Trash2, Plus, Minus } from "lucide-react";
 import { getGuestCart, updateGuestCartQuantity, removeFromGuestCart, GuestCartItem } from "@/lib/cartUtils";
+import { formatPrice } from "@/lib/currency";
 
 const Cart = () => {
   const [user, setUser] = useState<any>(null);
@@ -145,7 +146,7 @@ const Cart = () => {
                               {productData.name}
                             </h3>
                             <p className="text-accent font-bold mb-2">
-                              ${productData.price}
+                              {formatPrice(productData.price)}
                             </p>
                             <div className="flex items-center space-x-2">
                               <Button
@@ -197,7 +198,7 @@ const Cart = () => {
                               <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
                             <p className="font-bold text-sm md:text-base">
-                              ${(productData.price * item.quantity).toFixed(2)}
+                              {formatPrice(productData.price * item.quantity)}
                             </p>
                           </div>
                         </div>
@@ -214,7 +215,7 @@ const Cart = () => {
                     <div className="space-y-2 mb-4">
                       <div className="flex justify-between text-sm md:text-base">
                         <span>Subtotal</span>
-                        <span>${total.toFixed(2)}</span>
+                        <span>{formatPrice(total)}</span>
                       </div>
                       <div className="flex justify-between text-sm md:text-base">
                         <span>Shipping</span>
@@ -223,7 +224,7 @@ const Cart = () => {
                       <div className="border-t pt-2 mt-2">
                         <div className="flex justify-between font-bold text-base md:text-lg">
                           <span>Total</span>
-                          <span className="text-accent">${total.toFixed(2)}</span>
+                          <span className="text-accent">{formatPrice(total)}</span>
                         </div>
                       </div>
                     </div>

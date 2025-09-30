@@ -3,12 +3,14 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Link, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { ShoppingCart } from "lucide-react";
+import { ShoppingCart, Star } from "lucide-react";
 import { addToGuestCart } from "@/lib/cartUtils";
+import { formatPrice } from "@/lib/currency";
 import {
   Select,
   SelectContent,
@@ -21,7 +23,7 @@ import { Slider } from "@/components/ui/slider";
 const Shop = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedCategory = searchParams.get("category");
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 500]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 50000]);
   const [user, setUser] = useState<any>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -166,12 +168,12 @@ const Shop = () => {
 
                       <div>
                         <label className="text-xs md:text-sm font-medium mb-2 md:mb-3 block">
-                          Price Range: ${priceRange[0]} - ${priceRange[1]}
+                          Price Range: {formatPrice(priceRange[0])} - {formatPrice(priceRange[1])}
                         </label>
                         <Slider
                           min={0}
-                          max={500}
-                          step={10}
+                          max={50000}
+                          step={100}
                           value={priceRange}
                           onValueChange={(value) => setPriceRange(value as [number, number])}
                           className="mt-2"
@@ -194,8 +196,14 @@ const Shop = () => {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-                    {products?.map((product) => (
-                      <Card key={product.id} className="hover-lift overflow-hidden group">
+                     {products?.map((product) => (
+                      <Card key={product.id} className="hover-lift overflow-hidden group relative">
+                        {product.is_featured && (
+                          <Badge className="absolute top-2 left-2 z-10 bg-accent text-accent-foreground">
+                            <Star className="h-3 w-3 mr-1" fill="currentColor" />
+                            Featured
+                          </Badge>
+                        )}
                         <div className="aspect-square bg-muted relative overflow-hidden">
                           {product.images?.[0] && (
                             <img
@@ -213,7 +221,7 @@ const Shop = () => {
                             {product.name}
                           </h3>
                           <p className="text-lg md:text-xl font-bold text-accent mb-1 md:mb-2">
-                            ${product.price}
+                            {formatPrice(product.price)}
                           </p>
                           {product.stock_quantity !== undefined && product.stock_quantity < 10 && product.stock_quantity > 0 && (
                             <p className="text-xs text-orange-500 mb-2">

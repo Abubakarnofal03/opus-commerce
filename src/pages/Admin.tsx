@@ -17,6 +17,7 @@ import { CategoryDialog } from "@/components/admin/CategoryDialog";
 import { BannerDialog } from "@/components/admin/BannerDialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { formatPrice } from "@/lib/currency";
 
 const Admin = () => {
   const [user, setUser] = useState<any>(null);
@@ -185,7 +186,7 @@ const Admin = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground">Total Revenue</p>
-                    <p className="text-3xl font-bold">${stats.totalRevenue.toFixed(2)}</p>
+                    <p className="text-3xl font-bold">{formatPrice(stats.totalRevenue)}</p>
                   </div>
                   <DollarSign className="h-12 w-12 text-accent" />
                 </div>
@@ -234,12 +235,12 @@ const Admin = () => {
                       {order.order_items?.map((item: any) => (
                         <div key={item.id} className="flex justify-between text-sm">
                           <span>{item.products?.name} x {item.quantity}</span>
-                          <span>${(item.price * item.quantity).toFixed(2)}</span>
+                          <span>{formatPrice(item.price * item.quantity)}</span>
                         </div>
                       ))}
                       <div className="border-t pt-2 flex justify-between font-bold">
                         <span>Total</span>
-                        <span className="text-accent">${Number(order.total_amount).toFixed(2)}</span>
+                        <span className="text-accent">{formatPrice(Number(order.total_amount))}</span>
                       </div>
                     </div>
                   </CardContent>
@@ -273,7 +274,7 @@ const Admin = () => {
                         <TableRow key={product.id}>
                           <TableCell className="font-medium">{product.name}</TableCell>
                           <TableCell>{product.categories?.name || "—"}</TableCell>
-                          <TableCell>${product.price}</TableCell>
+                          <TableCell>{formatPrice(product.price)}</TableCell>
                           <TableCell>{product.stock_quantity}</TableCell>
                           <TableCell>
                             {product.is_featured && <Badge variant="secondary">Featured</Badge>}

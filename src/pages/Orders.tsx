@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import { formatPrice } from "@/lib/currency";
 
 const Orders = () => {
   const [user, setUser] = useState<any>(null);
@@ -103,7 +104,7 @@ const Orders = () => {
                               <span>
                                 {item.products?.name} x {item.quantity}
                               </span>
-                              <span>${(item.price * item.quantity).toFixed(2)}</span>
+                              <span>{formatPrice(item.price * item.quantity)}</span>
                             </div>
                           ))}
                         </div>
@@ -111,7 +112,7 @@ const Orders = () => {
                       <div className="border-t pt-4">
                         <div className="flex justify-between font-bold">
                           <span>Total</span>
-                          <span className="text-accent">${order.total_amount.toFixed(2)}</span>
+                          <span className="text-accent">{formatPrice(order.total_amount)}</span>
                         </div>
                       </div>
                       <div className="border-t pt-4 text-sm">

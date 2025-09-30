@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getGuestCart, clearGuestCart, GuestCartItem } from "@/lib/cartUtils";
+import { formatPrice } from "@/lib/currency";
 
 const Checkout = () => {
   const [user, setUser] = useState<any>(null);
@@ -319,7 +320,7 @@ const Checkout = () => {
                             {productData.name} × {item.quantity}
                           </span>
                           <span className="font-semibold whitespace-nowrap">
-                            ${(productData.price * item.quantity).toFixed(2)}
+                            {formatPrice(productData.price * item.quantity)}
                           </span>
                         </div>
                       );
@@ -329,7 +330,7 @@ const Checkout = () => {
                   <div className="space-y-2 mb-4 md:mb-6 text-sm">
                     <div className="flex justify-between">
                       <span>Subtotal</span>
-                      <span>${total.toFixed(2)}</span>
+                      <span>{formatPrice(total)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Shipping</span>
@@ -338,7 +339,7 @@ const Checkout = () => {
                     <div className="border-t pt-2 mt-2">
                       <div className="flex justify-between font-bold text-base md:text-lg">
                         <span>Total</span>
-                        <span className="text-accent">${total.toFixed(2)}</span>
+                        <span className="text-accent">{formatPrice(total)}</span>
                       </div>
                     </div>
                   </div>

@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 import { ArrowRight, ShieldCheck, Truck, CreditCard, Award } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { formatPrice } from "@/lib/currency";
 
 const Index = () => {
   const { data: banners } = useQuery({
@@ -205,7 +206,7 @@ const Index = () => {
                       {product.name}
                     </h3>
                     <p className="text-xl font-bold text-accent mb-4">
-                      ${product.price}
+                      {formatPrice(product.price)}
                     </p>
                     <Button asChild className="w-full" size="sm">
                       <Link to={`/product/${product.slug}`}>

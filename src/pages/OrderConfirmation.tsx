@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { CheckCircle } from "lucide-react";
+import { formatPrice } from "@/lib/currency";
 
 const OrderConfirmation = () => {
   const { orderId } = useParams();
@@ -104,7 +105,7 @@ const OrderConfirmation = () => {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Total Amount</p>
-                  <p className="font-semibold text-accent">${order.total_amount}</p>
+                  <p className="font-semibold text-accent">{formatPrice(order.total_amount)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Payment Method</p>
@@ -146,7 +147,7 @@ const OrderConfirmation = () => {
                       </div>
                     </div>
                     <p className="font-semibold">
-                      ${((item.price || 0) * item.quantity).toFixed(2)}
+                      {formatPrice((item.price || 0) * item.quantity)}
                     </p>
                   </div>
                 ))}
