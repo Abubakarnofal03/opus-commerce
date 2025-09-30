@@ -7,14 +7,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { Package, ShoppingBag, DollarSign } from "lucide-react";
+import { Package, ShoppingBag, DollarSign, Plus, Pencil, Trash2, Image as ImageIcon } from "lucide-react";
+import { ProductDialog } from "@/components/admin/ProductDialog";
+import { CategoryDialog } from "@/components/admin/CategoryDialog";
+import { BannerDialog } from "@/components/admin/BannerDialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 const Admin = () => {
   const [user, setUser] = useState<any>(null);
@@ -22,6 +24,11 @@ const Admin = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+
+  const [productDialog, setProductDialog] = useState({ open: false, product: null });
+  const [categoryDialog, setCategoryDialog] = useState({ open: false, category: null });
+  const [bannerDialog, setBannerDialog] = useState({ open: false, banner: null });
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, type: "", id: "", name: "" });
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -87,6 +94,18 @@ const Admin = () => {
     },
   });
 
+  const { data: banners } = useQuery({
+    queryKey: ['admin-banners'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('banners')
+        .select('*')
+        .order('sort_order');
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const updateOrderStatus = useMutation({
     mutationFn: async ({ orderId, status }: { orderId: string; status: string }) => {
       const { error } = await supabase
@@ -100,6 +119,23 @@ const Admin = () => {
       toast({ title: "Order status updated" });
     },
   });
+
+  const deleteItem = useMutation({
+    mutationFn: async ({ type, id }: { type: string; id: string }) => {
+      const { error } = await supabase.from(type as any).delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: [`admin-${variables.type}`] });
+      queryClient.invalidateQueries({ queryKey: [variables.type] });
+      toast({ title: `${variables.type.slice(0, -1)} deleted successfully` });
+      setDeleteDialog({ open: false, type: "", id: "", name: "" });
+    },
+  });
+
+  const handleDelete = () => {
+    deleteItem.mutate({ type: deleteDialog.type, id: deleteDialog.id });
+  };
 
   const stats = {
     totalOrders: orders?.length || 0,
@@ -158,10 +194,11 @@ const Admin = () => {
           </div>
 
           <Tabs defaultValue="orders">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="orders">Orders</TabsTrigger>
               <TabsTrigger value="products">Products</TabsTrigger>
               <TabsTrigger value="categories">Categories</TabsTrigger>
+              <TabsTrigger value="banners">Banners</TabsTrigger>
             </TabsList>
 
             <TabsContent value="orders" className="space-y-4">
@@ -212,42 +249,182 @@ const Admin = () => {
 
             <TabsContent value="products">
               <Card>
-                <CardHeader>
+                <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>Products</CardTitle>
+                  <Button onClick={() => setProductDialog({ open: true, product: null })}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Product
+                  </Button>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-muted-foreground mb-4">
-                    Product management features coming soon. You can add products directly through the Cloud dashboard.
-                  </p>
-                  <div className="space-y-2">
-                    {products?.map((product) => (
-                      <div key={product.id} className="flex justify-between items-center p-3 border rounded">
-                        <div>
-                          <p className="font-semibold">{product.name}</p>
-                          <p className="text-sm text-muted-foreground">{product.categories?.name}</p>
-                        </div>
-                        <Badge variant="secondary">${product.price}</Badge>
-                      </div>
-                    ))}
-                  </div>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Category</TableHead>
+                        <TableHead>Price</TableHead>
+                        <TableHead>Stock</TableHead>
+                        <TableHead>Featured</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {products?.map((product) => (
+                        <TableRow key={product.id}>
+                          <TableCell className="font-medium">{product.name}</TableCell>
+                          <TableCell>{product.categories?.name || "—"}</TableCell>
+                          <TableCell>${product.price}</TableCell>
+                          <TableCell>{product.stock_quantity}</TableCell>
+                          <TableCell>
+                            {product.is_featured && <Badge variant="secondary">Featured</Badge>}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setProductDialog({ open: true, product })}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setDeleteDialog({ 
+                                open: true, 
+                                type: "products", 
+                                id: product.id, 
+                                name: product.name 
+                              })}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </CardContent>
               </Card>
             </TabsContent>
 
             <TabsContent value="categories">
               <Card>
-                <CardHeader>
+                <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>Categories</CardTitle>
+                  <Button onClick={() => setCategoryDialog({ open: true, category: null })}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Category
+                  </Button>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-2">
-                    {categories?.map((category) => (
-                      <div key={category.id} className="p-3 border rounded">
-                        <p className="font-semibold">{category.name}</p>
-                        <p className="text-sm text-muted-foreground">{category.description}</p>
-                      </div>
-                    ))}
-                  </div>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Slug</TableHead>
+                        <TableHead>Description</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {categories?.map((category) => (
+                        <TableRow key={category.id}>
+                          <TableCell className="font-medium">{category.name}</TableCell>
+                          <TableCell>{category.slug}</TableCell>
+                          <TableCell>{category.description || "—"}</TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setCategoryDialog({ open: true, category })}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setDeleteDialog({ 
+                                open: true, 
+                                type: "categories", 
+                                id: category.id, 
+                                name: category.name 
+                              })}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="banners">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle>Homepage Banners</CardTitle>
+                  <Button onClick={() => setBannerDialog({ open: true, banner: null })}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Banner
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Preview</TableHead>
+                        <TableHead>Title</TableHead>
+                        <TableHead>Sort Order</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {banners?.map((banner) => (
+                        <TableRow key={banner.id}>
+                          <TableCell>
+                            {banner.image_url ? (
+                              <img src={banner.image_url} alt={banner.title} className="h-12 w-20 object-cover rounded" />
+                            ) : (
+                              <div className="h-12 w-20 bg-muted rounded flex items-center justify-center">
+                                <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                              </div>
+                            )}
+                          </TableCell>
+                          <TableCell className="font-medium">{banner.title}</TableCell>
+                          <TableCell>{banner.sort_order}</TableCell>
+                          <TableCell>
+                            <Badge variant={banner.active ? "default" : "secondary"}>
+                              {banner.active ? "Active" : "Inactive"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setBannerDialog({ open: true, banner })}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setDeleteDialog({ 
+                                open: true, 
+                                type: "banners", 
+                                id: banner.id, 
+                                name: banner.title 
+                              })}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -256,6 +433,53 @@ const Admin = () => {
       </main>
 
       <Footer />
+
+      <ProductDialog
+        open={productDialog.open}
+        onOpenChange={(open) => setProductDialog({ open, product: null })}
+        product={productDialog.product}
+        categories={categories || []}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+          queryClient.invalidateQueries({ queryKey: ['products'] });
+        }}
+      />
+
+      <CategoryDialog
+        open={categoryDialog.open}
+        onOpenChange={(open) => setCategoryDialog({ open, category: null })}
+        category={categoryDialog.category}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['categories'] });
+        }}
+      />
+
+      <BannerDialog
+        open={bannerDialog.open}
+        onOpenChange={(open) => setBannerDialog({ open, banner: null })}
+        banner={bannerDialog.banner}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['admin-banners'] });
+          queryClient.invalidateQueries({ queryKey: ['banners'] });
+        }}
+      />
+
+      <AlertDialog open={deleteDialog.open} onOpenChange={(open) => !open && setDeleteDialog({ open: false, type: "", id: "", name: "" })}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete "{deleteDialog.name}". This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
