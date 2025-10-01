@@ -179,8 +179,23 @@ const ProductDetail = () => {
       <main className="flex-1 py-8 md:py-12">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
-            {/* Image Carousel */}
+            {/* Media Gallery */}
             <div className="space-y-3 md:space-y-4">
+              {/* Video Preview */}
+              {product.video_url && (
+                <div className="aspect-video bg-muted rounded-lg overflow-hidden">
+                  <video
+                    src={product.video_url}
+                    controls
+                    className="w-full h-full object-cover"
+                    poster={product.images?.[0]}
+                  >
+                    Your browser does not support the video tag.
+                  </video>
+                </div>
+              )}
+              
+              {/* Image Carousel */}
               {product.images && product.images.length > 0 && (
                 <>
                   {product.images.length > 1 ? (
