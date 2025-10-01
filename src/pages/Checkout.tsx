@@ -15,6 +15,7 @@ import { formatPrice } from "@/lib/currency";
 const Checkout = () => {
   const [user, setUser] = useState<any>(null);
   const [guestCart, setGuestCart] = useState<GuestCartItem[]>([]);
+  const [showErrors, setShowErrors] = useState(false);
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -80,10 +81,13 @@ const Checkout = () => {
     ? cartItems?.reduce((sum, item) => sum + (item.products?.price || 0) * item.quantity, 0) || 0
     : guestCart.reduce((sum, item) => sum + item.product_price * item.quantity, 0);
 
+  const isFormValid = formData.firstName && formData.city && formData.phone && 
+                      formData.addressLine1 && formData.state;
+
   const placeOrder = useMutation({
     mutationFn: async () => {
-      if (!formData.firstName || !formData.lastName || !formData.phone || 
-          !formData.addressLine1 || !formData.city || !formData.state || !formData.postalCode) {
+      if (!isFormValid) {
+        setShowErrors(true);
         throw new Error("Please fill in all required fields");
       }
 
@@ -202,8 +206,11 @@ const Checkout = () => {
                         value={formData.firstName}
                         onChange={handleInputChange}
                         required
-                        className="mt-1"
+                        className={`mt-1 ${showErrors && !formData.firstName ? 'border-destructive' : ''}`}
                       />
+                      {showErrors && !formData.firstName && (
+                        <p className="text-destructive text-xs mt-1">First name is required</p>
+                      )}
                     </div>
                     <div>
                       <Label htmlFor="lastName" className="text-sm">Last Name *</Label>
@@ -236,8 +243,11 @@ const Checkout = () => {
                         value={formData.phone}
                         onChange={handleInputChange}
                         required
-                        className="mt-1"
+                        className={`mt-1 ${showErrors && !formData.phone ? 'border-destructive' : ''}`}
                       />
+                      {showErrors && !formData.phone && (
+                        <p className="text-destructive text-xs mt-1">Phone number is required</p>
+                      )}
                     </div>
                     <div className="md:col-span-2">
                       <Label htmlFor="addressLine1" className="text-sm">Address Line 1 *</Label>
@@ -247,8 +257,11 @@ const Checkout = () => {
                         value={formData.addressLine1}
                         onChange={handleInputChange}
                         required
-                        className="mt-1"
+                        className={`mt-1 ${showErrors && !formData.addressLine1 ? 'border-destructive' : ''}`}
                       />
+                      {showErrors && !formData.addressLine1 && (
+                        <p className="text-destructive text-xs mt-1">Address is required</p>
+                      )}
                     </div>
                     <div className="md:col-span-2">
                       <Label htmlFor="addressLine2" className="text-sm">Address Line 2 (Optional)</Label>
@@ -268,8 +281,11 @@ const Checkout = () => {
                         value={formData.city}
                         onChange={handleInputChange}
                         required
-                        className="mt-1"
+                        className={`mt-1 ${showErrors && !formData.city ? 'border-destructive' : ''}`}
                       />
+                      {showErrors && !formData.city && (
+                        <p className="text-destructive text-xs mt-1">City is required</p>
+                      )}
                     </div>
                     <div>
                       <Label htmlFor="state" className="text-sm">State/Province *</Label>
@@ -279,8 +295,11 @@ const Checkout = () => {
                         value={formData.state}
                         onChange={handleInputChange}
                         required
-                        className="mt-1"
+                        className={`mt-1 ${showErrors && !formData.state ? 'border-destructive' : ''}`}
                       />
+                      {showErrors && !formData.state && (
+                        <p className="text-destructive text-xs mt-1">State is required</p>
+                      )}
                     </div>
                     <div className="md:col-span-2">
                       <Label htmlFor="postalCode" className="text-sm">Postal Code *</Label>
@@ -353,10 +372,13 @@ const Checkout = () => {
                     className="w-full"
                     size="lg"
                     onClick={() => placeOrder.mutate()}
-                    disabled={placeOrder.isPending}
+                    disabled={placeOrder.isPending || !isFormValid}
                   >
                     {placeOrder.isPending ? "Processing..." : "Place Order"}
                   </Button>
+                  {showErrors && !isFormValid && (
+                    <p className="text-destructive text-sm mt-2 text-center">Please fill in all required fields</p>
+                  )}
                 </CardContent>
               </Card>
             </div>
