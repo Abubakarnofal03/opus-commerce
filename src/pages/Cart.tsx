@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 const Cart = () => {
   const [user, setUser] = useState<any>(null);
   const [guestCart, setGuestCart] = useState<GuestCartItem[]>([]);
+  const [freeShippingThreshold, setFreeShippingThreshold] = useState<number>(5000);
   const { toast } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -56,6 +57,27 @@ const Cart = () => {
       return data;
     },
   });
+
+  const { data: settings } = useQuery({
+    queryKey: ['settings'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('settings')
+        .select('*');
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  useEffect(() => {
+    if (settings && Array.isArray(settings)) {
+      const shippingSetting = settings.find(s => s.key === 'free_shipping_threshold');
+      if (shippingSetting && typeof shippingSetting.value === 'object' && shippingSetting.value !== null) {
+        const value = shippingSetting.value as { threshold: number };
+        setFreeShippingThreshold(value.threshold);
+      }
+    }
+  }, [settings]);
 
   const updateQuantity = useMutation({
     mutationFn: async ({ id, quantity }: { id: string; quantity: number }) => {
@@ -97,8 +119,8 @@ const Cart = () => {
 
   const items = user ? cartItems : guestCart;
   
-  // Calculate total with sale prices
-  const total = user 
+  // Calculate subtotal with sale prices
+  const subtotal = user 
     ? cartItems?.reduce((sum, item) => {
         const productSale = sales?.find(s => s.product_id === item.product_id);
         const globalSale = sales?.find(s => s.is_global);
@@ -111,6 +133,18 @@ const Cart = () => {
         const { finalPrice } = calculateSalePrice(item.product_price, productSale, globalSale);
         return sum + finalPrice * item.quantity;
       }, 0);
+
+  // Calculate max shipping cost from all cart items
+  const maxShippingCost = user
+    ? cartItems?.reduce((max, item) => {
+        const shippingCost = item.products?.shipping_cost || 0;
+        return Math.max(max, shippingCost);
+      }, 0) || 0
+    : 0;
+
+  // Apply free shipping if subtotal exceeds threshold
+  const shippingCost = subtotal >= freeShippingThreshold ? 0 : maxShippingCost;
+  const total = subtotal + shippingCost;
 
   if (isLoading && user) {
     return (
@@ -272,12 +306,23 @@ const Cart = () => {
                     <div className="space-y-2 mb-4">
                       <div className="flex justify-between text-sm md:text-base">
                         <span>Subtotal</span>
-                        <span>{formatPrice(total)}</span>
+                        <span>{formatPrice(subtotal)}</span>
                       </div>
                       <div className="flex justify-between text-sm md:text-base">
                         <span>Shipping</span>
-                        <span>FREE</span>
+                        <span>
+                          {shippingCost === 0 ? (
+                            <span className="text-green-600 font-medium">FREE</span>
+                          ) : (
+                            formatPrice(shippingCost)
+                          )}
+                        </span>
                       </div>
+                      {subtotal < freeShippingThreshold && maxShippingCost > 0 && (
+                        <div className="text-xs text-muted-foreground">
+                          Add {formatPrice(freeShippingThreshold - subtotal)} more for free shipping
+                        </div>
+                      )}
                       <div className="border-t pt-2 mt-2">
                         <div className="flex justify-between font-bold text-base md:text-lg">
                           <span>Total</span>

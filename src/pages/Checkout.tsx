@@ -94,11 +94,11 @@ const Checkout = () => {
   });
 
   useEffect(() => {
-    if (settings) {
+    if (settings && Array.isArray(settings)) {
       const shippingSetting = settings.find(s => s.key === 'free_shipping_threshold');
       if (shippingSetting && typeof shippingSetting.value === 'object' && shippingSetting.value !== null) {
-        const value = shippingSetting.value as { amount: number };
-        setFreeShippingThreshold(value.amount);
+        const value = shippingSetting.value as { threshold: number };
+        setFreeShippingThreshold(value.threshold);
       }
     }
   }, [settings]);
