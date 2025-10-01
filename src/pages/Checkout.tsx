@@ -11,6 +11,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getGuestCart, clearGuestCart, GuestCartItem } from "@/lib/cartUtils";
 import { formatPrice } from "@/lib/currency";
+import { trackInitiateCheckout } from "@/lib/metaPixel";
 
 const Checkout = () => {
   const [user, setUser] = useState<any>(null);
@@ -61,6 +62,9 @@ const Checkout = () => {
           });
       }
     });
+    
+    // Track Meta Pixel InitiateCheckout event when user lands on checkout page
+    trackInitiateCheckout();
   }, []);
 
   const { data: cartItems } = useQuery({

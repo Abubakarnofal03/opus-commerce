@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { calculateSalePrice } from "@/lib/saleUtils";
+import { trackAddToCart } from "@/lib/metaPixel";
 
 const Shop = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -108,7 +109,7 @@ const Shop = () => {
           product_price: product.price,
           product_image: product.images?.[0],
         });
-        return;
+        return product;
       }
 
       const { data: existingItem } = await supabase
@@ -134,9 +135,15 @@ const Shop = () => {
           });
         if (error) throw error;
       }
+      
+      return product;
     },
-    onSuccess: () => {
+    onSuccess: (product) => {
       queryClient.invalidateQueries({ queryKey: ['cart'] });
+      
+      // Track Meta Pixel AddToCart event
+      trackAddToCart(product.id, product.name, product.price);
+      
       toast({
         title: "Added to cart",
         description: "Product has been added to your cart.",

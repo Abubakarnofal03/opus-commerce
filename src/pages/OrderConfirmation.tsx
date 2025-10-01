@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { CheckCircle } from "lucide-react";
 import { formatPrice } from "@/lib/currency";
 import { LoadingScreen } from "@/components/LoadingScreen";
+import { trackPurchase } from "@/lib/metaPixel";
 
 const OrderConfirmation = () => {
   const { orderId } = useParams();
@@ -45,6 +46,13 @@ const OrderConfirmation = () => {
     },
     enabled: !!orderId,
   });
+
+  // Track Meta Pixel Purchase event when order is loaded
+  useEffect(() => {
+    if (order && !isLoading) {
+      trackPurchase(order.total_amount, 'PKR', order.id);
+    }
+  }, [order, isLoading]);
 
   if (isLoading) {
     return (

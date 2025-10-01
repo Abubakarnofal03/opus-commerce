@@ -13,6 +13,7 @@ import { formatPrice } from "@/lib/currency";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { calculateSalePrice } from "@/lib/saleUtils";
 import { Badge } from "@/components/ui/badge";
+import { trackAddToCart } from "@/lib/metaPixel";
 import {
   Carousel,
   CarouselContent,
@@ -122,6 +123,10 @@ const ProductDetail = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cart'] });
+      
+      // Track Meta Pixel AddToCart event
+      trackAddToCart(product.id, product.name, product.price);
+      
       toast({
         title: "Added to cart",
         description: "Product has been added to your cart.",
