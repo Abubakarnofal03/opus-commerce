@@ -234,20 +234,19 @@ export const Navbar = () => {
             </div>
             <Link
               to="/"
-              className="block text-sm font-medium hover:text-accent transition-colors"
+              className="block px-4 text-sm font-medium hover:text-accent transition-colors"
               onClick={() => setMobileMenuOpen(false)}
             >
               Home
             </Link>
             <Collapsible open={shopOpen} onOpenChange={setShopOpen}>
-              <CollapsibleTrigger className="flex items-center justify-between w-full px-4 text-sm font-medium hover:text-accent transition-colors">
+              <CollapsibleTrigger className="block px-4 text-left w-full text-sm font-medium hover:text-accent transition-colors">
                 Catalog
-                <ChevronDown className={`h-4 w-4 transition-transform ${shopOpen ? 'rotate-180' : ''}`} />
               </CollapsibleTrigger>
               <CollapsibleContent className="pl-8 space-y-2 pt-2">
                 <Link
                   to="/shop"
-                  className="block text-sm hover:text-accent transition-colors py-1"
+                  className="block px-4 text-sm hover:text-accent transition-colors py-1"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   All Products
@@ -256,7 +255,7 @@ export const Navbar = () => {
                   <Link
                     key={category.id}
                     to={`/shop?category=${category.slug}`}
-                    className="block text-sm hover:text-accent transition-colors py-1"
+                    className="block px-4 text-sm hover:text-accent transition-colors py-1"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     {category.name}
@@ -266,14 +265,14 @@ export const Navbar = () => {
             </Collapsible>
             <Link
               to="/about"
-              className="block text-sm font-medium hover:text-accent transition-colors"
+              className="block px-4 text-sm font-medium hover:text-accent transition-colors"
               onClick={() => setMobileMenuOpen(false)}
             >
               About
             </Link>
             <Link
               to="/contact"
-              className="block text-sm font-medium hover:text-accent transition-colors"
+              className="block px-4 text-sm font-medium hover:text-accent transition-colors"
               onClick={() => setMobileMenuOpen(false)}
             >
               Contact
@@ -282,14 +281,14 @@ export const Navbar = () => {
               <>
                 <Link
                   to="/cart"
-                  className="block text-sm font-medium hover:text-accent transition-colors"
+                  className="block px-4 text-sm font-medium hover:text-accent transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Cart {cartCount > 0 && `(${cartCount})`}
                 </Link>
                 <Link
                   to="/orders"
-                  className="block text-sm font-medium hover:text-accent transition-colors"
+                  className="block px-4 text-sm font-medium hover:text-accent transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   My Orders
@@ -297,7 +296,7 @@ export const Navbar = () => {
                 {isAdmin && (
                   <Link
                     to="/admin"
-                    className="block text-sm font-medium hover:text-accent transition-colors"
+                    className="block px-4 text-sm font-medium hover:text-accent transition-colors"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Admin Dashboard
@@ -308,7 +307,7 @@ export const Navbar = () => {
                     handleLogout();
                     setMobileMenuOpen(false);
                   }}
-                  className="block text-sm font-medium hover:text-accent transition-colors"
+                  className="block px-4 text-left w-full text-sm font-medium hover:text-accent transition-colors"
                 >
                   Logout
                 </button>
