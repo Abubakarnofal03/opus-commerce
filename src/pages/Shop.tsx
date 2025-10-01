@@ -258,76 +258,80 @@ const Shop = () => {
                       const { finalPrice, discount } = calculateSalePrice(product.price, productSale, globalSale);
                       
                       return (
-                        <Card key={product.id} className="glass-card glass-hover overflow-hidden rounded-xl group relative">
-                          {discount && (
-                            <Badge className="absolute top-2 left-2 z-10 bg-destructive text-destructive-foreground">
-                              {discount}% OFF
-                            </Badge>
-                          )}
-                          {product.is_featured && !discount && (
-                            <Badge className="absolute top-2 left-2 z-10 bg-accent text-accent-foreground">
-                              <Star className="h-3 w-3 mr-1" fill="currentColor" />
-                              Featured
-                            </Badge>
-                          )}
-                        <div className="aspect-square bg-muted relative overflow-hidden">
-                          {product.images?.[0] && (
-                            <img
-                              src={product.images[0]}
-                              alt={product.name}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                            />
-                          )}
-                        </div>
-                        <CardContent className="p-3 md:p-4">
-                          <p className="text-xs text-muted-foreground mb-1 truncate">
-                            {product.categories?.name}
-                          </p>
-                            <h3 className="font-display text-base md:text-lg font-semibold mb-1 md:mb-2 truncate">
-                              {product.name}
-                            </h3>
-                            <div className="mb-1 md:mb-2">
-                              {discount ? (
-                                <div className="flex items-center gap-2">
-                                  <p className="text-lg md:text-xl font-bold text-destructive">
-                                    {formatPrice(finalPrice)}
-                                  </p>
-                                  <p className="text-sm text-muted-foreground line-through">
+                        <Link key={product.id} to={`/product/${product.slug}`}>
+                          <Card className="glass-card glass-hover overflow-hidden rounded-xl group relative cursor-pointer">
+                            {discount && (
+                              <Badge className="absolute top-2 left-2 z-10 bg-destructive text-destructive-foreground">
+                                {discount}% OFF
+                              </Badge>
+                            )}
+                            {product.is_featured && !discount && (
+                              <Badge className="absolute top-2 left-2 z-10 bg-accent text-accent-foreground">
+                                <Star className="h-3 w-3 mr-1" fill="currentColor" />
+                                Featured
+                              </Badge>
+                            )}
+                          <div className="aspect-square bg-muted relative overflow-hidden">
+                            {product.images?.[0] && (
+                              <img
+                                src={product.images[0]}
+                                alt={product.name}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
+                            )}
+                          </div>
+                          <CardContent className="p-3 md:p-4">
+                            <p className="text-xs text-muted-foreground mb-1 truncate">
+                              {product.categories?.name}
+                            </p>
+                              <h3 className="font-display text-base md:text-lg font-semibold mb-1 md:mb-2 truncate">
+                                {product.name}
+                              </h3>
+                              <div className="mb-1 md:mb-2">
+                                {discount ? (
+                                  <div className="flex items-center gap-2">
+                                    <p className="text-lg md:text-xl font-bold text-destructive">
+                                      {formatPrice(finalPrice)}
+                                    </p>
+                                    <p className="text-sm text-muted-foreground line-through">
+                                      {formatPrice(product.price)}
+                                    </p>
+                                  </div>
+                                ) : (
+                                  <p className="text-lg md:text-xl font-bold text-accent">
                                     {formatPrice(product.price)}
                                   </p>
-                                </div>
-                              ) : (
-                                <p className="text-lg md:text-xl font-bold text-accent">
-                                  {formatPrice(product.price)}
-                                </p>
-                              )}
-                            </div>
-                          {product.stock_quantity !== undefined && product.stock_quantity < 10 && product.stock_quantity > 0 && (
-                            <p className="text-xs text-orange-500 mb-2">
-                              Only {product.stock_quantity} left in stock!
-                            </p>
-                          )}
-                            {product.stock_quantity === 0 && (
-                              <p className="text-xs text-destructive mb-2">Out of stock</p>
+                                )}
+                              </div>
+                            {product.stock_quantity !== undefined && product.stock_quantity < 10 && product.stock_quantity > 0 && (
+                              <p className="text-xs text-orange-500 mb-2">
+                                Only {product.stock_quantity} left in stock!
+                              </p>
                             )}
-                            <div className="grid grid-cols-2 gap-2">
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => addToCart.mutate(product)}
-                                disabled={addToCart.isPending || product.stock_quantity === 0}
-                                className="text-xs md:text-sm"
-                              >
-                                <ShoppingCart className="h-3 w-3 md:h-4 md:w-4" />
-                              </Button>
-                              <Button asChild size="sm" className="text-xs md:text-sm">
-                                <Link to={`/product/${product.slug}`}>
+                              {product.stock_quantity === 0 && (
+                                <p className="text-xs text-destructive mb-2">Out of stock</p>
+                              )}
+                              <div className="grid grid-cols-2 gap-2">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    addToCart.mutate(product);
+                                  }}
+                                  disabled={addToCart.isPending || product.stock_quantity === 0}
+                                  className="text-xs md:text-sm"
+                                >
+                                  <ShoppingCart className="h-3 w-3 md:h-4 md:w-4" />
+                                </Button>
+                                <Button size="sm" className="text-xs md:text-sm">
                                   View
-                                </Link>
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
+                                </Button>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </Link>
                       );
                     })}
                   </div>
