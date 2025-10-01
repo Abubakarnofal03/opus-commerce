@@ -3,6 +3,10 @@ import { Facebook, Instagram } from "lucide-react";
 import logo from "@/assets/logo.jpg";
 
 export const Footer = () => {
+  const handleLinkClick = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <footer className="glass border-t py-12">
       <div className="container mx-auto px-4">
@@ -32,28 +36,27 @@ export const Footer = () => {
           <div>
             <h4 className="font-semibold mb-4">Quick Links</h4>
             <ul className="space-y-2 text-sm">
-              <li><Link to="/shop" className="hover:text-accent transition-colors">Shop All Products</Link></li>
-              <li><Link to="/blog" className="hover:text-accent transition-colors">Blog</Link></li>
-              <li><Link to="/about" className="hover:text-accent transition-colors">About Us</Link></li>
-              <li><Link to="/contact" className="hover:text-accent transition-colors">Contact</Link></li>
+              <li><Link to="/shop" onClick={handleLinkClick} className="hover:text-accent transition-colors">Shop All Products</Link></li>
+              <li><Link to="/blog" onClick={handleLinkClick} className="hover:text-accent transition-colors">Blog</Link></li>
+              <li><Link to="/about" onClick={handleLinkClick} className="hover:text-accent transition-colors">About Us</Link></li>
+              <li><Link to="/contact" onClick={handleLinkClick} className="hover:text-accent transition-colors">Contact</Link></li>
             </ul>
           </div>
           <div>
             <h4 className="font-semibold mb-4">Shop by Category</h4>
             <ul className="space-y-2 text-sm">
-              <li><Link to="/shop?category=home-decor" className="hover:text-accent transition-colors">Home Decor</Link></li>
-              <li><Link to="/shop?category=furniture" className="hover:text-accent transition-colors">Furniture</Link></li>
-              <li><Link to="/shop?category=mens-wallets" className="hover:text-accent transition-colors">Men's Wallets</Link></li>
-              <li><Link to="/shop?category=womens-wallets" className="hover:text-accent transition-colors">Women's Wallets</Link></li>
-              <li><Link to="/shop?category=accessories" className="hover:text-accent transition-colors">Accessories</Link></li>
-              <li><Link to="/shop?category=garden-decorations" className="hover:text-accent transition-colors">Garden Decorations</Link></li>
+              <li><Link to="/shop?category=home-decor" onClick={handleLinkClick} className="hover:text-accent transition-colors">Home Decor</Link></li>
+              <li><Link to="/shop?category=furniture" onClick={handleLinkClick} className="hover:text-accent transition-colors">Furniture</Link></li>
+              <li><Link to="/shop?category=mens-wallets" onClick={handleLinkClick} className="hover:text-accent transition-colors">Men's Wallets</Link></li>
+              <li><Link to="/shop?category=womens-wallets" onClick={handleLinkClick} className="hover:text-accent transition-colors">Women's Wallets</Link></li>
+              <li><Link to="/shop?category=accessories" onClick={handleLinkClick} className="hover:text-accent transition-colors">Accessories</Link></li>
+              <li><Link to="/shop?category=garden-decorations" onClick={handleLinkClick} className="hover:text-accent transition-colors">Garden Decorations</Link></li>
             </ul>
           </div>
           <div>
             <h4 className="font-semibold mb-4">Customer Service</h4>
             <ul className="space-y-2 text-sm">
-              <li><Link to="/contact" className="hover:text-accent transition-colors">Contact Us</Link></li>
-              <li><Link to="/shop" className="hover:text-accent transition-colors">Track Order</Link></li>
+              <li><Link to="/contact" onClick={handleLinkClick} className="hover:text-accent transition-colors">Contact Us</Link></li>
             </ul>
           </div>
         </div>
