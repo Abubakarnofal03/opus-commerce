@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, User, Menu, X, LogOut } from "lucide-react";
+import { ShoppingCart, User, Menu, X, LogOut, ChevronDown } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -13,12 +13,27 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+} from "@/components/ui/navigation-menu";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 export const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [cartCount, setCartCount] = useState(0);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [shopOpen, setShopOpen] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -42,8 +57,18 @@ export const Navbar = () => {
       }
     });
 
+    fetchCategories();
+
     return () => subscription.unsubscribe();
   }, []);
+
+  const fetchCategories = async () => {
+    const { data } = await supabase
+      .from('categories')
+      .select('*')
+      .order('name');
+    setCategories(data || []);
+  };
 
   const checkAdminStatus = async (userId: string) => {
     const { data } = await supabase
@@ -106,9 +131,37 @@ export const Navbar = () => {
             <Link to="/" className="text-sm font-medium hover:text-accent transition-colors">
               Home
             </Link>
-            <Link to="/shop" className="text-sm font-medium hover:text-accent transition-colors">
-              Shop
-            </Link>
+            <NavigationMenu>
+              <NavigationMenuList>
+                <NavigationMenuItem>
+                  <NavigationMenuTrigger className="text-sm font-medium bg-transparent hover:bg-transparent data-[state=open]:bg-transparent">
+                    Shop
+                  </NavigationMenuTrigger>
+                  <NavigationMenuContent>
+                    <div className="w-48 p-2">
+                      <NavigationMenuLink asChild>
+                        <Link
+                          to="/shop"
+                          className="block px-3 py-2 text-sm hover:bg-accent/10 rounded-md transition-colors"
+                        >
+                          All Products
+                        </Link>
+                      </NavigationMenuLink>
+                      {categories.map((category) => (
+                        <NavigationMenuLink key={category.id} asChild>
+                          <Link
+                            to={`/shop?category=${category.slug}`}
+                            className="block px-3 py-2 text-sm hover:bg-accent/10 rounded-md transition-colors"
+                          >
+                            {category.name}
+                          </Link>
+                        </NavigationMenuLink>
+                      ))}
+                    </div>
+                  </NavigationMenuContent>
+                </NavigationMenuItem>
+              </NavigationMenuList>
+            </NavigationMenu>
             <Link to="/about" className="text-sm font-medium hover:text-accent transition-colors">
               About
             </Link>
@@ -184,13 +237,31 @@ export const Navbar = () => {
             >
               Home
             </Link>
-            <Link
-              to="/shop"
-              className="block text-sm font-medium hover:text-accent transition-colors"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Shop
-            </Link>
+            <Collapsible open={shopOpen} onOpenChange={setShopOpen}>
+              <CollapsibleTrigger className="flex items-center justify-between w-full px-4 text-sm font-medium hover:text-accent transition-colors">
+                Shop
+                <ChevronDown className={`h-4 w-4 transition-transform ${shopOpen ? 'rotate-180' : ''}`} />
+              </CollapsibleTrigger>
+              <CollapsibleContent className="pl-8 space-y-2 pt-2">
+                <Link
+                  to="/shop"
+                  className="block text-sm hover:text-accent transition-colors py-1"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  All Products
+                </Link>
+                {categories.map((category) => (
+                  <Link
+                    key={category.id}
+                    to={`/shop?category=${category.slug}`}
+                    className="block text-sm hover:text-accent transition-colors py-1"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    {category.name}
+                  </Link>
+                ))}
+              </CollapsibleContent>
+            </Collapsible>
             <Link
               to="/about"
               className="block text-sm font-medium hover:text-accent transition-colors"
