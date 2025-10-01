@@ -134,7 +134,7 @@ export const Navbar = () => {
             <NavigationMenu>
               <NavigationMenuList>
                 <NavigationMenuItem>
-                  <NavigationMenuTrigger className="text-sm font-medium bg-transparent hover:bg-transparent data-[state=open]:bg-transparent">
+                  <NavigationMenuTrigger className="text-sm font-medium bg-transparent hover:bg-transparent data-[state=open]:bg-transparent hover:text-accent transition-colors h-auto p-0">
                     Shop
                   </NavigationMenuTrigger>
                   <NavigationMenuContent>
