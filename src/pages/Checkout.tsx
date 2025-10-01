@@ -27,6 +27,7 @@ const Checkout = () => {
     state: "",
     postalCode: "",
   });
+  const [phoneError, setPhoneError] = useState("");
   const { toast } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -81,19 +82,58 @@ const Checkout = () => {
     ? cartItems?.reduce((sum, item) => sum + (item.products?.price || 0) * item.quantity, 0) || 0
     : guestCart.reduce((sum, item) => sum + item.product_price * item.quantity, 0);
 
-  const isFormValid = formData.firstName && formData.city && formData.phone && 
+  const validatePhoneNumber = (phone: string): { isValid: boolean; formatted: string; error: string } => {
+    // Remove all spaces and dashes for validation
+    let cleanPhone = phone.replace(/[\s-]/g, '');
+    
+    // Check if it starts with +92
+    if (!cleanPhone.startsWith('+92')) {
+      return { isValid: false, formatted: phone, error: "Phone number must start with +92" };
+    }
+    
+    // Remove +92 prefix to check the rest
+    let numberPart = cleanPhone.slice(3);
+    
+    // If it starts with 0, remove it
+    if (numberPart.startsWith('0')) {
+      numberPart = numberPart.slice(1);
+      cleanPhone = '+92' + numberPart;
+    }
+    
+    // Check if the number part has exactly 10 digits
+    if (!/^\d{10}$/.test(numberPart)) {
+      return { 
+        isValid: false, 
+        formatted: cleanPhone, 
+        error: `Phone number must have exactly 10 digits after +92 (currently ${numberPart.length})` 
+      };
+    }
+    
+    return { isValid: true, formatted: cleanPhone, error: "" };
+  };
+
+  const isPhoneValid = validatePhoneNumber(formData.phone).isValid;
+  const isFormValid = formData.firstName && formData.city && isPhoneValid && 
                       formData.addressLine1 && formData.state;
 
   const placeOrder = useMutation({
     mutationFn: async () => {
       if (!isFormValid) {
         setShowErrors(true);
+        const validation = validatePhoneNumber(formData.phone);
+        if (!validation.isValid) {
+          setPhoneError(validation.error);
+        }
         throw new Error("Please fill in all required fields");
       }
 
       if (!items || items.length === 0) {
         throw new Error("Your cart is empty");
       }
+
+      // Format phone number before saving
+      const phoneValidation = validatePhoneNumber(formData.phone);
+      const formattedPhone = phoneValidation.formatted;
 
       const { data: order, error: orderError } = await supabase
         .from('orders')
@@ -102,7 +142,7 @@ const Checkout = () => {
           first_name: formData.firstName,
           last_name: formData.lastName,
           email: formData.email || null,
-          phone: formData.phone,
+          phone: formattedPhone,
           shipping_address: formData.addressLine1 + (formData.addressLine2 ? `, ${formData.addressLine2}` : ''),
           shipping_city: formData.city,
           shipping_state: formData.state,
@@ -158,9 +198,31 @@ const Checkout = () => {
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    
+    if (name === 'phone') {
+      // Clear phone error when user starts typing
+      setPhoneError("");
+      
+      // If user tries to delete +92, prevent it
+      if (!value.startsWith('+92')) {
+        setFormData(prev => ({
+          ...prev,
+          phone: '+92',
+        }));
+        return;
+      }
+      
+      // Validate on blur or when complete
+      const validation = validatePhoneNumber(value);
+      if (value.length >= 13) { // +92 + 10 digits
+        setPhoneError(validation.error);
+      }
+    }
+    
     setFormData(prev => ({
       ...prev,
-      [e.target.name]: e.target.value,
+      [name]: value,
     }));
   };
 
@@ -242,11 +304,18 @@ const Checkout = () => {
                         type="tel"
                         value={formData.phone}
                         onChange={handleInputChange}
+                        placeholder="+923001234567"
                         required
-                        className={`mt-1 ${showErrors && !formData.phone ? 'border-destructive' : ''}`}
+                        className={`mt-1 ${(showErrors && !isPhoneValid) || phoneError ? 'border-destructive' : ''}`}
                       />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Format: +92 followed by 10 digits (e.g., +923001234567)
+                      </p>
                       {showErrors && !formData.phone && (
                         <p className="text-destructive text-xs mt-1">Phone number is required</p>
+                      )}
+                      {phoneError && (
+                        <p className="text-destructive text-xs mt-1">{phoneError}</p>
                       )}
                     </div>
                     <div className="md:col-span-2">
