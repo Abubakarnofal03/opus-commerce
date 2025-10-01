@@ -225,6 +225,7 @@ export type Database = {
           phone: string
           shipping_address: string
           shipping_city: string
+          shipping_cost: number
           shipping_state: string
           shipping_zip: string
           status: string
@@ -242,6 +243,7 @@ export type Database = {
           phone: string
           shipping_address: string
           shipping_city: string
+          shipping_cost?: number
           shipping_state: string
           shipping_zip: string
           status?: string
@@ -259,6 +261,7 @@ export type Database = {
           phone?: string
           shipping_address?: string
           shipping_city?: string
+          shipping_cost?: number
           shipping_state?: string
           shipping_zip?: string
           status?: string

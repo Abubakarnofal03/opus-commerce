@@ -16,6 +16,7 @@ import { trackInitiateCheckout } from "@/lib/metaPixel";
 const Checkout = () => {
   const [user, setUser] = useState<any>(null);
   const [guestCart, setGuestCart] = useState<GuestCartItem[]>([]);
+  const [freeShippingThreshold, setFreeShippingThreshold] = useState<number>(5000);
   const [showErrors, setShowErrors] = useState(false);
   const [formData, setFormData] = useState({
     firstName: "",
@@ -81,10 +82,42 @@ const Checkout = () => {
     enabled: !!user,
   });
 
+  const { data: settings } = useQuery({
+    queryKey: ['settings'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('settings')
+        .select('*');
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  useEffect(() => {
+    if (settings) {
+      const shippingSetting = settings.find(s => s.key === 'free_shipping_threshold');
+      if (shippingSetting && typeof shippingSetting.value === 'object' && shippingSetting.value !== null) {
+        const value = shippingSetting.value as { amount: number };
+        setFreeShippingThreshold(value.amount);
+      }
+    }
+  }, [settings]);
+
   const items = user ? cartItems : guestCart;
-  const total = user 
-    ? cartItems?.reduce((sum, item) => sum + (item.products?.price || 0) * item.quantity, 0) || 0
-    : guestCart.reduce((sum, item) => sum + item.product_price * item.quantity, 0);
+  const subtotal = items?.reduce((sum: number, item: any) => {
+    const price = user ? item.products.price : item.product_price;
+    return sum + (price * item.quantity);
+  }, 0) || 0;
+
+  // Calculate max shipping cost from all cart items
+  const maxShippingCost = items?.reduce((max: number, item: any) => {
+    const shippingCost = user ? (item.products.shipping_cost || 0) : 0;
+    return Math.max(max, shippingCost);
+  }, 0) || 0;
+
+  // Apply free shipping if subtotal exceeds threshold
+  const shippingCost = subtotal >= freeShippingThreshold ? 0 : maxShippingCost;
+  const total = subtotal + shippingCost;
 
   const validatePhoneNumber = (phone: string): { isValid: boolean; formatted: string; error: string } => {
     // Remove all spaces and dashes for validation
@@ -152,6 +185,7 @@ const Checkout = () => {
           shipping_state: formData.state,
           shipping_zip: formData.postalCode,
           total_amount: total,
+          shipping_cost: shippingCost,
           status: 'pending',
         })
         .select()
@@ -422,12 +456,23 @@ const Checkout = () => {
                   <div className="space-y-2 mb-4 md:mb-6 text-sm">
                     <div className="flex justify-between">
                       <span>Subtotal</span>
-                      <span>{formatPrice(total)}</span>
+                      <span>{formatPrice(subtotal)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Shipping</span>
-                      <span>FREE</span>
+                      <span>
+                        {shippingCost === 0 ? (
+                          <span className="text-green-600 font-medium">FREE</span>
+                        ) : (
+                          formatPrice(shippingCost)
+                        )}
+                      </span>
                     </div>
+                    {subtotal < freeShippingThreshold && maxShippingCost > 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        Add {formatPrice(freeShippingThreshold - subtotal)} more for free shipping!
+                      </p>
+                    )}
                     <div className="border-t pt-2 mt-2">
                       <div className="flex justify-between font-bold text-base md:text-lg">
                         <span>Total</span>

@@ -354,6 +354,11 @@ const Shop = () => {
                                   Free Shipping
                                 </Badge>
                               )}
+                              {product.shipping_cost === 0 && (
+                                <Badge variant="outline" className="bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800 text-xs mb-2">
+                                  Free Shipping
+                                </Badge>
+                              )}
                             {product.stock_quantity !== undefined && product.stock_quantity < 10 && product.stock_quantity > 0 && (
                               <p className="text-xs text-orange-500 mb-2">
                                 Only {product.stock_quantity} left in stock!

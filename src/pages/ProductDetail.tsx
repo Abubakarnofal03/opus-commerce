@@ -333,6 +333,18 @@ const ProductDetail = () => {
                 )}
               </div>
 
+              <div className="flex items-center gap-2 mb-4">
+                {product.shipping_cost === 0 ? (
+                  <Badge variant="outline" className="bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800">
+                    Free Shipping
+                  </Badge>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Shipping: {formatPrice(product.shipping_cost)}
+                  </p>
+                )}
+              </div>
+
               {product.description && (
                 <div>
                   <h2 className="font-semibold text-base md:text-lg mb-2">Description</h2>
