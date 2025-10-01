@@ -16,6 +16,7 @@ import { ProductDialog } from "@/components/admin/ProductDialog";
 import { CategoryDialog } from "@/components/admin/CategoryDialog";
 import { BannerDialog } from "@/components/admin/BannerDialog";
 import { SaleDialog } from "@/components/admin/SaleDialog";
+import { MetaCatalogSync } from "@/components/admin/MetaCatalogSync";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatPrice } from "@/lib/currency";
@@ -263,11 +264,12 @@ const Admin = () => {
           </div>
 
           <Tabs defaultValue="orders">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="orders">Orders</TabsTrigger>
               <TabsTrigger value="products">Products</TabsTrigger>
               <TabsTrigger value="categories">Categories</TabsTrigger>
               <TabsTrigger value="banners">Banners</TabsTrigger>
+              <TabsTrigger value="meta-catalog">Meta Catalog</TabsTrigger>
             </TabsList>
 
             <TabsContent value="orders" className="space-y-4">
@@ -558,6 +560,10 @@ const Admin = () => {
                   </Table>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            <TabsContent value="meta-catalog" className="space-y-4">
+              <MetaCatalogSync />
             </TabsContent>
           </Tabs>
         </div>
