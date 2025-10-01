@@ -239,14 +239,14 @@ const Index = () => {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 justify-center mx-auto" style={{ gridAutoColumns: 'max-content' }}>
+            <div className="flex flex-wrap justify-center gap-6">
               {featuredProducts?.map((product) => {
                 const productSale = sales?.find(s => s.product_id === product.id);
                 const globalSale = sales?.find(s => s.is_global);
                 const { finalPrice, discount } = calculateSalePrice(product.price, productSale, globalSale);
                 
                 return (
-                  <Card key={product.id} className="glass-card glass-hover overflow-hidden rounded-xl group relative w-full">
+                  <Card key={product.id} className="glass-card glass-hover overflow-hidden rounded-xl group relative w-full sm:w-[calc(50%-0.75rem)] lg:w-[calc(25%-1.125rem)] min-w-[280px] max-w-[400px]">
                     {discount && (
                       <Badge className="absolute top-2 left-2 z-10 bg-destructive text-destructive-foreground">
                         {discount}% OFF
