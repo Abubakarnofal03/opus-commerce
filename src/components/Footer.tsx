@@ -25,10 +25,10 @@ export const Footer = () => {
             <img src={logo} alt="The Shopping Cart - Online Shopping in Pakistan" className="h-16 w-auto mb-4" />
             <p className="text-sm mb-4">Premium lifestyle products for the discerning customer.</p>
             <div className="flex space-x-4">
-              <a href="https://www.facebook.com/share/1GYJjkBfNr/" target="_blank" rel="noopener noreferrer" className="hover:text-accent transition-colors" aria-label="Visit our Facebook page">
+              <a href="https://www.facebook.com/share/1EgybenFiL/" target="_blank" rel="noopener noreferrer" className="hover:text-accent transition-colors" aria-label="Visit our Facebook page">
                 <Facebook className="h-5 w-5" />
               </a>
-              <a href="https://www.instagram.com/theshoppingcart.official?igsh=NWI4YjI5ZTF1YjFi" target="_blank" rel="noopener noreferrer" className="hover:text-accent transition-colors" aria-label="Visit our Instagram page">
+              <a href="https://www.instagram.com/theshoppingcart.official?igsh=MTMzbGd3ZXhvMHFvbA==" target="_blank" rel="noopener noreferrer" className="hover:text-accent transition-colors" aria-label="Visit our Instagram page">
                 <Instagram className="h-5 w-5" />
               </a>
             </div>

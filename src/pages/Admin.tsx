@@ -278,13 +278,13 @@ const Admin = () => {
           </div>
 
           <Tabs defaultValue="orders">
-            <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-1">
-              <TabsTrigger value="orders" className="text-xs md:text-sm">Orders</TabsTrigger>
-              <TabsTrigger value="products" className="text-xs md:text-sm">Products</TabsTrigger>
-              <TabsTrigger value="categories" className="text-xs md:text-sm">Categories</TabsTrigger>
-              <TabsTrigger value="banners" className="text-xs md:text-sm">Banners</TabsTrigger>
-              <TabsTrigger value="blogs" className="text-xs md:text-sm">Blogs</TabsTrigger>
-              <TabsTrigger value="meta-catalog" className="text-xs md:text-sm col-span-2 md:col-span-1 lg:col-span-1">Meta Catalog</TabsTrigger>
+            <TabsList className="w-full flex flex-wrap gap-1 h-auto p-1">
+              <TabsTrigger value="orders" className="text-xs md:text-sm flex-1 min-w-[80px]">Orders</TabsTrigger>
+              <TabsTrigger value="products" className="text-xs md:text-sm flex-1 min-w-[80px]">Products</TabsTrigger>
+              <TabsTrigger value="categories" className="text-xs md:text-sm flex-1 min-w-[80px]">Categories</TabsTrigger>
+              <TabsTrigger value="banners" className="text-xs md:text-sm flex-1 min-w-[80px]">Banners</TabsTrigger>
+              <TabsTrigger value="blogs" className="text-xs md:text-sm flex-1 min-w-[80px]">Blogs</TabsTrigger>
+              <TabsTrigger value="meta-catalog" className="text-xs md:text-sm flex-1 min-w-[100px]">Meta Catalog</TabsTrigger>
             </TabsList>
 
             <TabsContent value="orders" className="space-y-4">
