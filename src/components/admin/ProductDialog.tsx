@@ -32,6 +32,7 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
     images: [] as string[],
     video_url: "",
     is_featured: false,
+    shipping_cost: "",
   });
 
   useEffect(() => {
@@ -47,6 +48,7 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
         images: product.images || [],
         video_url: product.video_url || "",
         is_featured: product.is_featured || false,
+        shipping_cost: product.shipping_cost?.toString() || "",
       });
     } else {
       setFormData({
@@ -60,6 +62,7 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
         images: [],
         video_url: "",
         is_featured: false,
+        shipping_cost: "",
       });
     }
   }, [product, open]);
@@ -80,6 +83,7 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
         images: formData.images,
         video_url: formData.video_url || null,
         is_featured: formData.is_featured,
+        shipping_cost: parseFloat(formData.shipping_cost) || 0,
       };
 
       if (product) {
@@ -148,7 +152,7 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
             />
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="price">Price *</Label>
               <Input
@@ -160,6 +164,20 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
                 required
               />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="shipping">Shipping Cost *</Label>
+              <Input
+                id="shipping"
+                type="number"
+                step="0.01"
+                value={formData.shipping_cost}
+                onChange={(e) => setFormData({ ...formData, shipping_cost: e.target.value })}
+                required
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="stock">Stock Quantity *</Label>
               <Input
