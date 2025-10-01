@@ -225,7 +225,6 @@ export type Database = {
           phone: string
           shipping_address: string
           shipping_city: string
-          shipping_cost: number
           shipping_state: string
           shipping_zip: string
           status: string
@@ -243,7 +242,6 @@ export type Database = {
           phone: string
           shipping_address: string
           shipping_city: string
-          shipping_cost?: number
           shipping_state: string
           shipping_zip: string
           status?: string
@@ -261,7 +259,6 @@ export type Database = {
           phone?: string
           shipping_address?: string
           shipping_city?: string
-          shipping_cost?: number
           shipping_state?: string
           shipping_zip?: string
           status?: string
@@ -453,30 +450,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      settings: {
-        Row: {
-          created_at: string
-          id: string
-          key: string
-          updated_at: string
-          value: Json
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          key: string
-          updated_at?: string
-          value: Json
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          key?: string
-          updated_at?: string
-          value?: Json
-        }
-        Relationships: []
       }
       user_roles: {
         Row: {

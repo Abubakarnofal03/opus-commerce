@@ -25,8 +25,6 @@ import { LoadingScreen } from "@/components/LoadingScreen";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import * as XLSX from 'xlsx';
 
 const Admin = () => {
@@ -45,7 +43,6 @@ const Admin = () => {
   const [exportDialog, setExportDialog] = useState(false);
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
-  const [freeShippingThreshold, setFreeShippingThreshold] = useState<number>(5000);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -135,27 +132,6 @@ const Admin = () => {
     },
   });
 
-  const { data: settings } = useQuery({
-    queryKey: ['settings'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('settings')
-        .select('*');
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  useEffect(() => {
-    if (settings && Array.isArray(settings)) {
-      const shippingSetting = settings.find(s => s.key === 'free_shipping_threshold');
-      if (shippingSetting && typeof shippingSetting.value === 'object' && shippingSetting.value !== null) {
-        const value = shippingSetting.value as { threshold: number };
-        setFreeShippingThreshold(value.threshold);
-      }
-    }
-  }, [settings]);
-
   const updateOrderStatus = useMutation({
     mutationFn: async ({ orderId, status }: { orderId: string; status: string }) => {
       const { error } = await supabase
@@ -185,34 +161,6 @@ const Admin = () => {
 
   const handleDelete = () => {
     deleteItem.mutate({ type: deleteDialog.type, id: deleteDialog.id });
-  };
-
-  const updateShippingThreshold = useMutation({
-    mutationFn: async (amount: number) => {
-      const { error } = await supabase
-        .from('settings')
-        .update({ value: { amount } })
-        .eq('key', 'free_shipping_threshold');
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['settings'] });
-      toast({
-        title: "Success",
-        description: "Free shipping threshold updated successfully.",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleSaveShippingThreshold = () => {
-    updateShippingThreshold.mutate(freeShippingThreshold);
   };
 
   const toggleOrderExpanded = (orderId: string) => {
@@ -371,7 +319,6 @@ const Admin = () => {
               <TabsTrigger value="banners" className="text-xs md:text-sm flex-1 min-w-[80px]">Banners</TabsTrigger>
               <TabsTrigger value="blogs" className="text-xs md:text-sm flex-1 min-w-[80px]">Blogs</TabsTrigger>
               <TabsTrigger value="meta-catalog" className="text-xs md:text-sm flex-1 min-w-[100px]">Meta Catalog</TabsTrigger>
-              <TabsTrigger value="settings" className="text-xs md:text-sm flex-1 min-w-[80px]">Settings</TabsTrigger>
             </TabsList>
 
             <TabsContent value="orders" className="space-y-4">
@@ -731,37 +678,6 @@ const Admin = () => {
 
             <TabsContent value="meta-catalog" className="space-y-4">
               <MetaCatalogSync />
-            </TabsContent>
-
-            <TabsContent value="settings">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Shipping Settings</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="shipping-threshold">Free Shipping Threshold (Rs)</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        id="shipping-threshold"
-                        type="number"
-                        value={freeShippingThreshold}
-                        onChange={(e) => setFreeShippingThreshold(Number(e.target.value))}
-                        placeholder="Enter amount"
-                      />
-                      <Button 
-                        onClick={handleSaveShippingThreshold}
-                        disabled={updateShippingThreshold.isPending}
-                      >
-                        Save
-                      </Button>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      Orders above this amount will get free shipping regardless of individual product shipping costs.
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
             </TabsContent>
           </Tabs>
         </div>

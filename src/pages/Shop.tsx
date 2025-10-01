@@ -11,7 +11,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ShoppingCart, Star } from "lucide-react";
-import { addToGuestCart, getGuestCart } from "@/lib/cartUtils";
+import { addToGuestCart } from "@/lib/cartUtils";
 import { formatPrice } from "@/lib/currency";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { SEOHead } from "@/components/SEOHead";
@@ -101,33 +101,6 @@ const Shop = () => {
     enabled: !!categories,
   });
 
-  const { data: settings } = useQuery({
-    queryKey: ['settings'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('settings')
-        .select('*')
-        .eq('key', 'free_shipping_threshold')
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const { data: cartItems } = useQuery({
-    queryKey: ['cart'],
-    queryFn: async () => {
-      if (!user) return [];
-      const { data, error } = await supabase
-        .from('cart_items')
-        .select('*, products(*)')
-        .eq('user_id', user.id);
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user,
-  });
-
   const addToCart = useMutation({
     mutationFn: async (product: any) => {
       if (!user) {
@@ -167,58 +140,16 @@ const Shop = () => {
       
       return product;
     },
-    onSuccess: async (product) => {
-      // Invalidate queries first
-      await queryClient.invalidateQueries({ queryKey: ['cart'] });
+    onSuccess: (product) => {
+      queryClient.invalidateQueries({ queryKey: ['cart'] });
       
       // Track Meta Pixel AddToCart event
       trackAddToCart(product.id, product.name, product.price);
       
-      // Get the LATEST updated cart total
-      const freeShippingThreshold = (settings?.value as any)?.threshold || 5000;
-      let updatedCartTotal = 0;
-      
-      if (!user) {
-        // For guest users, get the updated cart from session storage
-        const guestCart = getGuestCart();
-        updatedCartTotal = guestCart.reduce((sum, item) => {
-          const productSale = sales?.find(s => s.product_id === item.product_id);
-          const globalSale = sales?.find(s => s.is_global);
-          const { finalPrice } = calculateSalePrice(item.product_price, productSale, globalSale);
-          return sum + (finalPrice * item.quantity);
-        }, 0);
-      } else {
-        // For logged-in users, fetch the latest cart from database
-        const { data: latestCart } = await supabase
-          .from('cart_items')
-          .select('*, products(*)')
-          .eq('user_id', user.id);
-        
-        if (latestCart) {
-          updatedCartTotal = latestCart.reduce((sum, item: any) => {
-            const productSale = sales?.find(s => s.product_id === item.product_id);
-            const globalSale = sales?.find(s => s.is_global);
-            const { finalPrice } = calculateSalePrice(item.products.price, productSale, globalSale);
-            return sum + (finalPrice * item.quantity);
-          }, 0);
-        }
-      }
-      
-      const remaining = freeShippingThreshold - updatedCartTotal;
-      
-      if (remaining > 0) {
-        toast({
-          title: "Added to cart",
-          description: `Buy ${formatPrice(remaining)} more to get FREE SHIPPING!`,
-          className: "border-red-500 bg-red-50 dark:bg-red-950/20 text-red-900 dark:text-red-100",
-        });
-      } else {
-        toast({
-          title: "Added to cart",
-          description: "🎉 You are eligible for FREE SHIPPING!",
-          className: "border-green-500 bg-green-50 dark:bg-green-950/20 text-green-900 dark:text-green-100",
-        });
-      }
+      toast({
+        title: "Added to cart",
+        description: "Product has been added to your cart.",
+      });
     },
   });
 
@@ -418,16 +349,6 @@ const Shop = () => {
                                   </p>
                                 )}
                               </div>
-                              {product.shipping_cost === 0 && (
-                                <Badge variant="outline" className="bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800 text-xs mb-2">
-                                  Free Shipping
-                                </Badge>
-                              )}
-                              {product.shipping_cost === 0 && (
-                                <Badge variant="outline" className="bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800 text-xs mb-2">
-                                  Free Shipping
-                                </Badge>
-                              )}
                             {product.stock_quantity !== undefined && product.stock_quantity < 10 && product.stock_quantity > 0 && (
                               <p className="text-xs text-orange-500 mb-2">
                                 Only {product.stock_quantity} left in stock!

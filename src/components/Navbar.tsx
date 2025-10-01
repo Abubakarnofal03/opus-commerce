@@ -124,7 +124,7 @@ export const Navbar = () => {
         <div className="container mx-auto px-4">
           <div className="flex h-16 items-center justify-between">
           <Link to="/" className="flex items-center space-x-2">
-            <img src={logo} alt="The Shopping Cart" className="h-12 w-auto hidden md:block" />
+            <img src={logo} alt="The Shopping Cart" className="h-12 w-auto" />
             <h1 className="text-2xl font-display font-bold">The Shopping Cart</h1>
           </Link>
 
