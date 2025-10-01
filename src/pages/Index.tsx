@@ -11,6 +11,8 @@ import { calculateSalePrice } from "@/lib/saleUtils";
 import { Badge } from "@/components/ui/badge";
 import { Star } from "lucide-react";
 import { useState, useEffect } from "react";
+import { SEOHead } from "@/components/SEOHead";
+import { organizationSchema, websiteSchema, breadcrumbSchema } from "@/lib/structuredData";
 
 const Index = () => {
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
@@ -80,9 +82,37 @@ const Index = () => {
 
   const activeBanner = banners?.[currentBannerIndex];
 
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@graph": [organizationSchema, websiteSchema]
+  };
+
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
+    <>
+      <SEOHead
+        title="The Shopping Cart – Pakistan's Online Store for Home Decor, Wallets & More"
+        description="Shop premium home decor, wallets, furniture, accessories & garden decorations online in Pakistan. Fast delivery, quality products at TheShoppingCart.shop"
+        keywords={[
+          'home decor',
+          'wallets',
+          'furniture',
+          'accessories',
+          'garden decorations',
+          'shopping cart',
+          'the shopping cart',
+          'theshoppingcart.shop',
+          'buy online in Pakistan',
+          'premium decor items',
+          'online shopping Pakistan',
+          'home accessories',
+          'leather wallets'
+        ]}
+        canonicalUrl="https://theshoppingcart.shop"
+        structuredData={structuredData}
+      />
+      
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
       
       <main className="flex-1">
         {/* Dynamic Hero Banner */}
@@ -106,7 +136,7 @@ const Index = () => {
               key={currentBannerIndex}
               className="relative z-10 text-center text-primary-foreground px-4 transition-all duration-700 ease-in-out"
             >
-              <h1 className="font-display text-5xl md:text-7xl font-bold mb-6 gold-accent pb-8 animate-fade-in">
+              <h1 className="font-display text-4xl md:text-6xl lg:text-7xl font-bold mb-6 gold-accent pb-8 animate-fade-in">
                 {activeBanner.title}
               </h1>
               <p className="text-xl md:text-2xl mb-8 max-w-2xl mx-auto animate-fade-in">
@@ -141,15 +171,27 @@ const Index = () => {
           )}
         </section>
 
+        {/* Introduction Section for SEO */}
+        <section className="py-12 bg-background">
+          <div className="container mx-auto px-4 max-w-4xl text-center">
+            <p className="text-lg text-muted-foreground leading-relaxed">
+              Welcome to <strong>The Shopping Cart</strong> – your trusted online destination for premium <strong>home decor</strong>, 
+              elegant <strong>wallets</strong>, stylish <strong>furniture</strong>, quality <strong>accessories</strong>, and beautiful 
+              <strong> garden decorations</strong> in Pakistan. Shop with confidence and enjoy fast delivery across the country. 
+              TheShoppingCart.shop brings you carefully curated products that blend style, quality, and affordability.
+            </p>
+          </div>
+        </section>
+
         {/* Shop by Category - Dynamic */}
         <section className="py-20">
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
-              <h2 className="font-display text-4xl font-bold mb-4 gold-accent pb-8">
-                Shop by Category
+              <h2 className="font-display text-3xl md:text-4xl font-bold mb-4 gold-accent pb-8">
+                Shop Home Decor, Wallets, Accessories & More
               </h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
-                Explore our curated collections
+                Explore our curated collections of premium products
               </p>
             </div>
 
@@ -231,11 +273,11 @@ const Index = () => {
         <section className="py-20 bg-muted/30">
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
-              <h2 className="font-display text-4xl font-bold mb-4 gold-accent pb-8">
-                Featured Collection
+              <h2 className="font-display text-3xl md:text-4xl font-bold mb-4 gold-accent pb-8">
+                Featured Products - Best Sellers
               </h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
-                Handpicked premium products for the discerning customer
+                Handpicked premium home decor, wallets, and accessories for the discerning customer
               </p>
             </div>
 
@@ -312,8 +354,9 @@ const Index = () => {
         </section>
       </main>
 
-      <Footer />
-    </div>
+        <Footer />
+      </div>
+    </>
   );
 };
 

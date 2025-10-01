@@ -53,6 +53,54 @@ export type Database = {
         }
         Relationships: []
       }
+      blogs: {
+        Row: {
+          author: string | null
+          content: string
+          created_at: string
+          excerpt: string | null
+          featured_image_url: string | null
+          focus_keywords: string[] | null
+          id: string
+          meta_description: string | null
+          meta_title: string | null
+          published: boolean
+          slug: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author?: string | null
+          content: string
+          created_at?: string
+          excerpt?: string | null
+          featured_image_url?: string | null
+          focus_keywords?: string[] | null
+          id?: string
+          meta_description?: string | null
+          meta_title?: string | null
+          published?: boolean
+          slug: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          author?: string | null
+          content?: string
+          created_at?: string
+          excerpt?: string | null
+          featured_image_url?: string | null
+          focus_keywords?: string[] | null
+          id?: string
+          meta_description?: string | null
+          meta_title?: string | null
+          published?: boolean
+          slug?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cart_items: {
         Row: {
           created_at: string | null
@@ -92,24 +140,33 @@ export type Database = {
         Row: {
           created_at: string | null
           description: string | null
+          focus_keywords: string[] | null
           id: string
           image_url: string | null
+          meta_description: string | null
+          meta_title: string | null
           name: string
           slug: string
         }
         Insert: {
           created_at?: string | null
           description?: string | null
+          focus_keywords?: string[] | null
           id?: string
           image_url?: string | null
+          meta_description?: string | null
+          meta_title?: string | null
           name: string
           slug: string
         }
         Update: {
           created_at?: string | null
           description?: string | null
+          focus_keywords?: string[] | null
           id?: string
           image_url?: string | null
+          meta_description?: string | null
+          meta_title?: string | null
           name?: string
           slug?: string
         }
@@ -248,9 +305,12 @@ export type Database = {
           category_id: string | null
           created_at: string | null
           description: string | null
+          focus_keywords: string[] | null
           id: string
           images: string[] | null
           is_featured: boolean | null
+          meta_description: string | null
+          meta_title: string | null
           name: string
           price: number
           shipping_cost: number
@@ -264,9 +324,12 @@ export type Database = {
           category_id?: string | null
           created_at?: string | null
           description?: string | null
+          focus_keywords?: string[] | null
           id?: string
           images?: string[] | null
           is_featured?: boolean | null
+          meta_description?: string | null
+          meta_title?: string | null
           name: string
           price: number
           shipping_cost?: number
@@ -280,9 +343,12 @@ export type Database = {
           category_id?: string | null
           created_at?: string | null
           description?: string | null
+          focus_keywords?: string[] | null
           id?: string
           images?: string[] | null
           is_featured?: boolean | null
+          meta_description?: string | null
+          meta_title?: string | null
           name?: string
           price?: number
           shipping_cost?: number

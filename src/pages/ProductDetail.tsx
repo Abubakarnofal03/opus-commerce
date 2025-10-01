@@ -14,6 +14,8 @@ import { LoadingScreen } from "@/components/LoadingScreen";
 import { calculateSalePrice } from "@/lib/saleUtils";
 import { Badge } from "@/components/ui/badge";
 import { trackAddToCart } from "@/lib/metaPixel";
+import { SEOHead } from "@/components/SEOHead";
+import { organizationSchema, productSchema, breadcrumbSchema } from "@/lib/structuredData";
 import {
   Carousel,
   CarouselContent,
@@ -172,9 +174,43 @@ const ProductDetail = () => {
   const globalSale = sales?.find(s => s.is_global);
   const { finalPrice, discount } = calculateSalePrice(product.price, productSale, globalSale);
 
+  const productImages = product.images || [];
+
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@graph": [
+      organizationSchema,
+      productSchema({
+        name: product.name,
+        description: product.description || product.name,
+        price: finalPrice,
+        images: productImages,
+        sku: product.sku,
+        stock_quantity: product.stock_quantity
+      }),
+      breadcrumbSchema([
+        { name: "Home", url: "/" },
+        { name: "Shop", url: "/shop" },
+        ...(product.categories ? [{ name: product.categories.name, url: `/shop?category=${product.categories.slug}` }] : []),
+        { name: product.name, url: `/product/${product.slug}` }
+      ])
+    ]
+  };
+
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
+    <>
+      <SEOHead
+        title={product.meta_title || `${product.name} | Buy Online at The Shopping Cart`}
+        description={product.meta_description || product.description || `Buy ${product.name} online in Pakistan. Premium quality products at TheShoppingCart.shop with fast delivery.`}
+        keywords={product.focus_keywords || [product.name, product.categories?.name || '', 'buy online Pakistan']}
+        canonicalUrl={`https://theshoppingcart.shop/product/${product.slug}`}
+        ogImage={productImages[0]}
+        ogType="product"
+        structuredData={structuredData}
+      />
+      
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
       
       <main className="flex-1 py-8 md:py-12">
         <div className="container mx-auto px-4">
@@ -445,6 +481,7 @@ const ProductDetail = () => {
 
       <Footer />
     </div>
+    </>
   );
 };
 

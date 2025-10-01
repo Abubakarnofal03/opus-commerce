@@ -14,6 +14,8 @@ import { ShoppingCart, Star } from "lucide-react";
 import { addToGuestCart } from "@/lib/cartUtils";
 import { formatPrice } from "@/lib/currency";
 import { LoadingScreen } from "@/components/LoadingScreen";
+import { SEOHead } from "@/components/SEOHead";
+import { organizationSchema, breadcrumbSchema } from "@/lib/structuredData";
 import {
   Select,
   SelectContent,
@@ -169,9 +171,46 @@ const Shop = () => {
     );
   }
 
+  const selectedCategoryData = categories?.find(c => c.slug === selectedCategory);
+  const pageTitle = selectedCategoryData
+    ? `Shop ${selectedCategoryData.name} Online | The Shopping Cart`
+    : "Shop All Products Online | The Shopping Cart";
+  const pageDescription = selectedCategoryData
+    ? `Browse premium ${selectedCategoryData.name.toLowerCase()} online in Pakistan. Quality products, fast delivery at TheShoppingCart.shop`
+    : "Discover premium home decor, wallets, accessories, and furniture at TheShoppingCart.shop – fast delivery across Pakistan.";
+  const pageKeywords = selectedCategoryData?.focus_keywords || [
+    'online shopping Pakistan',
+    'home decor',
+    'wallets',
+    'furniture',
+    'accessories',
+    'buy online Pakistan'
+  ];
+
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@graph": [
+      organizationSchema,
+      breadcrumbSchema([
+        { name: "Home", url: "/" },
+        { name: "Shop", url: "/shop" },
+        ...(selectedCategoryData ? [{ name: selectedCategoryData.name, url: `/shop?category=${selectedCategory}` }] : [])
+      ])
+    ]
+  };
+
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
+    <>
+      <SEOHead
+        title={pageTitle}
+        description={pageDescription}
+        keywords={pageKeywords}
+        canonicalUrl={selectedCategory ? `https://theshoppingcart.shop/shop?category=${selectedCategory}` : "https://theshoppingcart.shop/shop"}
+        structuredData={structuredData}
+      />
+      
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
       
       <main className="flex-1">
         <section className="py-8 md:py-12 bg-muted/30">
@@ -351,6 +390,7 @@ const Shop = () => {
 
       <Footer />
     </div>
+    </>
   );
 };
 
