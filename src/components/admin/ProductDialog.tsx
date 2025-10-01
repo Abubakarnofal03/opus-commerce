@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { ImageUpload } from "./ImageUpload";
+import { VideoUpload } from "./VideoUpload";
 
 interface ProductDialogProps {
   open: boolean;
@@ -29,6 +30,7 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
     category_id: "",
     sku: "",
     images: [] as string[],
+    video_url: "",
     is_featured: false,
   });
 
@@ -43,6 +45,7 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
         category_id: product.category_id || "",
         sku: product.sku || "",
         images: product.images || [],
+        video_url: product.video_url || "",
         is_featured: product.is_featured || false,
       });
     } else {
@@ -55,6 +58,7 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
         category_id: "",
         sku: "",
         images: [],
+        video_url: "",
         is_featured: false,
       });
     }
@@ -74,6 +78,7 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
         category_id: formData.category_id || null,
         sku: formData.sku || null,
         images: formData.images,
+        video_url: formData.video_url || null,
         is_featured: formData.is_featured,
       };
 
@@ -199,6 +204,13 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
             value={formData.images}
             onChange={(value) => setFormData({ ...formData, images: value as string[] })}
             multiple={true}
+            folder="products"
+          />
+
+          <VideoUpload
+            label="Product Video (Optional)"
+            value={formData.video_url}
+            onChange={(value) => setFormData({ ...formData, video_url: value })}
             folder="products"
           />
 
