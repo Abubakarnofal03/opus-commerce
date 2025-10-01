@@ -125,6 +125,7 @@ export const Navbar = () => {
           <div className="flex h-16 items-center justify-between">
           <Link to="/" className="flex items-center space-x-2">
             <img src={logo} alt="The Shopping Cart" className="h-12 w-auto" />
+            <h1 className="text-2xl font-display font-bold">The Shopping Cart</h1>
           </Link>
 
           {/* Desktop Navigation */}
