@@ -115,13 +115,7 @@ const ProductDetail = () => {
 
   const addToCart = useMutation({
     mutationFn: async () => {
-      // Get current cart total BEFORE adding the item
-      let currentCartTotal = 0;
-      
       if (!user) {
-        const guestCart = getGuestCart();
-        currentCartTotal = guestCart.reduce((sum, item) => sum + (item.product_price * item.quantity), 0);
-        
         addToGuestCart({
           product_id: product.id,
           quantity,
@@ -129,16 +123,7 @@ const ProductDetail = () => {
           product_price: product.price,
           product_image: product.images?.[0],
         });
-        return currentCartTotal;
-      }
-
-      if (cartItems) {
-        currentCartTotal = cartItems.reduce((sum, item: any) => {
-          const productSale = sales?.find(s => s.product_id === item.product_id);
-          const globalSale = sales?.find(s => s.is_global);
-          const { finalPrice } = calculateSalePrice(item.products.price, productSale, globalSale);
-          return sum + (finalPrice * item.quantity);
-        }, 0);
+        return;
       }
 
       const { data: existingItem } = await supabase
@@ -164,23 +149,45 @@ const ProductDetail = () => {
           });
         if (error) throw error;
       }
-      
-      return currentCartTotal;
     },
-    onSuccess: (currentCartTotal) => {
-      queryClient.invalidateQueries({ queryKey: ['cart'] });
+    onSuccess: async () => {
+      // Invalidate queries first
+      await queryClient.invalidateQueries({ queryKey: ['cart'] });
       
       // Track Meta Pixel AddToCart event
       trackAddToCart(product.id, product.name, product.price);
       
-      // Calculate new total after adding the item
+      // Get the LATEST updated cart total
       const freeShippingThreshold = (settings?.value as any)?.threshold || 5000;
-      const productSale = sales?.find(s => s.product_id === product.id);
-      const globalSale = sales?.find(s => s.is_global);
-      const { finalPrice } = calculateSalePrice(product.price, productSale, globalSale);
-      const newTotal = currentCartTotal + (finalPrice * quantity);
+      let updatedCartTotal = 0;
       
-      const remaining = freeShippingThreshold - newTotal;
+      if (!user) {
+        // For guest users, get the updated cart from session storage
+        const guestCart = getGuestCart();
+        updatedCartTotal = guestCart.reduce((sum, item) => {
+          const productSale = sales?.find(s => s.product_id === item.product_id);
+          const globalSale = sales?.find(s => s.is_global);
+          const { finalPrice } = calculateSalePrice(item.product_price, productSale, globalSale);
+          return sum + (finalPrice * item.quantity);
+        }, 0);
+      } else {
+        // For logged-in users, fetch the latest cart from database
+        const { data: latestCart } = await supabase
+          .from('cart_items')
+          .select('*, products(*)')
+          .eq('user_id', user.id);
+        
+        if (latestCart) {
+          updatedCartTotal = latestCart.reduce((sum, item: any) => {
+            const productSale = sales?.find(s => s.product_id === item.product_id);
+            const globalSale = sales?.find(s => s.is_global);
+            const { finalPrice } = calculateSalePrice(item.products.price, productSale, globalSale);
+            return sum + (finalPrice * item.quantity);
+          }, 0);
+        }
+      }
+      
+      const remaining = freeShippingThreshold - updatedCartTotal;
       
       if (remaining > 0) {
         toast({
