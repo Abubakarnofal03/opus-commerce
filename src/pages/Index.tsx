@@ -141,6 +141,48 @@ const Index = () => {
           )}
         </section>
 
+        {/* Shop by Category - Dynamic */}
+        <section className="py-20">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-12">
+              <h2 className="font-display text-4xl font-bold mb-4 gold-accent pb-8">
+                Shop by Category
+              </h2>
+              <p className="text-muted-foreground max-w-2xl mx-auto">
+                Explore our curated collections
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {categories?.map((category) => (
+                <Link 
+                  key={category.id} 
+                  to={`/shop?category=${category.slug}`} 
+                  className="group"
+                >
+                  <Card className="glass-card glass-hover overflow-hidden rounded-xl">
+                    <div className="aspect-square bg-muted relative overflow-hidden">
+                      {category.image_url && (
+                        <img 
+                          src={category.image_url} 
+                          alt={category.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      )}
+                      <div className="absolute inset-0 bg-primary/40 group-hover:bg-primary/60 transition-colors" />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <h3 className="font-display text-3xl md:text-4xl font-bold text-white text-center px-4">
+                          {category.name}
+                        </h3>
+                      </div>
+                    </div>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* Trust Badges with Shadow Cards */}
         <section className="py-16 bg-muted/30">
           <div className="container mx-auto px-4">
@@ -181,48 +223,6 @@ const Index = () => {
                   </div>
                 </CardContent>
               </Card>
-            </div>
-          </div>
-        </section>
-
-        {/* Shop by Category - Dynamic */}
-        <section className="py-20">
-          <div className="container mx-auto px-4">
-            <div className="text-center mb-12">
-              <h2 className="font-display text-4xl font-bold mb-4 gold-accent pb-8">
-                Shop by Category
-              </h2>
-              <p className="text-muted-foreground max-w-2xl mx-auto">
-                Explore our curated collections
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {categories?.map((category) => (
-                <Link 
-                  key={category.id} 
-                  to={`/shop?category=${category.slug}`} 
-                  className="group"
-                >
-                  <Card className="glass-card glass-hover overflow-hidden rounded-xl">
-                    <div className="aspect-square bg-muted relative overflow-hidden">
-                      {category.image_url && (
-                        <img 
-                          src={category.image_url} 
-                          alt={category.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                      )}
-                      <div className="absolute inset-0 bg-primary/40 group-hover:bg-primary/60 transition-colors" />
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <h3 className="font-display text-3xl md:text-4xl font-bold text-white text-center px-4">
-                          {category.name}
-                        </h3>
-                      </div>
-                    </div>
-                  </Card>
-                </Link>
-              ))}
             </div>
           </div>
         </section>
