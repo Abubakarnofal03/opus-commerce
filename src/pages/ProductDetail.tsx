@@ -181,48 +181,63 @@ const ProductDetail = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
             {/* Media Gallery */}
             <div className="space-y-3 md:space-y-4">
-              {/* Video Preview */}
-              {product.video_url && (
-                <div className="aspect-video bg-muted rounded-lg overflow-hidden">
-                  <video
-                    src={product.video_url}
-                    controls
-                    className="w-full h-full object-cover"
-                    poster={product.images?.[0]}
-                  >
-                    Your browser does not support the video tag.
-                  </video>
-                </div>
-              )}
-              
-              {/* Image Carousel */}
-              {product.images && product.images.length > 0 && (
+              {/* Media Carousel (Video + Images) */}
+              {((product.video_url || (product.images && product.images.length > 0)) && 
+                ((product.video_url ? 1 : 0) + (product.images?.length || 0)) > 1) ? (
+                <Carousel className="w-full">
+                  <CarouselContent>
+                    {/* Video as first carousel item */}
+                    {product.video_url && (
+                      <CarouselItem key="video">
+                        <div className="aspect-square bg-muted rounded-lg overflow-hidden">
+                          <video
+                            src={product.video_url}
+                            controls
+                            className="w-full h-full object-cover"
+                            poster={product.images?.[0]}
+                          >
+                            Your browser does not support the video tag.
+                          </video>
+                        </div>
+                      </CarouselItem>
+                    )}
+                    {/* Images as subsequent carousel items */}
+                    {product.images?.map((image, index) => (
+                      <CarouselItem key={`image-${index}`}>
+                        <div 
+                          className="aspect-square bg-muted rounded-lg overflow-hidden cursor-zoom-in"
+                          onClick={() => {
+                            setSelectedImageIndex(index);
+                            setZoomDialogOpen(true);
+                          }}
+                        >
+                          <img
+                            src={image}
+                            alt={`${product.name} ${index + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      </CarouselItem>
+                    ))}
+                  </CarouselContent>
+                  <CarouselPrevious className="left-2" />
+                  <CarouselNext className="right-2" />
+                </Carousel>
+              ) : (
+                /* Single item display */
                 <>
-                  {product.images.length > 1 ? (
-                    <Carousel className="w-full">
-                      <CarouselContent>
-                        {product.images.map((image, index) => (
-                          <CarouselItem key={index}>
-                            <div 
-                              className="aspect-square bg-muted rounded-lg overflow-hidden cursor-zoom-in"
-                              onClick={() => {
-                                setSelectedImageIndex(index);
-                                setZoomDialogOpen(true);
-                              }}
-                            >
-                              <img
-                                src={image}
-                                alt={`${product.name} ${index + 1}`}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                          </CarouselItem>
-                        ))}
-                      </CarouselContent>
-                      <CarouselPrevious className="left-2" />
-                      <CarouselNext className="right-2" />
-                    </Carousel>
-                  ) : (
+                  {product.video_url ? (
+                    <div className="aspect-square bg-muted rounded-lg overflow-hidden">
+                      <video
+                        src={product.video_url}
+                        controls
+                        className="w-full h-full object-cover"
+                        poster={product.images?.[0]}
+                      >
+                        Your browser does not support the video tag.
+                      </video>
+                    </div>
+                  ) : product.images?.[0] ? (
                     <div 
                       className="aspect-square bg-muted rounded-lg overflow-hidden cursor-zoom-in"
                       onClick={() => {
@@ -236,7 +251,7 @@ const ProductDetail = () => {
                         className="w-full h-full object-cover"
                       />
                     </div>
-                  )}
+                  ) : null}
                 </>
               )}
             </div>
