@@ -173,6 +173,10 @@ export const Navbar = () => {
         {/* Mobile Menu */}
         {mobileMenuOpen && (
           <div className="md:hidden py-4 space-y-4 animate-fade-in">
+            <div className="flex items-center justify-between px-4">
+              <span className="text-sm font-medium">Theme</span>
+              <ThemeToggle />
+            </div>
             <Link
               to="/"
               className="block text-sm font-medium hover:text-accent transition-colors"
