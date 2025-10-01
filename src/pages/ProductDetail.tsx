@@ -115,7 +115,13 @@ const ProductDetail = () => {
 
   const addToCart = useMutation({
     mutationFn: async () => {
+      // Get current cart total BEFORE adding the item
+      let currentCartTotal = 0;
+      
       if (!user) {
+        const guestCart = getGuestCart();
+        currentCartTotal = guestCart.reduce((sum, item) => sum + (item.product_price * item.quantity), 0);
+        
         addToGuestCart({
           product_id: product.id,
           quantity,
@@ -123,7 +129,16 @@ const ProductDetail = () => {
           product_price: product.price,
           product_image: product.images?.[0],
         });
-        return;
+        return currentCartTotal;
+      }
+
+      if (cartItems) {
+        currentCartTotal = cartItems.reduce((sum, item: any) => {
+          const productSale = sales?.find(s => s.product_id === item.product_id);
+          const globalSale = sales?.find(s => s.is_global);
+          const { finalPrice } = calculateSalePrice(item.products.price, productSale, globalSale);
+          return sum + (finalPrice * item.quantity);
+        }, 0);
       }
 
       const { data: existingItem } = await supabase
@@ -149,30 +164,17 @@ const ProductDetail = () => {
           });
         if (error) throw error;
       }
+      
+      return currentCartTotal;
     },
-    onSuccess: () => {
+    onSuccess: (currentCartTotal) => {
       queryClient.invalidateQueries({ queryKey: ['cart'] });
       
       // Track Meta Pixel AddToCart event
       trackAddToCart(product.id, product.name, product.price);
       
-      // Calculate cart total for free shipping message
+      // Calculate new total after adding the item
       const freeShippingThreshold = (settings?.value as any)?.threshold || 5000;
-      let currentCartTotal = 0;
-      
-      if (user && cartItems) {
-        currentCartTotal = cartItems.reduce((sum, item: any) => {
-          const productSale = sales?.find(s => s.product_id === item.product_id);
-          const globalSale = sales?.find(s => s.is_global);
-          const { finalPrice } = calculateSalePrice(item.products.price, productSale, globalSale);
-          return sum + (finalPrice * item.quantity);
-        }, 0);
-      } else {
-        const guestCart = getGuestCart();
-        currentCartTotal = guestCart.reduce((sum, item) => sum + (item.product_price * item.quantity), 0);
-      }
-      
-      // Add the new item price to the total
       const productSale = sales?.find(s => s.product_id === product.id);
       const globalSale = sales?.find(s => s.is_global);
       const { finalPrice } = calculateSalePrice(product.price, productSale, globalSale);
