@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Facebook, Instagram, Twitter } from "lucide-react";
+import { Facebook, Instagram } from "lucide-react";
 import logo from "@/assets/logo.jpg";
 
 export const Footer = () => {
@@ -11,21 +11,18 @@ export const Footer = () => {
             <img src={logo} alt="The Shopping Cart" className="h-16 w-auto mb-4" />
             <p className="text-sm mb-4">Premium lifestyle products for the discerning customer.</p>
             <div className="flex space-x-4">
-              <a href="#" className="hover:text-accent transition-colors">
+              <a href="https://www.facebook.com/share/1GYJjkBfNr/" target="_blank" rel="noopener noreferrer" className="hover:text-accent transition-colors">
                 <Facebook className="h-5 w-5" />
               </a>
-              <a href="#" className="hover:text-accent transition-colors">
+              <a href="https://www.instagram.com/theshoppingcart.official?igsh=NWI4YjI5ZTF1YjFi" target="_blank" rel="noopener noreferrer" className="hover:text-accent transition-colors">
                 <Instagram className="h-5 w-5" />
-              </a>
-              <a href="#" className="hover:text-accent transition-colors">
-                <Twitter className="h-5 w-5" />
               </a>
             </div>
           </div>
           <div>
             <h4 className="font-semibold mb-4">Quick Links</h4>
             <ul className="space-y-2 text-sm">
-              <li><Link to="/shop" className="hover:text-accent transition-colors">Shop</Link></li>
+              <li><Link to="/shop" className="hover:text-accent transition-colors">Catalog</Link></li>
               <li><Link to="/about" className="hover:text-accent transition-colors">About Us</Link></li>
               <li><Link to="/contact" className="hover:text-accent transition-colors">Contact</Link></li>
             </ul>
@@ -42,9 +39,6 @@ export const Footer = () => {
             <h4 className="font-semibold mb-4">Customer Service</h4>
             <ul className="space-y-2 text-sm">
               <li><Link to="/contact" className="hover:text-accent transition-colors">Contact Us</Link></li>
-              <li><Link to="/contact" className="hover:text-accent transition-colors">Privacy Policy</Link></li>
-              <li><Link to="/contact" className="hover:text-accent transition-colors">Terms of Service</Link></li>
-              <li><Link to="/contact" className="hover:text-accent transition-colors">Returns & Exchanges</Link></li>
             </ul>
           </div>
         </div>

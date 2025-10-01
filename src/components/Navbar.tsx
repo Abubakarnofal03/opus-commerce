@@ -137,7 +137,7 @@ export const Navbar = () => {
               <NavigationMenuList>
                 <NavigationMenuItem>
                   <NavigationMenuTrigger className="text-sm font-medium bg-transparent hover:bg-transparent data-[state=open]:bg-transparent hover:text-accent transition-colors h-auto p-0">
-                    Shop
+                    Catalog
                   </NavigationMenuTrigger>
                   <NavigationMenuContent>
                     <div className="w-48 p-2">
@@ -241,7 +241,7 @@ export const Navbar = () => {
             </Link>
             <Collapsible open={shopOpen} onOpenChange={setShopOpen}>
               <CollapsibleTrigger className="flex items-center justify-between w-full px-4 text-sm font-medium hover:text-accent transition-colors">
-                Shop
+                Catalog
                 <ChevronDown className={`h-4 w-4 transition-transform ${shopOpen ? 'rotate-180' : ''}`} />
               </CollapsibleTrigger>
               <CollapsibleContent className="pl-8 space-y-2 pt-2">

@@ -265,7 +265,7 @@ const Shop = () => {
                       const { finalPrice, discount } = calculateSalePrice(product.price, productSale, globalSale);
                       
                       return (
-                        <Link key={product.id} to={`/product/${product.slug}`}>
+                        <Link key={product.id} to={`/product/${product.slug}`} className="block transition-all duration-300 active:scale-95">
                           <Card className="glass-card glass-hover overflow-hidden rounded-xl group relative cursor-pointer">
                             {discount && (
                               <Badge className="absolute top-2 left-2 z-10 bg-destructive text-destructive-foreground">
