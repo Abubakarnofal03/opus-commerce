@@ -7,10 +7,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Minus, Plus, ShoppingCart, X } from "lucide-react";
+import { Minus, Plus, ShoppingCart, X, Star } from "lucide-react";
 import { addToGuestCart } from "@/lib/cartUtils";
 import { formatPrice } from "@/lib/currency";
 import { LoadingScreen } from "@/components/LoadingScreen";
+import { calculateSalePrice } from "@/lib/saleUtils";
+import { Badge } from "@/components/ui/badge";
 import {
   Carousel,
   CarouselContent,
@@ -47,6 +49,19 @@ const ProductDetail = () => {
         .select('*, categories(*)')
         .eq('slug', slug)
         .single();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: sales } = useQuery({
+    queryKey: ['sales'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('sales')
+        .select('*')
+        .eq('is_active', true)
+        .gt('end_date', new Date().toISOString());
       if (error) throw error;
       return data;
     },
@@ -148,6 +163,10 @@ const ProductDetail = () => {
     );
   }
 
+  const productSale = sales?.find(s => s.product_id === product.id);
+  const globalSale = sales?.find(s => s.is_global);
+  const { finalPrice, discount } = calculateSalePrice(product.price, productSale, globalSale);
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -210,9 +229,25 @@ const ProductDetail = () => {
                 <h1 className="font-display text-2xl md:text-3xl lg:text-4xl font-bold mb-3 md:mb-4">
                   {product.name}
                 </h1>
-                <p className="text-2xl md:text-3xl font-bold text-accent">
-                  {formatPrice(product.price)}
-                </p>
+                {discount ? (
+                  <div className="space-y-2">
+                    <Badge className="bg-destructive text-destructive-foreground">
+                      {discount}% OFF
+                    </Badge>
+                    <div className="flex items-center gap-3">
+                      <p className="text-2xl md:text-3xl font-bold text-destructive">
+                        {formatPrice(finalPrice)}
+                      </p>
+                      <p className="text-lg md:text-xl text-muted-foreground line-through">
+                        {formatPrice(product.price)}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-2xl md:text-3xl font-bold text-accent">
+                    {formatPrice(product.price)}
+                  </p>
+                )}
               </div>
 
               {product.description && (
@@ -292,32 +327,60 @@ const ProductDetail = () => {
             <div className="mt-12 md:mt-20">
               <h2 className="font-display text-2xl md:text-3xl font-bold mb-6 md:mb-8 text-center">Related Products</h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-                {relatedProducts.map((relatedProduct) => (
-                  <Card key={relatedProduct.id} className="glass-card glass-hover overflow-hidden rounded-xl">
-                    <div className="aspect-square bg-muted relative overflow-hidden">
-                      {relatedProduct.images?.[0] && (
-                        <img
-                          src={relatedProduct.images[0]}
-                          alt={relatedProduct.name}
-                          className="w-full h-full object-cover"
-                        />
+                {relatedProducts.map((relatedProduct) => {
+                  const relatedProductSale = sales?.find(s => s.product_id === relatedProduct.id);
+                  const relatedGlobalSale = sales?.find(s => s.is_global);
+                  const { finalPrice: relatedFinalPrice, discount: relatedDiscount } = calculateSalePrice(
+                    relatedProduct.price,
+                    relatedProductSale,
+                    relatedGlobalSale
+                  );
+                  
+                  return (
+                    <Card key={relatedProduct.id} className="glass-card glass-hover overflow-hidden rounded-xl relative">
+                      {relatedDiscount && (
+                        <Badge className="absolute top-2 left-2 z-10 bg-destructive text-destructive-foreground text-xs">
+                          {relatedDiscount}% OFF
+                        </Badge>
                       )}
-                    </div>
-                    <CardContent className="p-3 md:p-4">
-                      <h3 className="font-display text-sm md:text-base font-semibold mb-1 md:mb-2 truncate">
-                        {relatedProduct.name}
-                      </h3>
-                      <p className="text-base md:text-lg font-bold text-accent mb-2 md:mb-3">
-                        {formatPrice(relatedProduct.price)}
-                      </p>
-                      <Button asChild className="w-full text-xs md:text-sm" size="sm">
-                        <Link to={`/product/${relatedProduct.slug}`}>
-                          View Details
-                        </Link>
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
+                      <div className="aspect-square bg-muted relative overflow-hidden">
+                        {relatedProduct.images?.[0] && (
+                          <img
+                            src={relatedProduct.images[0]}
+                            alt={relatedProduct.name}
+                            className="w-full h-full object-cover"
+                          />
+                        )}
+                      </div>
+                      <CardContent className="p-3 md:p-4">
+                        <h3 className="font-display text-sm md:text-base font-semibold mb-1 md:mb-2 truncate">
+                          {relatedProduct.name}
+                        </h3>
+                        <div className="mb-2 md:mb-3">
+                          {relatedDiscount ? (
+                            <div className="flex items-center gap-2">
+                              <p className="text-base md:text-lg font-bold text-destructive">
+                                {formatPrice(relatedFinalPrice)}
+                              </p>
+                              <p className="text-xs text-muted-foreground line-through">
+                                {formatPrice(relatedProduct.price)}
+                              </p>
+                            </div>
+                          ) : (
+                            <p className="text-base md:text-lg font-bold text-accent">
+                              {formatPrice(relatedProduct.price)}
+                            </p>
+                          )}
+                        </div>
+                        <Button asChild className="w-full text-xs md:text-sm" size="sm">
+                          <Link to={`/product/${relatedProduct.slug}`}>
+                            View Details
+                          </Link>
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             </div>
           )}

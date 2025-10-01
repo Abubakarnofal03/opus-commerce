@@ -11,6 +11,8 @@ import { Trash2, Plus, Minus } from "lucide-react";
 import { getGuestCart, updateGuestCartQuantity, removeFromGuestCart, GuestCartItem } from "@/lib/cartUtils";
 import { formatPrice } from "@/lib/currency";
 import { LoadingScreen } from "@/components/LoadingScreen";
+import { calculateSalePrice } from "@/lib/saleUtils";
+import { Badge } from "@/components/ui/badge";
 
 const Cart = () => {
   const [user, setUser] = useState<any>(null);
@@ -40,6 +42,19 @@ const Cart = () => {
       return data;
     },
     enabled: !!user,
+  });
+
+  const { data: sales } = useQuery({
+    queryKey: ['sales'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('sales')
+        .select('*')
+        .eq('is_active', true)
+        .gt('end_date', new Date().toISOString());
+      if (error) throw error;
+      return data;
+    },
   });
 
   const updateQuantity = useMutation({
@@ -81,9 +96,21 @@ const Cart = () => {
   };
 
   const items = user ? cartItems : guestCart;
+  
+  // Calculate total with sale prices
   const total = user 
-    ? cartItems?.reduce((sum, item) => sum + (item.products?.price || 0) * item.quantity, 0) || 0
-    : guestCart.reduce((sum, item) => sum + item.product_price * item.quantity, 0);
+    ? cartItems?.reduce((sum, item) => {
+        const productSale = sales?.find(s => s.product_id === item.product_id);
+        const globalSale = sales?.find(s => s.is_global);
+        const { finalPrice } = calculateSalePrice(item.products?.price || 0, productSale, globalSale);
+        return sum + finalPrice * item.quantity;
+      }, 0) || 0
+    : guestCart.reduce((sum, item) => {
+        const productSale = sales?.find(s => s.product_id === item.product_id);
+        const globalSale = sales?.find(s => s.is_global);
+        const { finalPrice } = calculateSalePrice(item.product_price, productSale, globalSale);
+        return sum + finalPrice * item.quantity;
+      }, 0);
 
   if (isLoading && user) {
     return (
@@ -121,14 +148,25 @@ const Cart = () => {
                     name: item.product_name,
                     price: item.product_price,
                     image: item.product_image,
+                    productId: item.product_id,
                   } : {
                     name: item.products?.name,
                     price: item.products?.price,
                     image: item.products?.images?.[0],
+                    productId: item.product_id,
                   };
 
+                  const productSale = sales?.find(s => s.product_id === productData.productId);
+                  const globalSale = sales?.find(s => s.is_global);
+                  const { finalPrice, discount } = calculateSalePrice(productData.price, productSale, globalSale);
+
                   return (
-                    <Card key={isGuest ? item.product_id : item.id} className="glass-card glass-hover rounded-xl">
+                    <Card key={isGuest ? item.product_id : item.id} className="glass-card glass-hover rounded-xl relative">
+                      {discount && (
+                        <Badge className="absolute top-2 right-2 z-10 bg-destructive text-destructive-foreground text-xs">
+                          {discount}% OFF
+                        </Badge>
+                      )}
                       <CardContent className="p-4 md:p-6">
                         <div className="flex gap-3 md:gap-4">
                           {productData.image && (
@@ -144,9 +182,22 @@ const Cart = () => {
                             <h3 className="font-display text-base md:text-lg font-semibold mb-1 truncate">
                               {productData.name}
                             </h3>
-                            <p className="text-accent font-bold mb-2">
-                              {formatPrice(productData.price)}
-                            </p>
+                            {discount ? (
+                              <div className="mb-2">
+                                <div className="flex items-center gap-2">
+                                  <p className="text-accent font-bold">
+                                    {formatPrice(finalPrice)}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground line-through">
+                                    {formatPrice(productData.price)}
+                                  </p>
+                                </div>
+                              </div>
+                            ) : (
+                              <p className="text-accent font-bold mb-2">
+                                {formatPrice(productData.price)}
+                              </p>
+                            )}
                             <div className="flex items-center space-x-2">
                               <Button
                                 variant="outline"
@@ -196,9 +247,16 @@ const Cart = () => {
                             >
                               <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
-                            <p className="font-bold text-sm md:text-base">
-                              {formatPrice(productData.price * item.quantity)}
-                            </p>
+                            <div className="text-right">
+                              <p className="font-bold text-sm md:text-base">
+                                {formatPrice(finalPrice * item.quantity)}
+                              </p>
+                              {discount && (
+                                <p className="text-xs text-muted-foreground line-through">
+                                  {formatPrice(productData.price * item.quantity)}
+                                </p>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </CardContent>

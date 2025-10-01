@@ -7,6 +7,9 @@ import { ArrowRight, ShieldCheck, Truck, CreditCard, Award } from "lucide-react"
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { formatPrice } from "@/lib/currency";
+import { calculateSalePrice } from "@/lib/saleUtils";
+import { Badge } from "@/components/ui/badge";
+import { Star } from "lucide-react";
 
 const Index = () => {
   const { data: banners } = useQuery({
@@ -44,6 +47,19 @@ const Index = () => {
         .select('*')
         .order('name')
         .limit(3);
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: sales } = useQuery({
+    queryKey: ['sales'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('sales')
+        .select('*')
+        .eq('is_active', true)
+        .gt('end_date', new Date().toISOString());
       if (error) throw error;
       return data;
     },
@@ -182,35 +198,65 @@ const Index = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {featuredProducts?.map((product) => (
-                <Card key={product.id} className="glass-card glass-hover overflow-hidden rounded-xl group">
-                  <div className="aspect-square bg-muted relative overflow-hidden">
-                    {product.images?.[0] && (
-                      <img
-                        src={product.images[0]}
-                        alt={product.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
+              {featuredProducts?.map((product) => {
+                const productSale = sales?.find(s => s.product_id === product.id);
+                const globalSale = sales?.find(s => s.is_global);
+                const { finalPrice, discount } = calculateSalePrice(product.price, productSale, globalSale);
+                
+                return (
+                  <Card key={product.id} className="glass-card glass-hover overflow-hidden rounded-xl group relative">
+                    {discount && (
+                      <Badge className="absolute top-2 left-2 z-10 bg-destructive text-destructive-foreground">
+                        {discount}% OFF
+                      </Badge>
                     )}
-                  </div>
-                  <CardContent className="p-6">
-                    <p className="text-xs text-muted-foreground mb-2">
-                      {product.categories?.name}
-                    </p>
-                    <h3 className="font-display text-lg font-semibold mb-2 truncate">
-                      {product.name}
-                    </h3>
-                    <p className="text-xl font-bold text-accent mb-4">
-                      {formatPrice(product.price)}
-                    </p>
-                    <Button asChild className="w-full" size="sm">
-                      <Link to={`/product/${product.slug}`}>
-                        View Details
-                      </Link>
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
+                    {product.is_featured && !discount && (
+                      <Badge className="absolute top-2 left-2 z-10 bg-accent text-accent-foreground">
+                        <Star className="h-3 w-3 mr-1" fill="currentColor" />
+                        Featured
+                      </Badge>
+                    )}
+                    <div className="aspect-square bg-muted relative overflow-hidden">
+                      {product.images?.[0] && (
+                        <img
+                          src={product.images[0]}
+                          alt={product.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      )}
+                    </div>
+                    <CardContent className="p-6">
+                      <p className="text-xs text-muted-foreground mb-2">
+                        {product.categories?.name}
+                      </p>
+                      <h3 className="font-display text-lg font-semibold mb-2 truncate">
+                        {product.name}
+                      </h3>
+                      <div className="mb-4">
+                        {discount ? (
+                          <div className="flex items-center gap-2">
+                            <p className="text-xl font-bold text-destructive">
+                              {formatPrice(finalPrice)}
+                            </p>
+                            <p className="text-sm text-muted-foreground line-through">
+                              {formatPrice(product.price)}
+                            </p>
+                          </div>
+                        ) : (
+                          <p className="text-xl font-bold text-accent">
+                            {formatPrice(product.price)}
+                          </p>
+                        )}
+                      </div>
+                      <Button asChild className="w-full" size="sm">
+                        <Link to={`/product/${product.slug}`}>
+                          View Details
+                        </Link>
+                      </Button>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
 
             <div className="text-center mt-12">
