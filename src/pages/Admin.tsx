@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { Package, ShoppingBag, DollarSign, Plus, Pencil, Trash2, Image as ImageIcon, Download, ChevronDown, ChevronUp } from "lucide-react";
+import { Package, ShoppingBag, DollarSign, Plus, Pencil, Trash2, Image as ImageIcon, Download, ChevronDown, ChevronUp, CalendarIcon } from "lucide-react";
 import { ProductDialog } from "@/components/admin/ProductDialog";
 import { CategoryDialog } from "@/components/admin/CategoryDialog";
 import { BannerDialog } from "@/components/admin/BannerDialog";
@@ -23,6 +23,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { formatPrice } from "@/lib/currency";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import * as XLSX from 'xlsx';
 
 const Admin = () => {
@@ -38,6 +40,9 @@ const Admin = () => {
   const [blogDialog, setBlogDialog] = useState({ open: false, blog: null });
   const [deleteDialog, setDeleteDialog] = useState({ open: false, type: "", id: "", name: "" });
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
+  const [exportDialog, setExportDialog] = useState(false);
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -170,7 +175,7 @@ const Admin = () => {
     });
   };
 
-  const exportOrdersToExcel = () => {
+  const exportOrdersToExcel = (filterByDate: boolean = false) => {
     if (!orders || orders.length === 0) {
       toast({
         title: "No orders to export",
@@ -180,7 +185,29 @@ const Admin = () => {
       return;
     }
 
-    const exportData = orders.flatMap((order) => {
+    let filteredOrders = orders;
+    
+    if (filterByDate && startDate && endDate) {
+      filteredOrders = orders.filter((order) => {
+        const orderDate = new Date(order.created_at);
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        return orderDate >= start && orderDate <= end;
+      });
+
+      if (filteredOrders.length === 0) {
+        toast({
+          title: "No orders found",
+          description: "No orders found in the selected date range.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    const exportData = filteredOrders.flatMap((order) => {
       return order.order_items?.map((item: any, index: number) => ({
         'Order ID': order.id,
         'Order Date': format(new Date(order.created_at), 'PPP'),
@@ -206,13 +233,20 @@ const Admin = () => {
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Orders');
     
-    const fileName = `orders_${format(new Date(), 'yyyy-MM-dd_HH-mm')}.xlsx`;
+    const dateRangeStr = filterByDate && startDate && endDate 
+      ? `_${format(startDate, 'yyyy-MM-dd')}_to_${format(endDate, 'yyyy-MM-dd')}`
+      : '';
+    const fileName = `orders${dateRangeStr}_${format(new Date(), 'yyyy-MM-dd_HH-mm')}.xlsx`;
     XLSX.writeFile(workbook, fileName);
 
     toast({
       title: "Export successful",
-      description: `Downloaded ${orders.length} orders to ${fileName}`,
+      description: `Downloaded ${filteredOrders.length} orders to ${fileName}`,
     });
+    
+    setExportDialog(false);
+    setStartDate(undefined);
+    setEndDate(undefined);
   };
 
   const stats = {
@@ -289,9 +323,9 @@ const Admin = () => {
 
             <TabsContent value="orders" className="space-y-4">
               <div className="flex justify-end mb-4">
-                <Button onClick={exportOrdersToExcel} variant="outline" className="w-full sm:w-auto text-xs sm:text-sm">
+                <Button onClick={() => setExportDialog(true)} variant="outline" className="w-full sm:w-auto text-xs sm:text-sm">
                   <Download className="h-4 w-4 mr-2" />
-                  <span className="hidden sm:inline">Export All Orders to Excel</span>
+                  <span className="hidden sm:inline">Export Orders to Excel</span>
                   <span className="sm:hidden">Export Orders</span>
                 </Button>
               </div>
@@ -703,6 +737,84 @@ const Admin = () => {
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Delete
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={exportDialog} onOpenChange={setExportDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Export Orders to Excel</AlertDialogTitle>
+            <AlertDialogDescription>
+              Choose to export all orders or filter by date range.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Start Date</label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start text-left font-normal"
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {startDate ? format(startDate, "PPP") : "Pick start date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={startDate}
+                      onSelect={setStartDate}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">End Date</label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start text-left font-normal"
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {endDate ? format(endDate, "PPP") : "Pick end date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={endDate}
+                      onSelect={setEndDate}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+          </div>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <Button
+              onClick={() => exportOrdersToExcel(false)}
+              variant="outline"
+              className="w-full sm:w-auto"
+            >
+              Export All Orders
+            </Button>
+            <Button
+              onClick={() => exportOrdersToExcel(true)}
+              disabled={!startDate || !endDate}
+              className="w-full sm:w-auto"
+            >
+              Export Filtered Orders
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
