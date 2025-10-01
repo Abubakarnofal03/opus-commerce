@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { Package, ShoppingBag, DollarSign, Plus, Pencil, Trash2, Image as ImageIcon } from "lucide-react";
+import { Package, ShoppingBag, DollarSign, Plus, Pencil, Trash2, Image as ImageIcon, Download, ChevronDown, ChevronUp } from "lucide-react";
 import { ProductDialog } from "@/components/admin/ProductDialog";
 import { CategoryDialog } from "@/components/admin/CategoryDialog";
 import { BannerDialog } from "@/components/admin/BannerDialog";
@@ -20,6 +20,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatPrice } from "@/lib/currency";
 import { LoadingScreen } from "@/components/LoadingScreen";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import * as XLSX from 'xlsx';
 
 const Admin = () => {
   const [user, setUser] = useState<any>(null);
@@ -32,6 +34,7 @@ const Admin = () => {
   const [categoryDialog, setCategoryDialog] = useState({ open: false, category: null });
   const [bannerDialog, setBannerDialog] = useState({ open: false, banner: null });
   const [deleteDialog, setDeleteDialog] = useState({ open: false, type: "", id: "", name: "" });
+  const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -140,6 +143,63 @@ const Admin = () => {
     deleteItem.mutate({ type: deleteDialog.type, id: deleteDialog.id });
   };
 
+  const toggleOrderExpanded = (orderId: string) => {
+    setExpandedOrders(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(orderId)) {
+        newSet.delete(orderId);
+      } else {
+        newSet.add(orderId);
+      }
+      return newSet;
+    });
+  };
+
+  const exportOrdersToExcel = () => {
+    if (!orders || orders.length === 0) {
+      toast({
+        title: "No orders to export",
+        description: "There are no orders available to download.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const exportData = orders.flatMap((order) => {
+      return order.order_items?.map((item: any, index: number) => ({
+        'Order ID': order.id,
+        'Order Date': format(new Date(order.created_at), 'PPP'),
+        'Status': order.status,
+        'Customer First Name': order.first_name,
+        'Customer Last Name': order.last_name,
+        'Email': order.email || 'N/A',
+        'Phone': order.phone,
+        'Address': order.shipping_address,
+        'City': order.shipping_city,
+        'State': order.shipping_state,
+        'Zip': order.shipping_zip,
+        'Product Name': item.products?.name || 'N/A',
+        'Quantity': item.quantity,
+        'Price': item.price,
+        'Item Total': item.price * item.quantity,
+        'Order Total': index === 0 ? Number(order.total_amount) : '',
+        'Notes': order.notes || 'N/A',
+      }));
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Orders');
+    
+    const fileName = `orders_${format(new Date(), 'yyyy-MM-dd_HH-mm')}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
+
+    toast({
+      title: "Export successful",
+      description: `Downloaded ${orders.length} orders to ${fileName}`,
+    });
+  };
+
   const stats = {
     totalOrders: orders?.length || 0,
     totalProducts: products?.length || 0,
@@ -211,48 +271,107 @@ const Admin = () => {
             </TabsList>
 
             <TabsContent value="orders" className="space-y-4">
+              <div className="flex justify-end mb-4">
+                <Button onClick={exportOrdersToExcel} variant="outline">
+                  <Download className="h-4 w-4 mr-2" />
+                  Export All Orders to Excel
+                </Button>
+              </div>
               {orders?.map((order) => (
-                <Card key={order.id}>
-                  <CardHeader>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle className="text-lg">Order #{order.id.slice(0, 8)}</CardTitle>
-                        <p className="text-sm text-muted-foreground">
-                          {format(new Date(order.created_at), 'PPP')}
-                        </p>
+                <Collapsible 
+                  key={order.id}
+                  open={expandedOrders.has(order.id)}
+                  onOpenChange={() => toggleOrderExpanded(order.id)}
+                >
+                  <Card>
+                    <CardHeader>
+                      <div className="flex justify-between items-start gap-4">
+                        <CollapsibleTrigger asChild>
+                          <Button variant="ghost" className="flex items-center gap-2 p-0 h-auto hover:bg-transparent">
+                            <div className="text-left">
+                              <CardTitle className="text-lg">Order #{order.id.slice(0, 8)}</CardTitle>
+                              <p className="text-sm text-muted-foreground">
+                                {format(new Date(order.created_at), 'PPP')}
+                              </p>
+                            </div>
+                            {expandedOrders.has(order.id) ? (
+                              <ChevronUp className="h-5 w-5" />
+                            ) : (
+                              <ChevronDown className="h-5 w-5" />
+                            )}
+                          </Button>
+                        </CollapsibleTrigger>
+                        <Select
+                          value={order.status}
+                          onValueChange={(status) => updateOrderStatus.mutate({ orderId: order.id, status })}
+                        >
+                          <SelectTrigger className="w-[150px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pending">Pending</SelectItem>
+                            <SelectItem value="processing">Processing</SelectItem>
+                            <SelectItem value="shipped">Shipped</SelectItem>
+                            <SelectItem value="delivered">Delivered</SelectItem>
+                            <SelectItem value="cancelled">Cancelled</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
-                      <Select
-                        value={order.status}
-                        onValueChange={(status) => updateOrderStatus.mutate({ orderId: order.id, status })}
-                      >
-                        <SelectTrigger className="w-[150px]">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="pending">Pending</SelectItem>
-                          <SelectItem value="processing">Processing</SelectItem>
-                          <SelectItem value="shipped">Shipped</SelectItem>
-                          <SelectItem value="delivered">Delivered</SelectItem>
-                          <SelectItem value="cancelled">Cancelled</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      {order.order_items?.map((item: any) => (
-                        <div key={item.id} className="flex justify-between text-sm">
-                          <span>{item.products?.name} x {item.quantity}</span>
-                          <span>{formatPrice(item.price * item.quantity)}</span>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        {order.order_items?.map((item: any) => (
+                          <div key={item.id} className="flex justify-between text-sm">
+                            <span>{item.products?.name} x {item.quantity}</span>
+                            <span>{formatPrice(item.price * item.quantity)}</span>
+                          </div>
+                        ))}
+                        <div className="border-t pt-2 flex justify-between font-bold">
+                          <span>Total</span>
+                          <span className="text-accent">{formatPrice(Number(order.total_amount))}</span>
                         </div>
-                      ))}
-                      <div className="border-t pt-2 flex justify-between font-bold">
-                        <span>Total</span>
-                        <span className="text-accent">{formatPrice(Number(order.total_amount))}</span>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
+
+                      <CollapsibleContent className="mt-4 space-y-4">
+                        <div className="border-t pt-4 space-y-3">
+                          <h4 className="font-semibold text-sm">Customer Information</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                            <div>
+                              <span className="text-muted-foreground">Name:</span>
+                              <p className="font-medium">{order.first_name} {order.last_name}</p>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Email:</span>
+                              <p className="font-medium">{order.email || 'N/A'}</p>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Phone:</span>
+                              <p className="font-medium">{order.phone}</p>
+                            </div>
+                          </div>
+
+                          <h4 className="font-semibold text-sm pt-2">Shipping Address</h4>
+                          <div className="text-sm space-y-1">
+                            <p>{order.shipping_address}</p>
+                            <p>{order.shipping_city}, {order.shipping_state} {order.shipping_zip}</p>
+                          </div>
+
+                          {order.notes && (
+                            <>
+                              <h4 className="font-semibold text-sm pt-2">Order Notes</h4>
+                              <p className="text-sm text-muted-foreground">{order.notes}</p>
+                            </>
+                          )}
+
+                          <div className="text-sm">
+                            <span className="text-muted-foreground">Order ID:</span>
+                            <p className="font-mono text-xs break-all">{order.id}</p>
+                          </div>
+                        </div>
+                      </CollapsibleContent>
+                    </CardContent>
+                  </Card>
+                </Collapsible>
               ))}
             </TabsContent>
 
