@@ -239,14 +239,14 @@ const Index = () => {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 justify-items-center">
               {featuredProducts?.map((product) => {
                 const productSale = sales?.find(s => s.product_id === product.id);
                 const globalSale = sales?.find(s => s.is_global);
                 const { finalPrice, discount } = calculateSalePrice(product.price, productSale, globalSale);
                 
                 return (
-                  <Card key={product.id} className="glass-card glass-hover overflow-hidden rounded-xl group relative">
+                  <Card key={product.id} className="glass-card glass-hover overflow-hidden rounded-xl group relative w-full max-w-sm">
                     {discount && (
                       <Badge className="absolute top-2 left-2 z-10 bg-destructive text-destructive-foreground">
                         {discount}% OFF
