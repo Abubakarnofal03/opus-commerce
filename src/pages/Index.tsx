@@ -10,8 +10,11 @@ import { formatPrice } from "@/lib/currency";
 import { calculateSalePrice } from "@/lib/saleUtils";
 import { Badge } from "@/components/ui/badge";
 import { Star } from "lucide-react";
+import { useState, useEffect } from "react";
 
 const Index = () => {
+  const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
+
   const { data: banners } = useQuery({
     queryKey: ['banners'],
     queryFn: async () => {
@@ -19,12 +22,22 @@ const Index = () => {
         .from('banners')
         .select('*')
         .eq('active', true)
-        .order('sort_order')
-        .limit(1);
+        .order('sort_order');
       if (error) throw error;
       return data;
     },
   });
+
+  // Auto-rotate banners every 5 seconds
+  useEffect(() => {
+    if (!banners || banners.length <= 1) return;
+
+    const interval = setInterval(() => {
+      setCurrentBannerIndex((prev) => (prev + 1) % banners.length);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [banners]);
 
   const { data: featuredProducts } = useQuery({
     queryKey: ['featured-products'],
@@ -65,7 +78,7 @@ const Index = () => {
     },
   });
 
-  const activeBanner = banners?.[0];
+  const activeBanner = banners?.[currentBannerIndex];
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -77,7 +90,8 @@ const Index = () => {
           {activeBanner && (
             <>
               <div 
-                className="absolute inset-0 bg-cover bg-center"
+                key={currentBannerIndex}
+                className="absolute inset-0 bg-cover bg-center animate-fade-in"
                 style={{ backgroundImage: `url(${activeBanner.image_url})` }}
               >
                 <div className="absolute inset-0 bg-primary/40" />
@@ -95,6 +109,23 @@ const Index = () => {
                   </Link>
                 </Button>
               </div>
+              {/* Navigation Dots */}
+              {banners && banners.length > 1 && (
+                <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-2 z-20">
+                  {banners.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setCurrentBannerIndex(index)}
+                      className={`w-3 h-3 rounded-full transition-all ${
+                        index === currentBannerIndex
+                          ? 'bg-accent w-8'
+                          : 'bg-white/50 hover:bg-white/75'
+                      }`}
+                      aria-label={`Go to banner ${index + 1}`}
+                    />
+                  ))}
+                </div>
+              )}
             </>
           )}
         </section>
