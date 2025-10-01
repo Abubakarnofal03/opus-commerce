@@ -87,46 +87,57 @@ const Index = () => {
       <main className="flex-1">
         {/* Dynamic Hero Banner */}
         <section className="relative h-[600px] flex items-center justify-center overflow-hidden">
+          {banners && banners.map((banner, index) => (
+            <div
+              key={banner.id}
+              className={`absolute inset-0 bg-cover bg-center transition-all duration-1000 ease-in-out ${
+                index === currentBannerIndex
+                  ? 'opacity-100 scale-100'
+                  : 'opacity-0 scale-105'
+              }`}
+              style={{ backgroundImage: `url(${banner.image_url})` }}
+            >
+              <div className="absolute inset-0 bg-primary/40" />
+            </div>
+          ))}
+          
           {activeBanner && (
-            <>
-              <div 
-                key={currentBannerIndex}
-                className="absolute inset-0 bg-cover bg-center animate-fade-in"
-                style={{ backgroundImage: `url(${activeBanner.image_url})` }}
-              >
-                <div className="absolute inset-0 bg-primary/40" />
-              </div>
-              <div className="relative z-10 text-center text-primary-foreground px-4 animate-fade-in">
-                <h1 className="font-display text-5xl md:text-7xl font-bold mb-6 gold-accent pb-8">
-                  {activeBanner.title}
-                </h1>
-                <p className="text-xl md:text-2xl mb-8 max-w-2xl mx-auto">
-                  {activeBanner.subtitle}
-                </p>
+            <div 
+              key={currentBannerIndex}
+              className="relative z-10 text-center text-primary-foreground px-4 transition-all duration-700 ease-in-out"
+            >
+              <h1 className="font-display text-5xl md:text-7xl font-bold mb-6 gold-accent pb-8 animate-fade-in">
+                {activeBanner.title}
+              </h1>
+              <p className="text-xl md:text-2xl mb-8 max-w-2xl mx-auto animate-fade-in">
+                {activeBanner.subtitle}
+              </p>
+              <div className="animate-fade-in">
                 <Button asChild size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground">
                   <Link to={activeBanner.link_url || '/shop'}>
                     Explore Collection <ArrowRight className="ml-2 h-5 w-5" />
                   </Link>
                 </Button>
               </div>
-              {/* Navigation Dots */}
-              {banners && banners.length > 1 && (
-                <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-2 z-20">
-                  {banners.map((_, index) => (
-                    <button
-                      key={index}
-                      onClick={() => setCurrentBannerIndex(index)}
-                      className={`w-3 h-3 rounded-full transition-all ${
-                        index === currentBannerIndex
-                          ? 'bg-accent w-8'
-                          : 'bg-white/50 hover:bg-white/75'
-                      }`}
-                      aria-label={`Go to banner ${index + 1}`}
-                    />
-                  ))}
-                </div>
-              )}
-            </>
+            </div>
+          )}
+          
+          {/* Navigation Dots */}
+          {banners && banners.length > 1 && (
+            <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-2 z-20">
+              {banners.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentBannerIndex(index)}
+                  className={`h-3 rounded-full transition-all duration-300 ${
+                    index === currentBannerIndex
+                      ? 'bg-accent w-8'
+                      : 'bg-white/50 hover:bg-white/75 w-3'
+                  }`}
+                  aria-label={`Go to banner ${index + 1}`}
+                />
+              ))}
+            </div>
           )}
         </section>
 
