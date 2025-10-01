@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Facebook, Instagram, Twitter } from "lucide-react";
+import logo from "@/assets/logo.jpg";
 
 export const Footer = () => {
   return (
@@ -7,7 +8,7 @@ export const Footer = () => {
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
-            <h3 className="font-display text-xl font-bold mb-4">The Shopping Cart</h3>
+            <img src={logo} alt="The Shopping Cart" className="h-16 w-auto mb-4" />
             <p className="text-sm mb-4">Premium lifestyle products for the discerning customer.</p>
             <div className="flex space-x-4">
               <a href="#" className="hover:text-accent transition-colors">
