@@ -21,6 +21,7 @@ export type Database = {
           id: string
           image_url: string
           link_url: string | null
+          show_text_overlay: boolean
           sort_order: number
           subtitle: string | null
           title: string
@@ -32,6 +33,7 @@ export type Database = {
           id?: string
           image_url: string
           link_url?: string | null
+          show_text_overlay?: boolean
           sort_order?: number
           subtitle?: string | null
           title: string
@@ -43,6 +45,7 @@ export type Database = {
           id?: string
           image_url?: string
           link_url?: string | null
+          show_text_overlay?: boolean
           sort_order?: number
           subtitle?: string | null
           title?: string

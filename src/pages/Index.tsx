@@ -101,7 +101,7 @@ const Index = () => {
             </div>
           ))}
           
-          {activeBanner && (
+          {activeBanner && activeBanner.show_text_overlay && (
             <div 
               key={currentBannerIndex}
               className="relative z-10 text-center text-primary-foreground px-4 transition-all duration-700 ease-in-out"

@@ -25,6 +25,7 @@ export function BannerDialog({ open, onOpenChange, banner, onSuccess }: BannerDi
     link_url: "",
     sort_order: "0",
     active: true,
+    show_text_overlay: true,
   });
 
   useEffect(() => {
@@ -36,6 +37,7 @@ export function BannerDialog({ open, onOpenChange, banner, onSuccess }: BannerDi
         link_url: banner.link_url || "",
         sort_order: banner.sort_order?.toString() || "0",
         active: banner.active ?? true,
+        show_text_overlay: banner.show_text_overlay ?? true,
       });
     } else {
       setFormData({
@@ -45,6 +47,7 @@ export function BannerDialog({ open, onOpenChange, banner, onSuccess }: BannerDi
         link_url: "",
         sort_order: "0",
         active: true,
+        show_text_overlay: true,
       });
     }
   }, [banner, open]);
@@ -150,6 +153,17 @@ export function BannerDialog({ open, onOpenChange, banner, onSuccess }: BannerDi
               className="rounded border-input"
             />
             <Label htmlFor="active">Active</Label>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="show_text_overlay"
+              checked={formData.show_text_overlay}
+              onChange={(e) => setFormData({ ...formData, show_text_overlay: e.target.checked })}
+              className="rounded border-input"
+            />
+            <Label htmlFor="show_text_overlay">Show Text Overlay</Label>
           </div>
 
           <DialogFooter>
