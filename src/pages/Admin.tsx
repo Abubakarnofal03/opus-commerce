@@ -15,6 +15,7 @@ import { Package, ShoppingBag, DollarSign, Plus, Pencil, Trash2, Image as ImageI
 import { ProductDialog } from "@/components/admin/ProductDialog";
 import { CategoryDialog } from "@/components/admin/CategoryDialog";
 import { BannerDialog } from "@/components/admin/BannerDialog";
+import { BlogDialog } from "@/components/admin/BlogDialog";
 import { SaleDialog } from "@/components/admin/SaleDialog";
 import { MetaCatalogSync } from "@/components/admin/MetaCatalogSync";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -34,6 +35,7 @@ const Admin = () => {
   const [productDialog, setProductDialog] = useState({ open: false, product: null });
   const [categoryDialog, setCategoryDialog] = useState({ open: false, category: null });
   const [bannerDialog, setBannerDialog] = useState({ open: false, banner: null });
+  const [blogDialog, setBlogDialog] = useState({ open: false, blog: null });
   const [deleteDialog, setDeleteDialog] = useState({ open: false, type: "", id: "", name: "" });
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
 
@@ -108,6 +110,18 @@ const Admin = () => {
         .from('banners')
         .select('*')
         .order('sort_order');
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: blogs } = useQuery({
+    queryKey: ['admin-blogs'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('blogs')
+        .select('*')
+        .order('created_at', { ascending: false });
       if (error) throw error;
       return data;
     },
@@ -264,19 +278,21 @@ const Admin = () => {
           </div>
 
           <Tabs defaultValue="orders">
-            <TabsList className="grid w-full grid-cols-5">
-              <TabsTrigger value="orders">Orders</TabsTrigger>
-              <TabsTrigger value="products">Products</TabsTrigger>
-              <TabsTrigger value="categories">Categories</TabsTrigger>
-              <TabsTrigger value="banners">Banners</TabsTrigger>
-              <TabsTrigger value="meta-catalog">Meta Catalog</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-1">
+              <TabsTrigger value="orders" className="text-xs md:text-sm">Orders</TabsTrigger>
+              <TabsTrigger value="products" className="text-xs md:text-sm">Products</TabsTrigger>
+              <TabsTrigger value="categories" className="text-xs md:text-sm">Categories</TabsTrigger>
+              <TabsTrigger value="banners" className="text-xs md:text-sm">Banners</TabsTrigger>
+              <TabsTrigger value="blogs" className="text-xs md:text-sm">Blogs</TabsTrigger>
+              <TabsTrigger value="meta-catalog" className="text-xs md:text-sm col-span-2 md:col-span-1 lg:col-span-1">Meta Catalog</TabsTrigger>
             </TabsList>
 
             <TabsContent value="orders" className="space-y-4">
               <div className="flex justify-end mb-4">
-                <Button onClick={exportOrdersToExcel} variant="outline">
+                <Button onClick={exportOrdersToExcel} variant="outline" className="w-full sm:w-auto text-xs sm:text-sm">
                   <Download className="h-4 w-4 mr-2" />
-                  Export All Orders to Excel
+                  <span className="hidden sm:inline">Export All Orders to Excel</span>
+                  <span className="sm:hidden">Export Orders</span>
                 </Button>
               </div>
               {orders?.map((order) => (
@@ -287,12 +303,12 @@ const Admin = () => {
                 >
                   <Card>
                     <CardHeader>
-                      <div className="flex justify-between items-start gap-4">
+                      <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                         <CollapsibleTrigger asChild>
-                          <Button variant="ghost" className="flex items-center gap-2 p-0 h-auto hover:bg-transparent">
+                          <Button variant="ghost" className="flex items-center gap-2 p-0 h-auto hover:bg-transparent w-full sm:w-auto justify-start">
                             <div className="text-left">
-                              <CardTitle className="text-lg">Order #{order.id.slice(0, 8)}</CardTitle>
-                              <p className="text-sm text-muted-foreground">
+                              <CardTitle className="text-base sm:text-lg">Order #{order.id.slice(0, 8)}</CardTitle>
+                              <p className="text-xs sm:text-sm text-muted-foreground">
                                 {format(new Date(order.created_at), 'PPP')}
                               </p>
                             </div>
@@ -307,7 +323,7 @@ const Admin = () => {
                           value={order.status}
                           onValueChange={(status) => updateOrderStatus.mutate({ orderId: order.id, status })}
                         >
-                          <SelectTrigger className="w-[150px]">
+                          <SelectTrigger className="w-full sm:w-[150px]">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -379,26 +395,27 @@ const Admin = () => {
 
             <TabsContent value="products">
               <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
+                <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <CardTitle>Products</CardTitle>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 w-full sm:w-auto">
                     <SaleDialog />
-                    <Button onClick={() => setProductDialog({ open: true, product: null })}>
+                    <Button onClick={() => setProductDialog({ open: true, product: null })} className="flex-1 sm:flex-initial">
                       <Plus className="h-4 w-4 mr-2" />
-                      Add Product
+                      <span className="hidden sm:inline">Add Product</span>
+                      <span className="sm:hidden">Add</span>
                     </Button>
                   </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Category</TableHead>
-                        <TableHead>Price</TableHead>
-                        <TableHead>Stock</TableHead>
-                        <TableHead>Featured</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
+                        <TableHead className="min-w-[150px]">Name</TableHead>
+                        <TableHead className="min-w-[100px]">Category</TableHead>
+                        <TableHead className="min-w-[80px]">Price</TableHead>
+                        <TableHead className="min-w-[60px]">Stock</TableHead>
+                        <TableHead className="min-w-[80px]">Featured</TableHead>
+                        <TableHead className="text-right min-w-[100px]">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -442,21 +459,22 @@ const Admin = () => {
 
             <TabsContent value="categories">
               <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
+                <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <CardTitle>Categories</CardTitle>
-                  <Button onClick={() => setCategoryDialog({ open: true, category: null })}>
+                  <Button onClick={() => setCategoryDialog({ open: true, category: null })} className="w-full sm:w-auto">
                     <Plus className="h-4 w-4 mr-2" />
-                    Add Category
+                    <span className="hidden sm:inline">Add Category</span>
+                    <span className="sm:hidden">Add</span>
                   </Button>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Slug</TableHead>
-                        <TableHead>Description</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
+                        <TableHead className="min-w-[120px]">Name</TableHead>
+                        <TableHead className="min-w-[120px]">Slug</TableHead>
+                        <TableHead className="min-w-[150px]">Description</TableHead>
+                        <TableHead className="text-right min-w-[100px]">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -496,22 +514,23 @@ const Admin = () => {
 
             <TabsContent value="banners">
               <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
+                <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <CardTitle>Homepage Banners</CardTitle>
-                  <Button onClick={() => setBannerDialog({ open: true, banner: null })}>
+                  <Button onClick={() => setBannerDialog({ open: true, banner: null })} className="w-full sm:w-auto">
                     <Plus className="h-4 w-4 mr-2" />
-                    Add Banner
+                    <span className="hidden sm:inline">Add Banner</span>
+                    <span className="sm:hidden">Add</span>
                   </Button>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Preview</TableHead>
-                        <TableHead>Title</TableHead>
-                        <TableHead>Sort Order</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
+                        <TableHead className="min-w-[80px]">Preview</TableHead>
+                        <TableHead className="min-w-[150px]">Title</TableHead>
+                        <TableHead className="min-w-[80px]">Sort Order</TableHead>
+                        <TableHead className="min-w-[80px]">Status</TableHead>
+                        <TableHead className="text-right min-w-[100px]">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -562,6 +581,67 @@ const Admin = () => {
               </Card>
             </TabsContent>
 
+            <TabsContent value="blogs">
+              <Card>
+                <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <CardTitle>Blog Posts</CardTitle>
+                  <Button onClick={() => setBlogDialog({ open: true, blog: null })} className="w-full sm:w-auto">
+                    <Plus className="h-4 w-4 mr-2" />
+                    <span className="hidden sm:inline">Add Blog Post</span>
+                    <span className="sm:hidden">Add</span>
+                  </Button>
+                </CardHeader>
+                <CardContent className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="min-w-[200px]">Title</TableHead>
+                        <TableHead className="min-w-[120px]">Slug</TableHead>
+                        <TableHead className="min-w-[80px]">Status</TableHead>
+                        <TableHead className="min-w-[120px]">Created</TableHead>
+                        <TableHead className="text-right min-w-[100px]">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {blogs?.map((blog) => (
+                        <TableRow key={blog.id}>
+                          <TableCell className="font-medium">{blog.title}</TableCell>
+                          <TableCell className="text-xs">{blog.slug}</TableCell>
+                          <TableCell>
+                            <Badge variant={blog.published ? "default" : "secondary"}>
+                              {blog.published ? "Published" : "Draft"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-xs">{format(new Date(blog.created_at), 'PP')}</TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setBlogDialog({ open: true, blog })}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setDeleteDialog({ 
+                                open: true, 
+                                type: "blogs", 
+                                id: blog.id, 
+                                name: blog.title 
+                              })}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
             <TabsContent value="meta-catalog" className="space-y-4">
               <MetaCatalogSync />
             </TabsContent>
@@ -598,6 +678,15 @@ const Admin = () => {
         onSuccess={() => {
           queryClient.invalidateQueries({ queryKey: ['admin-banners'] });
           queryClient.invalidateQueries({ queryKey: ['banners'] });
+        }}
+      />
+
+      <BlogDialog
+        open={blogDialog.open}
+        onOpenChange={(open) => setBlogDialog({ open, blog: null })}
+        blog={blogDialog.blog}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['admin-blogs'] });
         }}
       />
 

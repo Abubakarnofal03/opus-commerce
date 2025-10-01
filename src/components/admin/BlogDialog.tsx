@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,17 +19,45 @@ interface BlogDialogProps {
 export const BlogDialog = ({ blog, open, onOpenChange, onSuccess }: BlogDialogProps) => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    title: blog?.title || "",
-    slug: blog?.slug || "",
-    content: blog?.content || "",
-    excerpt: blog?.excerpt || "",
-    meta_title: blog?.meta_title || "",
-    meta_description: blog?.meta_description || "",
-    focus_keywords: blog?.focus_keywords?.join(", ") || "",
-    featured_image_url: blog?.featured_image_url || "",
-    published: blog?.published || false,
+    title: "",
+    slug: "",
+    content: "",
+    excerpt: "",
+    meta_title: "",
+    meta_description: "",
+    focus_keywords: "",
+    featured_image_url: "",
+    published: false,
   });
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (blog) {
+      setFormData({
+        title: blog.title || "",
+        slug: blog.slug || "",
+        content: blog.content || "",
+        excerpt: blog.excerpt || "",
+        meta_title: blog.meta_title || "",
+        meta_description: blog.meta_description || "",
+        focus_keywords: blog.focus_keywords?.join(", ") || "",
+        featured_image_url: blog.featured_image_url || "",
+        published: blog.published || false,
+      });
+    } else {
+      setFormData({
+        title: "",
+        slug: "",
+        content: "",
+        excerpt: "",
+        meta_title: "",
+        meta_description: "",
+        focus_keywords: "",
+        featured_image_url: "",
+        published: false,
+      });
+    }
+  }, [blog]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
