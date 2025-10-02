@@ -324,7 +324,7 @@ const ProductDetail = () => {
               {product.description && (
                 <div>
                   <h2 className="font-semibold text-base md:text-lg mb-2">Description</h2>
-                  <p className="text-sm md:text-base text-muted-foreground leading-relaxed">
+                  <p className="text-sm md:text-base text-muted-foreground leading-relaxed whitespace-pre-wrap">
                     {product.description}
                   </p>
                 </div>
