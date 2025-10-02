@@ -333,6 +333,11 @@ const Shop = () => {
                               <h3 className="font-display text-base md:text-lg font-semibold mb-1 md:mb-2 truncate">
                                 {product.name}
                               </h3>
+                              {product.sku && (
+                                <p className="text-xs text-muted-foreground mb-1">
+                                  SKU: {product.sku}
+                                </p>
+                              )}
                               <div className="mb-1 md:mb-2">
                                 {discount ? (
                                   <div className="flex items-center gap-2">

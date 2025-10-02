@@ -445,6 +445,7 @@ const Admin = () => {
                     <TableHeader>
                       <TableRow>
                         <TableHead className="min-w-[150px]">Name</TableHead>
+                        <TableHead className="min-w-[80px]">SKU</TableHead>
                         <TableHead className="min-w-[100px]">Category</TableHead>
                         <TableHead className="min-w-[80px]">Price</TableHead>
                         <TableHead className="min-w-[60px]">Stock</TableHead>
@@ -456,6 +457,7 @@ const Admin = () => {
                       {products?.map((product) => (
                         <TableRow key={product.id}>
                           <TableCell className="font-medium">{product.name}</TableCell>
+                          <TableCell className="text-muted-foreground text-sm">{product.sku || "—"}</TableCell>
                           <TableCell>{product.categories?.name || "—"}</TableCell>
                           <TableCell>{formatPrice(product.price)}</TableCell>
                           <TableCell>{product.stock_quantity}</TableCell>

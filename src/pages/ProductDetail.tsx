@@ -297,6 +297,11 @@ const ProductDetail = () => {
                 <p className="text-xs md:text-sm text-muted-foreground mb-2">
                   {product.categories?.name}
                 </p>
+                {product.sku && (
+                  <p className="text-xs md:text-sm text-muted-foreground mb-2">
+                    SKU: {product.sku}
+                  </p>
+                )}
                 <h1 className="font-display text-2xl md:text-3xl lg:text-4xl font-bold mb-3 md:mb-4">
                   {product.name}
                 </h1>
