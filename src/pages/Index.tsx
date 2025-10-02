@@ -172,16 +172,16 @@ const Index = () => {
         </section>
 
         {/* Introduction Section for SEO */}
-        <section className="py-12 bg-background">
+        {/* <section className="py-12 bg-background">
           <div className="container mx-auto px-4 max-w-4xl text-center">
             {/* <p className="text-lg text-muted-foreground leading-relaxed">
               Welcome to <strong>The Shopping Cart</strong> – your trusted online destination for premium <strong>home decor</strong>, 
               elegant <strong>wallets</strong>, stylish <strong>furniture</strong>, quality <strong>accessories</strong>, and beautiful 
               <strong> garden decorations</strong> in Pakistan. Shop with confidence and enjoy fast delivery across the country. 
               TheShoppingCart.shop brings you carefully curated products that blend style, quality, and affordability.
-            </p> */}
+            </p> 
           </div>
-        </section>
+        </section> */}
 
         {/* Shop by Category - Dynamic */}
         <section className="py-20">
