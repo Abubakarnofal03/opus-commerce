@@ -18,11 +18,11 @@ const About = () => {
         <section className="py-20">
           <div className="container mx-auto px-4 max-w-4xl">
             <div className="prose prose-lg mx-auto">
-              {/* <p className="text-lg leading-relaxed mb-6">
+              <p className="text-lg leading-relaxed mb-6">
                 Welcome to The Shopping Cart, where sophistication meets everyday elegance. We curate a 
                 distinguished collection of premium home décor and luxury leather accessories for 
                 those who appreciate the finer things in life.
-              </p> */}
+              </p>
 
               <h2 className="font-display text-3xl font-bold mt-12 mb-4">Our Story</h2>
               <p className="leading-relaxed mb-6">
