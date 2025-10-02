@@ -1,7 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, User, Menu, X, LogOut, ChevronDown, Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { ShoppingCart, User, Menu, X, LogOut, ChevronDown } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -36,17 +35,8 @@ export const Navbar = () => {
   const [cartCount, setCartCount] = useState(0);
   const [categories, setCategories] = useState<any[]>([]);
   const [shopOpen, setShopOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/shop?search=${encodeURIComponent(searchQuery.trim())}`);
-      setMobileMenuOpen(false);
-    }
-  };
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -139,17 +129,7 @@ export const Navbar = () => {
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-6">
-            <form onSubmit={handleSearch} className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search products..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 w-64"
-              />
-            </form>
+          <div className="hidden md:flex items-center space-x-8">
             <Link to="/" className="text-sm font-medium hover:text-accent transition-colors">
               Home
             </Link>
@@ -259,18 +239,6 @@ export const Navbar = () => {
         {/* Mobile Menu */}
         {mobileMenuOpen && (
           <div className="md:hidden py-4 space-y-4 animate-fade-in">
-            <div className="px-4">
-              <form onSubmit={handleSearch} className="relative">
-                <Search className="absolute left-6 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="search"
-                  placeholder="Search products..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9"
-                />
-              </form>
-            </div>
             <div className="flex items-center justify-between px-4">
               <span className="text-sm font-medium">Theme</span>
               <ThemeToggle />

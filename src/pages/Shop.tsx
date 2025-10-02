@@ -29,7 +29,6 @@ import { trackAddToCart } from "@/lib/metaPixel";
 const Shop = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedCategory = searchParams.get("category");
-  const searchQuery = searchParams.get("search");
   const [minPrice, setMinPrice] = useState("0");
   const [maxPrice, setMaxPrice] = useState("50000");
   const [debouncedMinPrice, setDebouncedMinPrice] = useState("0");
@@ -80,7 +79,7 @@ const Shop = () => {
   });
 
   const { data: products, isLoading } = useQuery({
-    queryKey: ['products', selectedCategory, debouncedMinPrice, debouncedMaxPrice, searchQuery],
+    queryKey: ['products', selectedCategory, debouncedMinPrice, debouncedMaxPrice],
     queryFn: async () => {
       let query = supabase
         .from('products')
@@ -99,16 +98,6 @@ const Shop = () => {
         .order('created_at', { ascending: false })
         .limit(1000);
       if (error) throw error;
-      
-      // Client-side search filter if search query exists
-      if (searchQuery && data) {
-        return data.filter(product => 
-          product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          product.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          product.sku?.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-      }
-      
       return data;
     },
     enabled: !!categories,
