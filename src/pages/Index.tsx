@@ -115,63 +115,54 @@ const Index = () => {
         <Navbar />
       
       <main className="flex-1">
-        {/* Dynamic Hero Banner - Premium Shopify Style */}
-        <section className="relative h-screen w-full flex items-center overflow-hidden">
+        {/* Dynamic Hero Banner */}
+        <section className="relative h-[600px] flex items-center justify-center overflow-hidden">
           {banners && banners.map((banner, index) => (
             <div
               key={banner.id}
-              className={`absolute inset-0 transition-all duration-1000 ease-in-out ${
+              className={`absolute inset-0 bg-cover bg-center transition-all duration-1000 ease-in-out ${
                 index === currentBannerIndex
                   ? 'opacity-100 scale-100'
                   : 'opacity-0 scale-105'
               }`}
+              style={{ backgroundImage: `url(${banner.image_url})` }}
             >
-              <div 
-                className="absolute inset-0"
-                style={{ 
-                  backgroundImage: `url(${banner.image_url})`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center'
-                }}
-              />
-              <div className="absolute inset-0 bg-black/30" />
+              <div className="absolute inset-0 bg-primary/40" />
             </div>
           ))}
           
           {activeBanner && activeBanner.show_text_overlay && (
             <div 
               key={currentBannerIndex}
-              className="relative z-10 w-full px-4 md:px-8 lg:px-16 max-w-7xl mx-auto transition-all duration-700 ease-in-out"
+              className="relative z-10 text-center text-primary-foreground px-4 transition-all duration-700 ease-in-out"
             >
-              <div className="text-center md:text-left text-primary-foreground max-w-3xl mx-auto md:mx-0">
-                <h1 className="font-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-4 md:mb-6 gold-accent pb-4 md:pb-8 animate-fade-in">
-                  {activeBanner.title}
-                </h1>
-                <p className="text-base sm:text-lg md:text-xl lg:text-2xl mb-6 md:mb-8 animate-fade-in">
-                  {activeBanner.subtitle}
-                </p>
-                <div className="animate-fade-in">
-                  <Button asChild size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground text-sm md:text-base">
-                    <Link to={activeBanner.link_url || '/shop'}>
-                      Explore Collection <ArrowRight className="ml-2 h-4 w-4 md:h-5 md:w-5" />
-                    </Link>
-                  </Button>
-                </div>
+              <h1 className="font-display text-4xl md:text-6xl lg:text-7xl font-bold mb-6 gold-accent pb-8 animate-fade-in">
+                {activeBanner.title}
+              </h1>
+              <p className="text-xl md:text-2xl mb-8 max-w-2xl mx-auto animate-fade-in">
+                {activeBanner.subtitle}
+              </p>
+              <div className="animate-fade-in">
+                <Button asChild size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground">
+                  <Link to={activeBanner.link_url || '/shop'}>
+                    Explore Collection <ArrowRight className="ml-2 h-5 w-5" />
+                  </Link>
+                </Button>
               </div>
             </div>
           )}
           
           {/* Navigation Dots */}
           {banners && banners.length > 1 && (
-            <div className="absolute bottom-6 md:bottom-8 left-1/2 transform -translate-x-1/2 flex gap-2 z-20">
+            <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-2 z-20">
               {banners.map((_, index) => (
                 <button
                   key={index}
                   onClick={() => setCurrentBannerIndex(index)}
-                  className={`h-2 md:h-3 rounded-full transition-all duration-300 ${
+                  className={`h-3 rounded-full transition-all duration-300 ${
                     index === currentBannerIndex
-                      ? 'bg-accent w-6 md:w-8'
-                      : 'bg-white/50 hover:bg-white/75 w-2 md:w-3'
+                      ? 'bg-accent w-8'
+                      : 'bg-white/50 hover:bg-white/75 w-3'
                   }`}
                   aria-label={`Go to banner ${index + 1}`}
                 />
