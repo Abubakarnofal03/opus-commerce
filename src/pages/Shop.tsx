@@ -83,7 +83,7 @@ const Shop = () => {
     queryFn: async () => {
       let query = supabase
         .from('products')
-        .select('*, categories(*)')
+        .select('*, categories(*)', { count: 'exact' })
         .gte('price', parseFloat(debouncedMinPrice))
         .lte('price', parseFloat(debouncedMaxPrice));
 
@@ -94,7 +94,9 @@ const Shop = () => {
         }
       }
 
-      const { data, error } = await query.order('created_at', { ascending: false });
+      const { data, error } = await query
+        .order('created_at', { ascending: false })
+        .limit(1000);
       if (error) throw error;
       return data;
     },
