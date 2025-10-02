@@ -116,7 +116,7 @@ const Index = () => {
       
       <main className="flex-1">
         {/* Dynamic Hero Banner */}
-        <section className="relative h-[500px] sm:h-[600px] md:h-[650px] lg:h-[700px] flex items-center justify-start overflow-hidden">
+        <section className="relative h-[600px] flex items-center justify-center overflow-hidden">
           {banners && banners.map((banner, index) => (
             <div
               key={banner.id}
@@ -134,18 +134,18 @@ const Index = () => {
           {activeBanner && activeBanner.show_text_overlay && (
             <div 
               key={currentBannerIndex}
-              className="relative z-10 text-left text-primary-foreground px-4 sm:px-6 md:px-12 lg:px-16 max-w-7xl mx-auto w-full transition-all duration-700 ease-in-out"
+              className="relative z-10 text-center text-primary-foreground px-4 transition-all duration-700 ease-in-out"
             >
-              <h1 className="font-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-4 sm:mb-6 gold-accent pb-4 sm:pb-6 md:pb-8 animate-fade-in max-w-2xl">
+              <h1 className="font-display text-4xl md:text-6xl lg:text-7xl font-bold mb-6 gold-accent pb-8 animate-fade-in">
                 {activeBanner.title}
               </h1>
-              <p className="text-base sm:text-lg md:text-xl lg:text-2xl mb-6 sm:mb-8 max-w-xl animate-fade-in">
+              <p className="text-xl md:text-2xl mb-8 max-w-2xl mx-auto animate-fade-in">
                 {activeBanner.subtitle}
               </p>
               <div className="animate-fade-in">
-                <Button asChild size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground text-sm sm:text-base">
+                <Button asChild size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground">
                   <Link to={activeBanner.link_url || '/shop'}>
-                    Explore Collection <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
+                    Explore Collection <ArrowRight className="ml-2 h-5 w-5" />
                   </Link>
                 </Button>
               </div>
