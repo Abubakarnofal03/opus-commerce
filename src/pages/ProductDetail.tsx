@@ -387,16 +387,6 @@ const ProductDetail = () => {
                 >
                   Buy Now
                 </Button>
-                <Button
-                  className="w-full text-sm md:text-base"
-                  variant="outline"
-                  size="lg"
-                  onClick={() => addToCart.mutate()}
-                  disabled={addToCart.isPending || product.stock_quantity === 0}
-                >
-                  <ShoppingCart className="mr-2 h-4 w-4 md:h-5 md:w-5" />
-                  Add to Cart
-                </Button>
               </div>
               
               {product.description && (
