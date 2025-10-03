@@ -225,6 +225,7 @@ export type Database = {
           phone: string
           shipping_address: string
           shipping_city: string
+          shipping_cost: number
           shipping_state: string
           shipping_zip: string
           status: string
@@ -242,6 +243,7 @@ export type Database = {
           phone: string
           shipping_address: string
           shipping_city: string
+          shipping_cost?: number
           shipping_state: string
           shipping_zip: string
           status?: string
@@ -259,6 +261,7 @@ export type Database = {
           phone?: string
           shipping_address?: string
           shipping_city?: string
+          shipping_cost?: number
           shipping_state?: string
           shipping_zip?: string
           status?: string
@@ -407,6 +410,59 @@ export type Database = {
         }
         Relationships: []
       }
+      reviews: {
+        Row: {
+          created_at: string
+          id: string
+          is_verified: boolean
+          product_id: string
+          rating: number
+          review_date: string
+          review_images: string[] | null
+          review_text: string
+          review_title: string
+          reviewer_avatar: string | null
+          reviewer_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_verified?: boolean
+          product_id: string
+          rating: number
+          review_date?: string
+          review_images?: string[] | null
+          review_text: string
+          review_title: string
+          reviewer_avatar?: string | null
+          reviewer_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_verified?: boolean
+          product_id?: string
+          rating?: number
+          review_date?: string
+          review_images?: string[] | null
+          review_text?: string
+          review_title?: string
+          reviewer_avatar?: string | null
+          reviewer_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sales: {
         Row: {
           created_at: string
@@ -450,6 +506,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      settings: {
+        Row: {
+          created_at: string
+          id: string
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          key: string
+          updated_at?: string
+          value: Json
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {

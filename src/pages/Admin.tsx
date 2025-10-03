@@ -18,6 +18,7 @@ import { BannerDialog } from "@/components/admin/BannerDialog";
 import { BlogDialog } from "@/components/admin/BlogDialog";
 import { SaleDialog } from "@/components/admin/SaleDialog";
 import { MetaCatalogSync } from "@/components/admin/MetaCatalogSync";
+import ReviewDialog from "@/components/admin/ReviewDialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatPrice } from "@/lib/currency";
@@ -38,6 +39,7 @@ const Admin = () => {
   const [categoryDialog, setCategoryDialog] = useState({ open: false, category: null });
   const [bannerDialog, setBannerDialog] = useState({ open: false, banner: null });
   const [blogDialog, setBlogDialog] = useState({ open: false, blog: null });
+  const [reviewDialog, setReviewDialog] = useState({ open: false, review: null });
   const [deleteDialog, setDeleteDialog] = useState({ open: false, type: "", id: "", name: "" });
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
   const [exportDialog, setExportDialog] = useState(false);
@@ -127,6 +129,18 @@ const Admin = () => {
         .from('blogs')
         .select('*')
         .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: reviews } = useQuery({
+    queryKey: ['admin-reviews'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('reviews')
+        .select('*, products(name)')
+        .order('review_date', { ascending: false });
       if (error) throw error;
       return data;
     },
@@ -316,6 +330,7 @@ const Admin = () => {
               <TabsTrigger value="orders" className="text-xs md:text-sm flex-1 min-w-[80px]">Orders</TabsTrigger>
               <TabsTrigger value="products" className="text-xs md:text-sm flex-1 min-w-[80px]">Products</TabsTrigger>
               <TabsTrigger value="categories" className="text-xs md:text-sm flex-1 min-w-[80px]">Categories</TabsTrigger>
+              <TabsTrigger value="reviews" className="text-xs md:text-sm flex-1 min-w-[80px]">Reviews</TabsTrigger>
               <TabsTrigger value="banners" className="text-xs md:text-sm flex-1 min-w-[80px]">Banners</TabsTrigger>
               <TabsTrigger value="blogs" className="text-xs md:text-sm flex-1 min-w-[80px]">Blogs</TabsTrigger>
               <TabsTrigger value="meta-catalog" className="text-xs md:text-sm flex-1 min-w-[100px]">Meta Catalog</TabsTrigger>
@@ -548,6 +563,75 @@ const Admin = () => {
               </Card>
             </TabsContent>
 
+            <TabsContent value="reviews">
+              <Card>
+                <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <CardTitle>Customer Reviews</CardTitle>
+                  <Button onClick={() => setReviewDialog({ open: true, review: null })} className="w-full sm:w-auto">
+                    <Plus className="h-4 w-4 mr-2" />
+                    <span className="hidden sm:inline">Add Review</span>
+                    <span className="sm:hidden">Add</span>
+                  </Button>
+                </CardHeader>
+                <CardContent className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="min-w-[150px]">Product</TableHead>
+                        <TableHead className="min-w-[120px]">Reviewer</TableHead>
+                        <TableHead className="min-w-[80px]">Rating</TableHead>
+                        <TableHead className="min-w-[150px]">Title</TableHead>
+                        <TableHead className="min-w-[80px]">Verified</TableHead>
+                        <TableHead className="min-w-[100px]">Date</TableHead>
+                        <TableHead className="text-right min-w-[100px]">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {reviews?.map((review: any) => (
+                        <TableRow key={review.id}>
+                          <TableCell className="font-medium">{review.products?.name || 'N/A'}</TableCell>
+                          <TableCell>{review.reviewer_name}</TableCell>
+                          <TableCell>
+                            <div className="flex gap-0.5">
+                              {"⭐".repeat(review.rating)}
+                            </div>
+                          </TableCell>
+                          <TableCell>{review.review_title}</TableCell>
+                          <TableCell>
+                            <Badge variant={review.is_verified ? "default" : "secondary"}>
+                              {review.is_verified ? "Verified" : "Unverified"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{format(new Date(review.review_date), 'PP')}</TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setReviewDialog({ open: true, review })}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setDeleteDialog({ 
+                                open: true, 
+                                type: "reviews", 
+                                id: review.id, 
+                                name: review.review_title 
+                              })}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
             <TabsContent value="banners">
               <Card>
                 <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -723,6 +807,16 @@ const Admin = () => {
         blog={blogDialog.blog}
         onSuccess={() => {
           queryClient.invalidateQueries({ queryKey: ['admin-blogs'] });
+        }}
+      />
+
+      <ReviewDialog
+        open={reviewDialog.open}
+        onOpenChange={(open) => setReviewDialog({ open, review: null })}
+        review={reviewDialog.review}
+        products={products || []}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['admin-reviews'] });
         }}
       />
 

@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { trackAddToCart } from "@/lib/metaPixel";
 import { SEOHead } from "@/components/SEOHead";
 import { organizationSchema, productSchema, breadcrumbSchema } from "@/lib/structuredData";
+import ProductReviews from "@/components/ProductReviews";
 import {
   Carousel,
   CarouselContent,
@@ -396,6 +397,11 @@ const ProductDetail = () => {
                 </Button>
               </div>
             </div>
+          </div>
+
+          {/* Customer Reviews */}
+          <div className="mt-12 md:mt-20">
+            <ProductReviews productId={product.id} />
           </div>
 
           {/* Related Products */}

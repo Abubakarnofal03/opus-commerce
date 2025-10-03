@@ -10,7 +10,7 @@ interface ImageUploadProps {
   value: string | string[];
   onChange: (value: string | string[]) => void;
   multiple?: boolean;
-  folder: "products" | "categories" | "banners";
+  folder: "products" | "categories" | "banners" | "avatars" | "reviews";
 }
 
 export function ImageUpload({ label, value, onChange, multiple = false, folder }: ImageUploadProps) {
