@@ -327,14 +327,6 @@ const ProductDetail = () => {
                 )}
               </div>
 
-              {product.description && (
-                <div>
-                  <h2 className="font-semibold text-base md:text-lg mb-2">Description</h2>
-                  <p className="text-sm md:text-base text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                    {product.description}
-                  </p>
-                </div>
-              )}
 
               {product.stock_quantity !== undefined && product.stock_quantity < 10 && (
                 <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg p-3">
@@ -396,6 +388,15 @@ const ProductDetail = () => {
                   Add to Cart
                 </Button>
               </div>
+              
+              {product.description && (
+                <div>
+                  <h2 className="font-semibold text-base md:text-lg mb-2">Description</h2>
+                  <p className="text-sm md:text-base text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                    {product.description}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
