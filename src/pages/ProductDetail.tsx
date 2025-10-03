@@ -371,14 +371,6 @@ const ProductDetail = () => {
               <div className="space-y-3 pt-2 md:pt-4">
                 <Button
                   className="w-full text-sm md:text-base"
-                  size="lg"
-                  onClick={handleBuyNow}
-                  disabled={addToCart.isPending || product.stock_quantity === 0}
-                >
-                  Buy Now
-                </Button>
-                <Button
-                  className="w-full text-sm md:text-base"
                   variant="outline"
                   size="lg"
                   onClick={() => addToCart.mutate()}
@@ -387,6 +379,15 @@ const ProductDetail = () => {
                   <ShoppingCart className="mr-2 h-4 w-4 md:h-5 md:w-5" />
                   Add to Cart
                 </Button>
+                <Button
+                  className="w-full text-sm md:text-base"
+                  size="lg"
+                  onClick={handleBuyNow}
+                  disabled={addToCart.isPending || product.stock_quantity === 0}
+                >
+                  Buy Now
+                </Button>
+                
               </div>
               
               {product.description && (
