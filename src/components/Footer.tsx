@@ -13,7 +13,7 @@ export const Footer = () => {
         {/* SEO-rich footer text */}
         <div className="text-center mb-8 max-w-3xl mx-auto">
           <p className="text-sm text-muted-foreground">
-            <strong>TheShoppingCart.shop</strong> is your premier online shopping destination in Pakistan for 
+            <strong>theshoppingcart.shop</strong> is your premier online shopping destination in Pakistan for 
             premium <strong>home decor</strong>, elegant <strong>wallets</strong>, stylish <strong>furniture</strong>, 
             quality <strong>accessories</strong>, and beautiful <strong>garden decorations</strong>. 
             Shop with confidence and enjoy fast delivery nationwide.

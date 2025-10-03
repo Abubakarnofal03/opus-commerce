@@ -202,7 +202,7 @@ const ProductDetail = () => {
     <>
       <SEOHead
         title={product.meta_title || `${product.name} | Buy Online at The Shopping Cart`}
-        description={product.meta_description || product.description || `Buy ${product.name} online in Pakistan. Premium quality products at TheShoppingCart.shop with fast delivery.`}
+        description={product.meta_description || product.description || `Buy ${product.name} online in Pakistan. Premium quality products at theshoppingcart.shop with fast delivery.`}
         keywords={product.focus_keywords || [product.name, product.categories?.name || '', 'buy online Pakistan']}
         canonicalUrl={`https://theshoppingcart.shop/product/${product.slug}`}
         ogImage={productImages[0]}
@@ -371,6 +371,14 @@ const ProductDetail = () => {
               <div className="space-y-3 pt-2 md:pt-4">
                 <Button
                   className="w-full text-sm md:text-base"
+                  size="lg"
+                  onClick={handleBuyNow}
+                  disabled={addToCart.isPending || product.stock_quantity === 0}
+                >
+                  Buy Now
+                </Button>
+                <Button
+                  className="w-full text-sm md:text-base"
                   variant="outline"
                   size="lg"
                   onClick={() => addToCart.mutate()}
@@ -379,15 +387,6 @@ const ProductDetail = () => {
                   <ShoppingCart className="mr-2 h-4 w-4 md:h-5 md:w-5" />
                   Add to Cart
                 </Button>
-                <Button
-                  className="w-full text-sm md:text-base"
-                  size="lg"
-                  onClick={handleBuyNow}
-                  disabled={addToCart.isPending || product.stock_quantity === 0}
-                >
-                  Buy Now
-                </Button>
-                
               </div>
               
               {product.description && (
