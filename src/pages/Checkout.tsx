@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getGuestCart, clearGuestCart, GuestCartItem } from "@/lib/cartUtils";
 import { formatPrice } from "@/lib/currency";
 import { trackInitiateCheckout } from "@/lib/metaPixel";
+import { calculateSalePrice, Sale } from "@/lib/saleUtils";
 
 const Checkout = () => {
   const [user, setUser] = useState<any>(null);
@@ -81,10 +82,49 @@ const Checkout = () => {
     enabled: !!user,
   });
 
+  // Fetch active sales for price calculation
+  const { data: activeSales } = useQuery({
+    queryKey: ['sales', 'active'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('sales')
+        .select('*')
+        .eq('is_active', true)
+        .gt('end_date', new Date().toISOString());
+      
+      if (error) throw error;
+      return data as Sale[];
+    },
+  });
+
   const items = user ? cartItems : guestCart;
+  
+  // Calculate total with sales applied
   const total = user 
-    ? cartItems?.reduce((sum, item) => sum + (item.products?.price || 0) * item.quantity, 0) || 0
-    : guestCart.reduce((sum, item) => sum + item.product_price * item.quantity, 0);
+    ? cartItems?.reduce((sum, item) => {
+        const productSale = activeSales?.find(
+          sale => !sale.is_global && sale.product_id === item.product_id
+        ) || null;
+        const globalSale = activeSales?.find(sale => sale.is_global) || null;
+        const { finalPrice } = calculateSalePrice(
+          item.products?.price || 0,
+          productSale,
+          globalSale
+        );
+        return sum + finalPrice * item.quantity;
+      }, 0) || 0
+    : guestCart.reduce((sum, item) => {
+        const productSale = activeSales?.find(
+          sale => !sale.is_global && sale.product_id === item.product_id
+        ) || null;
+        const globalSale = activeSales?.find(sale => sale.is_global) || null;
+        const { finalPrice } = calculateSalePrice(
+          item.product_price,
+          productSale,
+          globalSale
+        );
+        return sum + finalPrice * item.quantity;
+      }, 0);
 
   const validatePhoneNumber = (phone: string): { isValid: boolean; formatted: string; error: string } => {
     // Remove all spaces and dashes for validation
@@ -159,12 +199,24 @@ const Checkout = () => {
 
       if (orderError) throw orderError;
 
-      const orderItems = items.map((item: any) => ({
-        order_id: order.id,
-        product_id: user ? item.product_id : item.product_id,
-        quantity: item.quantity,
-        price: user ? (item.products?.price || 0) : item.product_price,
-      }));
+      const orderItems = items.map((item: any) => {
+        const originalPrice = user ? (item.products?.price || 0) : item.product_price;
+        const productId = user ? item.product_id : item.product_id;
+        
+        // Apply sales when storing order items
+        const productSale = activeSales?.find(
+          sale => !sale.is_global && sale.product_id === productId
+        ) || null;
+        const globalSale = activeSales?.find(sale => sale.is_global) || null;
+        const { finalPrice } = calculateSalePrice(originalPrice, productSale, globalSale);
+        
+        return {
+          order_id: order.id,
+          product_id: productId,
+          quantity: item.quantity,
+          price: finalPrice,
+        };
+      });
 
       const { error: itemsError } = await supabase
         .from('order_items')
@@ -398,12 +450,19 @@ const Checkout = () => {
                   <div className="space-y-3 md:space-y-4 mb-4 md:mb-6 max-h-60 overflow-y-auto">
                     {items?.map((item: any, idx: number) => {
                       const isGuest = !user;
-                      const productData = isGuest ? {
-                        name: item.product_name,
-                        price: item.product_price,
-                      } : {
-                        name: item.products?.name,
-                        price: item.products?.price,
+                      const originalPrice = isGuest ? item.product_price : item.products?.price || 0;
+                      const productId = isGuest ? item.product_id : item.product_id;
+                      
+                      // Calculate sale price for each item
+                      const productSale = activeSales?.find(
+                        sale => !sale.is_global && sale.product_id === productId
+                      ) || null;
+                      const globalSale = activeSales?.find(sale => sale.is_global) || null;
+                      const { finalPrice } = calculateSalePrice(originalPrice, productSale, globalSale);
+                      
+                      const productData = {
+                        name: isGuest ? item.product_name : item.products?.name,
+                        price: finalPrice,
                       };
 
                       return (
