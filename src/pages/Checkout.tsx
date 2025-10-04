@@ -26,8 +26,6 @@ const Checkout = () => {
     addressLine1: "",
     addressLine2: "",
     city: "",
-    state: "",
-    postalCode: "",
   });
   const [phoneError, setPhoneError] = useState("");
   const { toast } = useToast();
@@ -56,8 +54,6 @@ const Checkout = () => {
                 phone: profile.phone || '+92',
                 addressLine1: profile.address || '',
                 city: profile.city || '',
-                state: profile.state || '',
-                postalCode: profile.zip_code || '',
               }));
             }
           });
@@ -158,7 +154,7 @@ const Checkout = () => {
 
   const isPhoneValid = validatePhoneNumber(formData.phone).isValid;
   const isFormValid = formData.firstName && formData.city && isPhoneValid && 
-                      formData.addressLine1 && formData.state;
+                      formData.addressLine1;
 
   const placeOrder = useMutation({
     mutationFn: async () => {
@@ -189,8 +185,8 @@ const Checkout = () => {
           phone: formattedPhone,
           shipping_address: formData.addressLine1 + (formData.addressLine2 ? `, ${formData.addressLine2}` : ''),
           shipping_city: formData.city,
-          shipping_state: formData.state,
-          shipping_zip: formData.postalCode,
+          shipping_state: null,
+          shipping_zip: null,
           total_amount: total,
           status: 'pending',
         })
@@ -398,7 +394,7 @@ const Checkout = () => {
                         className="mt-1"
                       />
                     </div>
-                    <div>
+                    <div className="md:col-span-2">
                       <Label htmlFor="city" className="text-sm">City *</Label>
                       <Input
                         id="city"
@@ -411,31 +407,6 @@ const Checkout = () => {
                       {showErrors && !formData.city && (
                         <p className="text-destructive text-xs mt-1">City is required</p>
                       )}
-                    </div>
-                    <div>
-                      <Label htmlFor="state" className="text-sm">State/Province *</Label>
-                      <Input
-                        id="state"
-                        name="state"
-                        value={formData.state}
-                        onChange={handleInputChange}
-                        required
-                        className={`mt-1 ${showErrors && !formData.state ? 'border-destructive' : ''}`}
-                      />
-                      {showErrors && !formData.state && (
-                        <p className="text-destructive text-xs mt-1">State is required</p>
-                      )}
-                    </div>
-                    <div className="md:col-span-2">
-                      <Label htmlFor="postalCode" className="text-sm">Postal Code *</Label>
-                      <Input
-                        id="postalCode"
-                        name="postalCode"
-                        value={formData.postalCode}
-                        onChange={handleInputChange}
-                        required
-                        className="mt-1"
-                      />
                     </div>
                   </div>
                 </CardContent>
