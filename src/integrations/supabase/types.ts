@@ -226,8 +226,8 @@ export type Database = {
           shipping_address: string
           shipping_city: string
           shipping_cost: number
-          shipping_state: string
-          shipping_zip: string
+          shipping_state: string | null
+          shipping_zip: string | null
           status: string
           total_amount: number
           updated_at: string | null
@@ -244,8 +244,8 @@ export type Database = {
           shipping_address: string
           shipping_city: string
           shipping_cost?: number
-          shipping_state: string
-          shipping_zip: string
+          shipping_state?: string | null
+          shipping_zip?: string | null
           status?: string
           total_amount: number
           updated_at?: string | null
@@ -262,8 +262,8 @@ export type Database = {
           shipping_address?: string
           shipping_city?: string
           shipping_cost?: number
-          shipping_state?: string
-          shipping_zip?: string
+          shipping_state?: string | null
+          shipping_zip?: string | null
           status?: string
           total_amount?: number
           updated_at?: string | null
