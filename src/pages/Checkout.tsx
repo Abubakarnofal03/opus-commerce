@@ -11,7 +11,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getGuestCart, clearGuestCart, GuestCartItem } from "@/lib/cartUtils";
 import { formatPrice } from "@/lib/currency";
-import { trackInitiateCheckout } from "@/lib/metaPixel";
+import { trackInitiateCheckout as trackMetaInitiateCheckout } from "@/lib/metaPixel";
+import { trackInitiateCheckout as trackTikTokInitiateCheckout } from "@/lib/tiktokPixel";
 import { calculateSalePrice, Sale } from "@/lib/saleUtils";
 
 const Checkout = () => {
@@ -61,7 +62,7 @@ const Checkout = () => {
     });
     
     // Track Meta Pixel InitiateCheckout event when user lands on checkout page
-    trackInitiateCheckout();
+    trackMetaInitiateCheckout();
   }, []);
 
   const { data: cartItems } = useQuery({
@@ -121,6 +122,18 @@ const Checkout = () => {
         );
         return sum + finalPrice * item.quantity;
       }, 0);
+
+  // Track TikTok Pixel InitiateCheckout when cart data is loaded
+  useEffect(() => {
+    if (items && items.length > 0 && total > 0) {
+      const tiktokItems = items.map((item: any) => ({
+        id: user ? item.product_id : item.product_id,
+        quantity: item.quantity,
+        price: user ? (item.products?.price || 0) : item.product_price,
+      }));
+      trackTikTokInitiateCheckout(total, tiktokItems);
+    }
+  }, [items, total, user]);
 
   const validatePhoneNumber = (phone: string): { isValid: boolean; formatted: string; error: string } => {
     // Remove all spaces and dashes for validation

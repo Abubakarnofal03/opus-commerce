@@ -13,7 +13,8 @@ import { formatPrice } from "@/lib/currency";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { calculateSalePrice } from "@/lib/saleUtils";
 import { Badge } from "@/components/ui/badge";
-import { trackAddToCart } from "@/lib/metaPixel";
+import { trackAddToCart as trackMetaAddToCart } from "@/lib/metaPixel";
+import { trackViewContent, trackAddToCart as trackTikTokAddToCart } from "@/lib/tiktokPixel";
 import { SEOHead } from "@/components/SEOHead";
 import { organizationSchema, productSchema, breadcrumbSchema } from "@/lib/structuredData";
 import ProductReviews from "@/components/ProductReviews";
@@ -128,7 +129,10 @@ const ProductDetail = () => {
       queryClient.invalidateQueries({ queryKey: ['cart'] });
       
       // Track Meta Pixel AddToCart event
-      trackAddToCart(product.id, product.name, product.price);
+      trackMetaAddToCart(product.id, product.name, product.price);
+      
+      // Track TikTok Pixel AddToCart event
+      trackTikTokAddToCart(product.id, product.name, finalPrice);
       
       toast({
         title: "Added to cart",
@@ -176,6 +180,13 @@ const ProductDetail = () => {
   const { finalPrice, discount } = calculateSalePrice(product.price, productSale, globalSale);
 
   const productImages = product.images || [];
+
+  // Track TikTok Pixel ViewContent event when product loads
+  useEffect(() => {
+    if (product) {
+      trackViewContent(product.id, product.name, finalPrice);
+    }
+  }, [product, finalPrice]);
 
   const structuredData = {
     "@context": "https://schema.org",

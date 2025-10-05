@@ -9,7 +9,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { CheckCircle } from "lucide-react";
 import { formatPrice } from "@/lib/currency";
 import { LoadingScreen } from "@/components/LoadingScreen";
-import { trackPurchase } from "@/lib/metaPixel";
+import { trackPurchase as trackMetaPurchase } from "@/lib/metaPixel";
+import { trackCompletePayment } from "@/lib/tiktokPixel";
 
 const OrderConfirmation = () => {
   const { orderId } = useParams();
@@ -50,9 +51,21 @@ const OrderConfirmation = () => {
   // Track Meta Pixel Purchase event when order is loaded
   useEffect(() => {
     if (order && !isLoading) {
-      trackPurchase(order.total_amount, 'PKR', order.id);
+      trackMetaPurchase(order.total_amount, 'PKR', order.id);
     }
   }, [order, isLoading]);
+
+  // Track TikTok Pixel CompletePayment event when order and items are loaded
+  useEffect(() => {
+    if (order && orderItems && orderItems.length > 0 && !isLoading) {
+      const tiktokItems = orderItems.map(item => ({
+        id: item.product_id,
+        quantity: item.quantity,
+        price: item.price || 0,
+      }));
+      trackCompletePayment(order.id, order.total_amount, tiktokItems);
+    }
+  }, [order, orderItems, isLoading]);
 
   if (isLoading) {
     return (
