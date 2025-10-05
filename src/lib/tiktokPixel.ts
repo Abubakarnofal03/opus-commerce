@@ -20,14 +20,18 @@ export const trackViewContent = (
   price: number,
   currency: string = 'PKR'
 ) => {
-  if (typeof window !== 'undefined' && window.ttq) {
-    window.ttq('track', 'ViewContent', {
-      content_id: productId,
-      content_name: productName,
-      value: price,
-      currency: currency,
-    });
-    console.log('TikTok Pixel: ViewContent tracked', { productId, productName, price });
+  if (typeof window !== 'undefined' && window.ttq && typeof window.ttq.track === 'function') {
+    try {
+      window.ttq.track('ViewContent', {
+        content_id: productId,
+        content_name: productName,
+        value: price,
+        currency: currency,
+      });
+      console.log('TikTok Pixel: ViewContent tracked', { productId, productName, price });
+    } catch (error) {
+      console.error('TikTok Pixel ViewContent error:', error);
+    }
   }
 };
 
@@ -44,15 +48,19 @@ export const trackAddToCart = (
   price: number,
   currency: string = 'PKR'
 ) => {
-  if (typeof window !== 'undefined' && window.ttq) {
-    window.ttq('track', 'AddToCart', {
-      content_id: productId,
-      content_name: productName,
-      content_type: 'product',
-      value: price,
-      currency: currency,
-    });
-    console.log('TikTok Pixel: AddToCart tracked', { productId, productName, price });
+  if (typeof window !== 'undefined' && window.ttq && typeof window.ttq.track === 'function') {
+    try {
+      window.ttq.track('AddToCart', {
+        content_id: productId,
+        content_name: productName,
+        content_type: 'product',
+        value: price,
+        currency: currency,
+      });
+      console.log('TikTok Pixel: AddToCart tracked', { productId, productName, price });
+    } catch (error) {
+      console.error('TikTok Pixel AddToCart error:', error);
+    }
   }
 };
 
@@ -67,17 +75,21 @@ export const trackInitiateCheckout = (
   items: Array<{ id: string; quantity: number; price: number }>,
   currency: string = 'PKR'
 ) => {
-  if (typeof window !== 'undefined' && window.ttq) {
-    window.ttq('track', 'InitiateCheckout', {
-      value: total,
-      currency: currency,
-      contents: items.map(item => ({
-        content_id: item.id,
-        quantity: item.quantity,
-        price: item.price,
-      })),
-    });
-    console.log('TikTok Pixel: InitiateCheckout tracked', { total, itemCount: items.length });
+  if (typeof window !== 'undefined' && window.ttq && typeof window.ttq.track === 'function') {
+    try {
+      window.ttq.track('InitiateCheckout', {
+        value: total,
+        currency: currency,
+        contents: items.map(item => ({
+          content_id: item.id,
+          quantity: item.quantity,
+          price: item.price,
+        })),
+      });
+      console.log('TikTok Pixel: InitiateCheckout tracked', { total, itemCount: items.length });
+    } catch (error) {
+      console.error('TikTok Pixel InitiateCheckout error:', error);
+    }
   }
 };
 
@@ -94,17 +106,21 @@ export const trackCompletePayment = (
   items: Array<{ id: string; quantity: number; price: number }>,
   currency: string = 'PKR'
 ) => {
-  if (typeof window !== 'undefined' && window.ttq) {
-    window.ttq('track', 'CompletePayment', {
-      content_id: orderId,
-      value: totalAmount,
-      currency: currency,
-      contents: items.map(item => ({
-        content_id: item.id,
-        quantity: item.quantity,
-        price: item.price,
-      })),
-    });
-    console.log('TikTok Pixel: CompletePayment tracked', { orderId, totalAmount });
+  if (typeof window !== 'undefined' && window.ttq && typeof window.ttq.track === 'function') {
+    try {
+      window.ttq.track('CompletePayment', {
+        content_id: orderId,
+        value: totalAmount,
+        currency: currency,
+        contents: items.map(item => ({
+          content_id: item.id,
+          quantity: item.quantity,
+          price: item.price,
+        })),
+      });
+      console.log('TikTok Pixel: CompletePayment tracked', { orderId, totalAmount });
+    } catch (error) {
+      console.error('TikTok Pixel CompletePayment error:', error);
+    }
   }
 };
