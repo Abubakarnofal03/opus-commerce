@@ -158,6 +158,18 @@ const ProductDetail = () => {
     navigate('/checkout');
   };
 
+  // Calculate sale price (needed for tracking)
+  const productSale = sales?.find(s => s.product_id === product?.id);
+  const globalSale = sales?.find(s => s.is_global);
+  const { finalPrice, discount } = calculateSalePrice(product?.price || 0, productSale, globalSale);
+
+  // Track TikTok Pixel ViewContent event when product loads
+  useEffect(() => {
+    if (product) {
+      trackViewContent(product.id, product.name, finalPrice);
+    }
+  }, [product, finalPrice]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -180,18 +192,7 @@ const ProductDetail = () => {
     );
   }
 
-  const productSale = sales?.find(s => s.product_id === product.id);
-  const globalSale = sales?.find(s => s.is_global);
-  const { finalPrice, discount } = calculateSalePrice(product.price, productSale, globalSale);
-
   const productImages = product.images || [];
-
-  // Track TikTok Pixel ViewContent event when product loads
-  useEffect(() => {
-    if (product) {
-      trackViewContent(product.id, product.name, finalPrice);
-    }
-  }, [product, finalPrice]);
 
   const structuredData = {
     "@context": "https://schema.org",
