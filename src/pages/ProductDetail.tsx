@@ -128,6 +128,11 @@ const ProductDetail = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cart'] });
       
+      // Calculate sale price for tracking
+      const productSale = sales?.find(s => s.product_id === product.id);
+      const globalSale = sales?.find(s => s.is_global);
+      const { finalPrice } = calculateSalePrice(product.price, productSale, globalSale);
+      
       // Track Meta Pixel AddToCart event
       trackMetaAddToCart(product.id, product.name, product.price);
       
