@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
@@ -9,10 +9,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { CheckCircle } from "lucide-react";
 import { formatPrice } from "@/lib/currency";
 import { LoadingScreen } from "@/components/LoadingScreen";
+import { trackPurchase as trackMetaPurchase } from "@/lib/metaPixel";
+import { trackCompletePayment } from "@/lib/tiktokPixel";
 
 const OrderConfirmation = () => {
   const { orderId } = useParams();
   const [user, setUser] = useState<any>(null);
+  const hasTrackedPurchase = useRef(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -45,6 +48,24 @@ const OrderConfirmation = () => {
     },
     enabled: !!orderId,
   });
+
+  // Track purchase events only once when order is confirmed
+  useEffect(() => {
+    if (order && orderItems && orderItems.length > 0 && !hasTrackedPurchase.current) {
+      hasTrackedPurchase.current = true;
+      
+      // Track Meta Pixel Purchase
+      trackMetaPurchase(order.total_amount, 'PKR', order.id);
+      
+      // Track TikTok Pixel CompletePayment
+      const tiktokItems = orderItems.map(item => ({
+        id: item.product_id,
+        quantity: item.quantity,
+        price: item.price || 0,
+      }));
+      trackCompletePayment(order.id, order.total_amount, tiktokItems);
+    }
+  }, [order, orderItems]);
 
   if (isLoading) {
     return (

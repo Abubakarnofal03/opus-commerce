@@ -11,8 +11,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getGuestCart, clearGuestCart, GuestCartItem } from "@/lib/cartUtils";
 import { formatPrice } from "@/lib/currency";
-import { trackInitiateCheckout as trackMetaInitiateCheckout, trackPurchase as trackMetaPurchase } from "@/lib/metaPixel";
-import { trackInitiateCheckout as trackTikTokInitiateCheckout, trackCompletePayment as trackTikTokCompletePayment } from "@/lib/tiktokPixel";
+import { trackInitiateCheckout as trackMetaInitiateCheckout } from "@/lib/metaPixel";
+import { trackInitiateCheckout as trackTikTokInitiateCheckout } from "@/lib/tiktokPixel";
 import { calculateSalePrice, Sale } from "@/lib/saleUtils";
 
 const Checkout = () => {
@@ -247,17 +247,6 @@ const Checkout = () => {
     },
     onSuccess: (orderId) => {
       queryClient.invalidateQueries({ queryKey: ['cart'] });
-      
-      // Track purchase events (Meta Pixel and TikTok Pixel)
-      trackMetaPurchase(total, 'PKR', orderId);
-      
-      const tiktokItems = items.map((item: any) => ({
-        id: user ? item.product_id : item.product_id,
-        quantity: item.quantity,
-        price: user ? (item.products?.price || 0) : item.product_price,
-      }));
-      trackTikTokCompletePayment(orderId, total, tiktokItems);
-      
       toast({
         title: "Order placed successfully!",
         description: "Thank you for your order. We'll process it shortly.",
