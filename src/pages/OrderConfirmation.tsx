@@ -52,18 +52,28 @@ const OrderConfirmation = () => {
   // Track purchase events only once when order is confirmed
   useEffect(() => {
     if (order && orderItems && orderItems.length > 0 && !hasTrackedPurchase.current) {
-      hasTrackedPurchase.current = true;
+      // Check if this order has already been tracked in this session
+      const trackedOrders = sessionStorage.getItem('tracked_orders');
+      const trackedOrderIds = trackedOrders ? JSON.parse(trackedOrders) : [];
       
-      // Track Meta Pixel Purchase
-      trackMetaPurchase(order.total_amount, 'PKR', order.id);
-      
-      // Track TikTok Pixel CompletePayment
-      const tiktokItems = orderItems.map(item => ({
-        id: item.product_id,
-        quantity: item.quantity,
-        price: item.price || 0,
-      }));
-      trackCompletePayment(order.id, order.total_amount, tiktokItems);
+      if (!trackedOrderIds.includes(order.id)) {
+        hasTrackedPurchase.current = true;
+        
+        // Track Meta Pixel Purchase
+        trackMetaPurchase(order.total_amount, 'PKR', order.id);
+        
+        // Track TikTok Pixel CompletePayment
+        const tiktokItems = orderItems.map(item => ({
+          id: item.product_id,
+          quantity: item.quantity,
+          price: item.price || 0,
+        }));
+        trackCompletePayment(order.id, order.total_amount, tiktokItems);
+        
+        // Mark this order as tracked
+        trackedOrderIds.push(order.id);
+        sessionStorage.setItem('tracked_orders', JSON.stringify(trackedOrderIds));
+      }
     }
   }, [order, orderItems]);
 
