@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Minus, Plus, ShoppingCart, X, Star } from "lucide-react";
+import { Minus, Plus, ShoppingCart, X, Star, ShieldCheck, Truck, Banknote, Package } from "lucide-react";
 import { addToGuestCart } from "@/lib/cartUtils";
 import { formatPrice } from "@/lib/currency";
 import { LoadingScreen } from "@/components/LoadingScreen";
@@ -382,6 +382,46 @@ const ProductDetail = () => {
                   >
                     <Plus className="h-3 w-3 md:h-4 md:w-4" />
                   </Button>
+                </div>
+              </div>
+
+              {/* Trust Badges */}
+              <div className="grid grid-cols-2 gap-3 py-4 border-y border-border">
+                <div className="flex items-center gap-2">
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                    <ShieldCheck className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium leading-tight">7 Day Easy</p>
+                    <p className="text-xs text-muted-foreground leading-tight">Return</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Banknote className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium leading-tight">Cash on</p>
+                    <p className="text-xs text-muted-foreground leading-tight">Delivery</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Truck className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium leading-tight">Free Delivery</p>
+                    <p className="text-xs text-muted-foreground leading-tight">All Pakistan</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Package className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium leading-tight">100% Original</p>
+                    <p className="text-xs text-muted-foreground leading-tight">Products</p>
+                  </div>
                 </div>
               </div>
 
