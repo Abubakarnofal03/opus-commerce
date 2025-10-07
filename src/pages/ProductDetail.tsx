@@ -18,17 +18,8 @@ import { trackViewContent, trackAddToCart as trackTikTokAddToCart } from "@/lib/
 import { SEOHead } from "@/components/SEOHead";
 import { organizationSchema, productSchema, breadcrumbSchema } from "@/lib/structuredData";
 import ProductReviews from "@/components/ProductReviews";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
-import {
-  Dialog,
-  DialogContent,
-} from "@/components/ui/dialog";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 const ProductDetail = () => {
   const { slug } = useParams();
@@ -47,40 +38,36 @@ const ProductDetail = () => {
   }, []);
 
   const { data: product, isLoading } = useQuery({
-    queryKey: ['product', slug],
+    queryKey: ["product", slug],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*, categories(*)')
-        .eq('slug', slug)
-        .single();
+      const { data, error } = await supabase.from("products").select("*, categories(*)").eq("slug", slug).single();
       if (error) throw error;
       return data;
     },
   });
 
   const { data: sales } = useQuery({
-    queryKey: ['sales'],
+    queryKey: ["sales"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('sales')
-        .select('*')
-        .eq('is_active', true)
-        .gt('end_date', new Date().toISOString());
+        .from("sales")
+        .select("*")
+        .eq("is_active", true)
+        .gt("end_date", new Date().toISOString());
       if (error) throw error;
       return data;
     },
   });
 
   const { data: relatedProducts } = useQuery({
-    queryKey: ['related-products', product?.category_id],
+    queryKey: ["related-products", product?.category_id],
     queryFn: async () => {
       if (!product?.category_id) return [];
       const { data, error } = await supabase
-        .from('products')
-        .select('*, categories(*)')
-        .eq('category_id', product.category_id)
-        .neq('id', product.id)
+        .from("products")
+        .select("*, categories(*)")
+        .eq("category_id", product.category_id)
+        .neq("id", product.id)
         .limit(4);
       if (error) throw error;
       return data;
@@ -102,43 +89,41 @@ const ProductDetail = () => {
       }
 
       const { data: existingItem } = await supabase
-        .from('cart_items')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('product_id', product.id)
+        .from("cart_items")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("product_id", product.id)
         .maybeSingle();
 
       if (existingItem) {
         const { error } = await supabase
-          .from('cart_items')
+          .from("cart_items")
           .update({ quantity: existingItem.quantity + quantity })
-          .eq('id', existingItem.id);
+          .eq("id", existingItem.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase
-          .from('cart_items')
-          .insert({
-            user_id: user.id,
-            product_id: product.id,
-            quantity,
-          });
+        const { error } = await supabase.from("cart_items").insert({
+          user_id: user.id,
+          product_id: product.id,
+          quantity,
+        });
         if (error) throw error;
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cart'] });
-      
+      queryClient.invalidateQueries({ queryKey: ["cart"] });
+
       // Calculate sale price for tracking
-      const productSale = sales?.find(s => s.product_id === product.id);
-      const globalSale = sales?.find(s => s.is_global);
+      const productSale = sales?.find((s) => s.product_id === product.id);
+      const globalSale = sales?.find((s) => s.is_global);
       const { finalPrice } = calculateSalePrice(product.price, productSale, globalSale);
-      
+
       // Track Meta Pixel AddToCart event
       trackMetaAddToCart(product.id, product.name, product.price);
-      
+
       // Track TikTok Pixel AddToCart event
       trackTikTokAddToCart(product.id, product.name, finalPrice);
-      
+
       toast({
         title: "Added to cart",
         description: "Product has been added to your cart.",
@@ -155,12 +140,12 @@ const ProductDetail = () => {
 
   const handleBuyNow = async () => {
     await addToCart.mutateAsync();
-    navigate('/checkout');
+    navigate("/checkout");
   };
 
   // Calculate sale price (needed for tracking)
-  const productSale = sales?.find(s => s.product_id === product?.id);
-  const globalSale = sales?.find(s => s.is_global);
+  const productSale = sales?.find((s) => s.product_id === product?.id);
+  const globalSale = sales?.find((s) => s.is_global);
   const { finalPrice, discount } = calculateSalePrice(product?.price || 0, productSale, globalSale);
 
   // Track TikTok Pixel ViewContent event when product loads
@@ -204,352 +189,339 @@ const ProductDetail = () => {
         price: finalPrice,
         images: productImages,
         sku: product.sku,
-        stock_quantity: product.stock_quantity
+        stock_quantity: product.stock_quantity,
       }),
       breadcrumbSchema([
         { name: "Home", url: "/" },
         { name: "Shop", url: "/shop" },
-        ...(product.categories ? [{ name: product.categories.name, url: `/shop?category=${product.categories.slug}` }] : []),
-        { name: product.name, url: `/product/${product.slug}` }
-      ])
-    ]
+        ...(product.categories
+          ? [{ name: product.categories.name, url: `/shop?category=${product.categories.slug}` }]
+          : []),
+        { name: product.name, url: `/product/${product.slug}` },
+      ]),
+    ],
   };
 
   return (
     <>
       <SEOHead
         title={product.meta_title || `${product.name} | Buy Online at The Shopping Cart`}
-        description={product.meta_description || product.description || `Buy ${product.name} online in Pakistan. Premium quality products at TheShoppingCart.shop with fast delivery.`}
-        keywords={product.focus_keywords || [product.name, product.categories?.name || '', 'buy online Pakistan']}
+        description={
+          product.meta_description ||
+          product.description ||
+          `Buy ${product.name} online in Pakistan. Premium quality products at TheShoppingCart.shop with fast delivery.`
+        }
+        keywords={product.focus_keywords || [product.name, product.categories?.name || "", "buy online Pakistan"]}
         canonicalUrl={`https://theshoppingcart.shop/product/${product.slug}`}
         ogImage={productImages[0]}
         ogType="product"
         structuredData={structuredData}
       />
-      
+
       <div className="min-h-screen flex flex-col">
         <Navbar />
-      
-      <main className="flex-1 py-8 md:py-12">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
-            {/* Media Gallery */}
-            <div className="space-y-3 md:space-y-4">
-              {/* Media Carousel (Video + Images) */}
-              {((product.video_url || (product.images && product.images.length > 0)) && 
-                ((product.video_url ? 1 : 0) + (product.images?.length || 0)) > 1) ? (
-                <Carousel className="w-full">
-                  <CarouselContent>
-                    {/* Video as first carousel item */}
-                    {product.video_url && (
-                      <CarouselItem key="video">
-                        <div className="aspect-square bg-muted rounded-lg overflow-hidden">
-                          <video
-                            src={product.video_url}
-                            controls
-                            className="w-full h-full object-cover"
-                            poster={product.images?.[0]}
-                          >
-                            Your browser does not support the video tag.
-                          </video>
-                        </div>
-                      </CarouselItem>
-                    )}
-                    {/* Images as subsequent carousel items */}
-                    {product.images?.map((image, index) => (
-                      <CarouselItem key={`image-${index}`}>
-                        <div 
-                          className="aspect-square bg-muted rounded-lg overflow-hidden cursor-zoom-in"
-                          onClick={() => {
-                            setSelectedImageIndex(index);
-                            setZoomDialogOpen(true);
-                          }}
-                        >
-                          <img
-                            src={image}
-                            alt={`${product.name} ${index + 1}`}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      </CarouselItem>
-                    ))}
-                  </CarouselContent>
-                  <CarouselPrevious className="left-2" />
-                  <CarouselNext className="right-2" />
-                </Carousel>
-              ) : (
-                /* Single item display */
-                <>
-                  {product.video_url ? (
-                    <div className="aspect-square bg-muted rounded-lg overflow-hidden">
-                      <video
-                        src={product.video_url}
-                        controls
-                        className="w-full h-full object-cover"
-                        poster={product.images?.[0]}
-                      >
-                        Your browser does not support the video tag.
-                      </video>
-                    </div>
-                  ) : product.images?.[0] ? (
-                    <div 
-                      className="aspect-square bg-muted rounded-lg overflow-hidden cursor-zoom-in"
-                      onClick={() => {
-                        setSelectedImageIndex(0);
-                        setZoomDialogOpen(true);
-                      }}
-                    >
-                      <img
-                        src={product.images[0]}
-                        alt={product.name}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  ) : null}
-                </>
-              )}
-            </div>
 
-            <div className="space-y-4 md:space-y-6">
-              <div>
-                <p className="text-xs md:text-sm text-muted-foreground mb-2">
-                  {product.categories?.name}
-                </p>
-                {product.sku && (
-                  <p className="text-xs md:text-sm text-muted-foreground mb-2">
-                    SKU: {product.sku}
-                  </p>
-                )}
-                <h1 className="font-display text-2xl md:text-3xl lg:text-4xl font-bold mb-3 md:mb-4">
-                  {product.name}
-                </h1>
-                {discount ? (
-                  <div className="space-y-2">
-                    <Badge className="bg-destructive text-destructive-foreground">
-                      {discount}% OFF
-                    </Badge>
-                    <div className="flex items-center gap-3">
-                      <p className="text-2xl md:text-3xl font-bold text-destructive">
-                        {formatPrice(finalPrice)}
-                      </p>
-                      <p className="text-lg md:text-xl text-muted-foreground line-through">
-                        {formatPrice(product.price)}
-                      </p>
-                    </div>
-                  </div>
+        <main className="flex-1 py-8 md:py-12">
+          <div className="container mx-auto px-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
+              {/* Media Gallery */}
+              <div className="space-y-3 md:space-y-4">
+                {/* Media Carousel (Video + Images) */}
+                {(product.video_url || (product.images && product.images.length > 0)) &&
+                (product.video_url ? 1 : 0) + (product.images?.length || 0) > 1 ? (
+                  <Carousel className="w-full">
+                    <CarouselContent>
+                      {/* Video as first carousel item */}
+                      {product.video_url && (
+                        <CarouselItem key="video">
+                          <div className="aspect-square bg-muted rounded-lg overflow-hidden">
+                            <video
+                              src={product.video_url}
+                              controls
+                              className="w-full h-full object-cover"
+                              poster={product.images?.[0]}
+                            >
+                              Your browser does not support the video tag.
+                            </video>
+                          </div>
+                        </CarouselItem>
+                      )}
+                      {/* Images as subsequent carousel items */}
+                      {product.images?.map((image, index) => (
+                        <CarouselItem key={`image-${index}`}>
+                          <div
+                            className="aspect-square bg-muted rounded-lg overflow-hidden cursor-zoom-in"
+                            onClick={() => {
+                              setSelectedImageIndex(index);
+                              setZoomDialogOpen(true);
+                            }}
+                          >
+                            <img
+                              src={image}
+                              alt={`${product.name} ${index + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        </CarouselItem>
+                      ))}
+                    </CarouselContent>
+                    <CarouselPrevious className="left-2" />
+                    <CarouselNext className="right-2" />
+                  </Carousel>
                 ) : (
-                  <p className="text-2xl md:text-3xl font-bold text-accent">
-                    {formatPrice(product.price)}
-                  </p>
+                  /* Single item display */
+                  <>
+                    {product.video_url ? (
+                      <div className="aspect-square bg-muted rounded-lg overflow-hidden">
+                        <video
+                          src={product.video_url}
+                          controls
+                          className="w-full h-full object-cover"
+                          poster={product.images?.[0]}
+                        >
+                          Your browser does not support the video tag.
+                        </video>
+                      </div>
+                    ) : product.images?.[0] ? (
+                      <div
+                        className="aspect-square bg-muted rounded-lg overflow-hidden cursor-zoom-in"
+                        onClick={() => {
+                          setSelectedImageIndex(0);
+                          setZoomDialogOpen(true);
+                        }}
+                      >
+                        <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
+                      </div>
+                    ) : null}
+                  </>
                 )}
               </div>
 
-
-              {product.stock_quantity !== undefined && product.stock_quantity < 10 && (
-                <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg p-3">
-                  {product.stock_quantity > 0 ? (
-                    <p className="text-sm font-medium text-orange-700 dark:text-orange-400">
-                      Hurry! Only {product.stock_quantity} {product.stock_quantity === 1 ? 'item' : 'items'} left in stock
-                    </p>
+              <div className="space-y-4 md:space-y-6">
+                <div>
+                  <p className="text-xs md:text-sm text-muted-foreground mb-2">{product.categories?.name}</p>
+                  {product.sku && <p className="text-xs md:text-sm text-muted-foreground mb-2">SKU: {product.sku}</p>}
+                  <h1 className="font-display text-2xl md:text-3xl lg:text-4xl font-bold mb-3 md:mb-4">
+                    {product.name}
+                  </h1>
+                  {discount ? (
+                    <div className="space-y-2">
+                      <Badge className="bg-destructive text-destructive-foreground">{discount}% OFF</Badge>
+                      <div className="flex items-center gap-3">
+                        <p className="text-2xl md:text-3xl font-bold text-destructive">{formatPrice(finalPrice)}</p>
+                        <p className="text-lg md:text-xl text-muted-foreground line-through">
+                          {formatPrice(product.price)}
+                        </p>
+                      </div>
+                    </div>
                   ) : (
-                    <p className="text-sm font-medium text-destructive">
-                      Out of stock
-                    </p>
+                    <p className="text-2xl md:text-3xl font-bold text-accent">{formatPrice(product.price)}</p>
                   )}
                 </div>
-              )}
 
-              <div>
-                <h2 className="font-semibold text-base md:text-lg mb-2">Quantity</h2>
-                <div className="flex items-center space-x-3 md:space-x-4">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-9 w-9 md:h-10 md:w-10"
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  >
-                    <Minus className="h-3 w-3 md:h-4 md:w-4" />
-                  </Button>
-                  <span className="text-lg md:text-xl font-semibold w-10 md:w-12 text-center">
-                    {quantity}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-9 w-9 md:h-10 md:w-10"
-                    onClick={() => setQuantity(Math.min(product.stock_quantity || 99, quantity + 1))}
-                    disabled={product.stock_quantity === 0}
-                  >
-                    <Plus className="h-3 w-3 md:h-4 md:w-4" />
-                  </Button>
-                </div>
-              </div>
+                {product.stock_quantity !== undefined && product.stock_quantity < 10 && (
+                  <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg p-3">
+                    {product.stock_quantity > 0 ? (
+                      <p className="text-sm font-medium text-orange-700 dark:text-orange-400">
+                        Hurry! Only {product.stock_quantity} {product.stock_quantity === 1 ? "item" : "items"} left in
+                        stock
+                      </p>
+                    ) : (
+                      <p className="text-sm font-medium text-destructive">Out of stock</p>
+                    )}
+                  </div>
+                )}
 
-              {/* Trust Badges */}
-              <div className="grid grid-cols-2 gap-3 py-4 border-y border-border">
-                <div className="flex items-center gap-2">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                    <ShieldCheck className="h-4 w-4 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium leading-tight">7 Day Easy</p>
-                    <p className="text-xs text-muted-foreground leading-tight">Return</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Banknote className="h-4 w-4 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium leading-tight">Cash on</p>
-                    <p className="text-xs text-muted-foreground leading-tight">Delivery</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Truck className="h-4 w-4 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium leading-tight">Free Delivery</p>
-                    <p className="text-xs text-muted-foreground leading-tight">All Pakistan</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Package className="h-4 w-4 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium leading-tight">100% Original</p>
-                    <p className="text-xs text-muted-foreground leading-tight">Products</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-3 pt-2 md:pt-4">
-                  <Button
-                  className="w-full text-sm md:text-base"
-                  variant="outline"
-                  size="lg"
-                  onClick={() => addToCart.mutate()}
-                  disabled={addToCart.isPending || product.stock_quantity === 0}
-                >
-                  <ShoppingCart className="mr-2 h-4 w-4 md:h-5 md:w-5" />
-                  Add to Cart
-                </Button>
-                <Button
-                  className="w-full text-sm md:text-base"
-                  size="lg"
-                  onClick={handleBuyNow}
-                  disabled={addToCart.isPending || product.stock_quantity === 0}
-                >
-                  Buy Now
-                </Button>
-              </div>
-              
-              {product.description && (
                 <div>
-                  <h2 className="font-semibold text-base md:text-lg mb-2">Description</h2>
-                  <p className="text-sm md:text-base text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                    {product.description}
-                  </p>
+                  <h2 className="font-semibold text-base md:text-lg mb-2">Quantity</h2>
+                  <div className="flex items-center space-x-3 md:space-x-4">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-9 w-9 md:h-10 md:w-10"
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    >
+                      <Minus className="h-3 w-3 md:h-4 md:w-4" />
+                    </Button>
+                    <span className="text-lg md:text-xl font-semibold w-10 md:w-12 text-center">{quantity}</span>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-9 w-9 md:h-10 md:w-10"
+                      onClick={() => setQuantity(Math.min(product.stock_quantity || 99, quantity + 1))}
+                      disabled={product.stock_quantity === 0}
+                    >
+                      <Plus className="h-3 w-3 md:h-4 md:w-4" />
+                    </Button>
+                  </div>
                 </div>
-              )}
+
+                <div className="space-y-3 pt-2 md:pt-4">
+                  <Button
+                    className="w-full text-sm md:text-base"
+                    variant="outline"
+                    size="lg"
+                    onClick={() => addToCart.mutate()}
+                    disabled={addToCart.isPending || product.stock_quantity === 0}
+                  >
+                    <ShoppingCart className="mr-2 h-4 w-4 md:h-5 md:w-5" />
+                    Add to Cart
+                  </Button>
+                  <Button
+                    className="w-full text-sm md:text-base"
+                    size="lg"
+                    onClick={handleBuyNow}
+                    disabled={addToCart.isPending || product.stock_quantity === 0}
+                  >
+                    Buy Now
+                  </Button>
+                </div>
+                {/* Trust Badges */}
+                <div className="grid grid-cols-2 gap-3 py-4 border-y border-border">
+                  <div className="flex items-center gap-2">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                      <ShieldCheck className="h-4 w-4 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium leading-tight">7 Day Easy</p>
+                      <p className="text-xs text-muted-foreground leading-tight">Return</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Banknote className="h-4 w-4 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium leading-tight">Cash on</p>
+                      <p className="text-xs text-muted-foreground leading-tight">Delivery</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Truck className="h-4 w-4 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium leading-tight">Free Delivery</p>
+                      <p className="text-xs text-muted-foreground leading-tight">All Pakistan</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Package className="h-4 w-4 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium leading-tight">100% Original</p>
+                      <p className="text-xs text-muted-foreground leading-tight">Products</p>
+                    </div>
+                  </div>
+                </div>
+                {product.description && (
+                  <div>
+                    <h2 className="font-semibold text-base md:text-lg mb-2">Description</h2>
+                    <p className="text-sm md:text-base text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                      {product.description}
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
 
-          {/* Customer Reviews */}
-          <div className="mt-12 md:mt-20">
-            <ProductReviews productId={product.id} />
-          </div>
-
-          {/* Related Products */}
-          {relatedProducts && relatedProducts.length > 0 && (
+            {/* Customer Reviews */}
             <div className="mt-12 md:mt-20">
-              <h2 className="font-display text-2xl md:text-3xl font-bold mb-6 md:mb-8 text-center">Related Products</h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-                {relatedProducts.map((relatedProduct) => {
-                  const relatedProductSale = sales?.find(s => s.product_id === relatedProduct.id);
-                  const relatedGlobalSale = sales?.find(s => s.is_global);
-                  const { finalPrice: relatedFinalPrice, discount: relatedDiscount } = calculateSalePrice(
-                    relatedProduct.price,
-                    relatedProductSale,
-                    relatedGlobalSale
-                  );
-                  
-                  return (
-                    <Card key={relatedProduct.id} className="glass-card glass-hover overflow-hidden rounded-xl relative">
-                      {relatedDiscount && (
-                        <Badge className="absolute top-2 left-2 z-10 bg-destructive text-destructive-foreground text-xs">
-                          {relatedDiscount}% OFF
-                        </Badge>
-                      )}
-                      <div className="aspect-square bg-muted relative overflow-hidden">
-                        {relatedProduct.images?.[0] && (
-                          <img
-                            src={relatedProduct.images[0]}
-                            alt={relatedProduct.name}
-                            className="w-full h-full object-cover"
-                          />
+              <ProductReviews productId={product.id} />
+            </div>
+
+            {/* Related Products */}
+            {relatedProducts && relatedProducts.length > 0 && (
+              <div className="mt-12 md:mt-20">
+                <h2 className="font-display text-2xl md:text-3xl font-bold mb-6 md:mb-8 text-center">
+                  Related Products
+                </h2>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                  {relatedProducts.map((relatedProduct) => {
+                    const relatedProductSale = sales?.find((s) => s.product_id === relatedProduct.id);
+                    const relatedGlobalSale = sales?.find((s) => s.is_global);
+                    const { finalPrice: relatedFinalPrice, discount: relatedDiscount } = calculateSalePrice(
+                      relatedProduct.price,
+                      relatedProductSale,
+                      relatedGlobalSale,
+                    );
+
+                    return (
+                      <Card
+                        key={relatedProduct.id}
+                        className="glass-card glass-hover overflow-hidden rounded-xl relative"
+                      >
+                        {relatedDiscount && (
+                          <Badge className="absolute top-2 left-2 z-10 bg-destructive text-destructive-foreground text-xs">
+                            {relatedDiscount}% OFF
+                          </Badge>
                         )}
-                      </div>
-                      <CardContent className="p-3 md:p-4">
-                        <h3 className="font-display text-sm md:text-base font-semibold mb-1 md:mb-2 truncate">
-                          {relatedProduct.name}
-                        </h3>
-                        <div className="mb-2 md:mb-3">
-                          {relatedDiscount ? (
-                            <div className="flex items-center gap-2">
-                              <p className="text-base md:text-lg font-bold text-destructive">
-                                {formatPrice(relatedFinalPrice)}
-                              </p>
-                              <p className="text-xs text-muted-foreground line-through">
-                                {formatPrice(relatedProduct.price)}
-                              </p>
-                            </div>
-                          ) : (
-                            <p className="text-base md:text-lg font-bold text-accent">
-                              {formatPrice(relatedProduct.price)}
-                            </p>
+                        <div className="aspect-square bg-muted relative overflow-hidden">
+                          {relatedProduct.images?.[0] && (
+                            <img
+                              src={relatedProduct.images[0]}
+                              alt={relatedProduct.name}
+                              className="w-full h-full object-cover"
+                            />
                           )}
                         </div>
-                        <Button asChild className="w-full text-xs md:text-sm" size="sm">
-                          <Link to={`/product/${relatedProduct.slug}`}>
-                            View Details
-                          </Link>
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
+                        <CardContent className="p-3 md:p-4">
+                          <h3 className="font-display text-sm md:text-base font-semibold mb-1 md:mb-2 truncate">
+                            {relatedProduct.name}
+                          </h3>
+                          <div className="mb-2 md:mb-3">
+                            {relatedDiscount ? (
+                              <div className="flex items-center gap-2">
+                                <p className="text-base md:text-lg font-bold text-destructive">
+                                  {formatPrice(relatedFinalPrice)}
+                                </p>
+                                <p className="text-xs text-muted-foreground line-through">
+                                  {formatPrice(relatedProduct.price)}
+                                </p>
+                              </div>
+                            ) : (
+                              <p className="text-base md:text-lg font-bold text-accent">
+                                {formatPrice(relatedProduct.price)}
+                              </p>
+                            )}
+                          </div>
+                          <Button asChild className="w-full text-xs md:text-sm" size="sm">
+                            <Link to={`/product/${relatedProduct.slug}`}>View Details</Link>
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          )}
-        </div>
-      </main>
+            )}
+          </div>
+        </main>
 
-      {/* Image Zoom Dialog */}
-      <Dialog open={zoomDialogOpen} onOpenChange={setZoomDialogOpen}>
-        <DialogContent className="max-w-4xl w-full p-0 overflow-hidden">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute right-4 top-4 z-50 rounded-full bg-background/80 hover:bg-background"
-            onClick={() => setZoomDialogOpen(false)}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-          {product.images && product.images[selectedImageIndex] && (
-            <img
-              src={product.images[selectedImageIndex]}
-              alt={`${product.name} ${selectedImageIndex + 1}`}
-              className="w-full h-auto max-h-[90vh] object-contain"
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+        {/* Image Zoom Dialog */}
+        <Dialog open={zoomDialogOpen} onOpenChange={setZoomDialogOpen}>
+          <DialogContent className="max-w-4xl w-full p-0 overflow-hidden">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-4 top-4 z-50 rounded-full bg-background/80 hover:bg-background"
+              onClick={() => setZoomDialogOpen(false)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+            {product.images && product.images[selectedImageIndex] && (
+              <img
+                src={product.images[selectedImageIndex]}
+                alt={`${product.name} ${selectedImageIndex + 1}`}
+                className="w-full h-auto max-h-[90vh] object-contain"
+              />
+            )}
+          </DialogContent>
+        </Dialog>
 
-      <Footer />
-    </div>
+        <Footer />
+      </div>
     </>
   );
 };
