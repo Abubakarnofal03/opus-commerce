@@ -100,17 +100,15 @@ const Cart = () => {
   // Calculate total with sale prices
   const total = user 
     ? cartItems?.reduce((sum, item) => {
-        const price = item.variation_price || item.products?.price || 0;
         const productSale = sales?.find(s => s.product_id === item.product_id);
         const globalSale = sales?.find(s => s.is_global);
-        const { finalPrice } = calculateSalePrice(price, productSale, globalSale);
+        const { finalPrice } = calculateSalePrice(item.products?.price || 0, productSale, globalSale);
         return sum + finalPrice * item.quantity;
       }, 0) || 0
     : guestCart.reduce((sum, item) => {
-        const price = item.variation_price || item.product_price;
         const productSale = sales?.find(s => s.product_id === item.product_id);
         const globalSale = sales?.find(s => s.is_global);
-        const { finalPrice } = calculateSalePrice(price, productSale, globalSale);
+        const { finalPrice } = calculateSalePrice(item.product_price, productSale, globalSale);
         return sum + finalPrice * item.quantity;
       }, 0);
 
@@ -148,16 +146,14 @@ const Cart = () => {
                   const isGuest = !user;
                   const productData = isGuest ? {
                     name: item.product_name,
-                    price: item.variation_price || item.product_price,
+                    price: item.product_price,
                     image: item.product_image,
                     productId: item.product_id,
-                    variationName: item.variation_name,
                   } : {
                     name: item.products?.name,
-                    price: item.variation_price || item.products?.price,
+                    price: item.products?.price,
                     image: item.products?.images?.[0],
                     productId: item.product_id,
-                    variationName: item.variation_name,
                   };
 
                   const productSale = sales?.find(s => s.product_id === productData.productId);
@@ -186,11 +182,6 @@ const Cart = () => {
                             <h3 className="font-display text-base md:text-lg font-semibold mb-1 truncate">
                               {productData.name}
                             </h3>
-                            {productData.variationName && (
-                              <p className="text-xs text-muted-foreground mb-1">
-                                Variation: {productData.variationName}
-                              </p>
-                            )}
                             {discount ? (
                               <div className="mb-2">
                                 <div className="flex items-center gap-2">

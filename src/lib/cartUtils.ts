@@ -6,9 +6,6 @@ export interface GuestCartItem {
   product_name: string;
   product_price: number;
   product_image?: string;
-  variation_id?: string;
-  variation_name?: string;
-  variation_price?: number;
 }
 
 const CART_STORAGE_KEY = 'guest_cart';

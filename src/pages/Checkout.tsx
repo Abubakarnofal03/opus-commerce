@@ -99,21 +99,27 @@ const Checkout = () => {
   // Calculate total with sales applied
   const total = user 
     ? cartItems?.reduce((sum, item) => {
-        const price = item.variation_price || item.products?.price || 0;
         const productSale = activeSales?.find(
           sale => !sale.is_global && sale.product_id === item.product_id
         ) || null;
         const globalSale = activeSales?.find(sale => sale.is_global) || null;
-        const { finalPrice } = calculateSalePrice(price, productSale, globalSale);
+        const { finalPrice } = calculateSalePrice(
+          item.products?.price || 0,
+          productSale,
+          globalSale
+        );
         return sum + finalPrice * item.quantity;
       }, 0) || 0
     : guestCart.reduce((sum, item) => {
-        const price = item.variation_price || item.product_price;
         const productSale = activeSales?.find(
           sale => !sale.is_global && sale.product_id === item.product_id
         ) || null;
         const globalSale = activeSales?.find(sale => sale.is_global) || null;
-        const { finalPrice } = calculateSalePrice(price, productSale, globalSale);
+        const { finalPrice } = calculateSalePrice(
+          item.product_price,
+          productSale,
+          globalSale
+        );
         return sum + finalPrice * item.quantity;
       }, 0);
 
@@ -203,9 +209,7 @@ const Checkout = () => {
       if (orderError) throw orderError;
 
       const orderItems = items.map((item: any) => {
-        const originalPrice = user 
-          ? (item.variation_price || item.products?.price || 0)
-          : (item.variation_price || item.product_price);
+        const originalPrice = user ? (item.products?.price || 0) : item.product_price;
         const productId = user ? item.product_id : item.product_id;
         
         // Apply sales when storing order items
@@ -220,9 +224,6 @@ const Checkout = () => {
           product_id: productId,
           quantity: item.quantity,
           price: finalPrice,
-          variation_id: item.variation_id || null,
-          variation_name: item.variation_name || null,
-          variation_price: item.variation_price || null,
         };
       });
 
@@ -433,9 +434,7 @@ const Checkout = () => {
                   <div className="space-y-3 md:space-y-4 mb-4 md:mb-6 max-h-60 overflow-y-auto">
                     {items?.map((item: any, idx: number) => {
                       const isGuest = !user;
-                      const originalPrice = isGuest 
-                        ? (item.variation_price || item.product_price)
-                        : (item.variation_price || item.products?.price || 0);
+                      const originalPrice = isGuest ? item.product_price : item.products?.price || 0;
                       const productId = isGuest ? item.product_id : item.product_id;
                       
                       // Calculate sale price for each item
@@ -448,17 +447,12 @@ const Checkout = () => {
                       const productData = {
                         name: isGuest ? item.product_name : item.products?.name,
                         price: finalPrice,
-                        variationName: item.variation_name,
                       };
 
                       return (
                         <div key={idx} className="flex justify-between text-sm">
                           <span className="truncate pr-2">
-                            {productData.name}
-                            {productData.variationName && (
-                              <span className="text-xs text-muted-foreground"> ({productData.variationName})</span>
-                            )}
-                            {' × '}{item.quantity}
+                            {productData.name} × {item.quantity}
                           </span>
                           <span className="font-semibold whitespace-nowrap">
                             {formatPrice(productData.price * item.quantity)}

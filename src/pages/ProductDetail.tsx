@@ -27,7 +27,6 @@ const ProductDetail = () => {
   const [user, setUser] = useState<any>(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [zoomDialogOpen, setZoomDialogOpen] = useState(false);
-  const [selectedVariation, setSelectedVariation] = useState<any>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -76,43 +75,15 @@ const ProductDetail = () => {
     enabled: !!product,
   });
 
-  const { data: variations } = useQuery({
-    queryKey: ["product-variations", product?.id],
-    queryFn: async () => {
-      if (!product?.id) return [];
-      const { data, error } = await supabase
-        .from("product_variations")
-        .select("*")
-        .eq("product_id", product.id)
-        .order("sort_order");
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!product,
-  });
-
-  // Set first variation as default when variations load
-  useEffect(() => {
-    if (variations && variations.length > 0 && !selectedVariation) {
-      setSelectedVariation(variations[0]);
-    }
-  }, [variations, selectedVariation]);
-
   const addToCart = useMutation({
     mutationFn: async () => {
-      // Determine the price to use (variation price or product price)
-      const priceToUse = selectedVariation ? selectedVariation.price : product.price;
-      
       if (!user) {
         addToGuestCart({
           product_id: product.id,
           quantity,
           product_name: product.name,
-          product_price: priceToUse,
+          product_price: product.price,
           product_image: product.images?.[0],
-          variation_id: selectedVariation?.id,
-          variation_name: selectedVariation?.name,
-          variation_price: selectedVariation?.price,
         });
         return;
       }
@@ -122,7 +93,6 @@ const ProductDetail = () => {
         .select("*")
         .eq("user_id", user.id)
         .eq("product_id", product.id)
-        .eq("variation_id", selectedVariation?.id || null)
         .maybeSingle();
 
       if (existingItem) {
@@ -136,9 +106,6 @@ const ProductDetail = () => {
           user_id: user.id,
           product_id: product.id,
           quantity,
-          variation_id: selectedVariation?.id || null,
-          variation_name: selectedVariation?.name || null,
-          variation_price: selectedVariation?.price || null,
         });
         if (error) throw error;
       }
@@ -146,14 +113,13 @@ const ProductDetail = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cart"] });
 
-      // Calculate sale price for tracking (use variation price if selected)
-      const basePrice = selectedVariation ? selectedVariation.price : product.price;
+      // Calculate sale price for tracking
       const productSale = sales?.find((s) => s.product_id === product.id);
       const globalSale = sales?.find((s) => s.is_global);
-      const { finalPrice } = calculateSalePrice(basePrice, productSale, globalSale);
+      const { finalPrice } = calculateSalePrice(product.price, productSale, globalSale);
 
       // Track Meta Pixel AddToCart event
-      trackMetaAddToCart(product.id, product.name, basePrice);
+      trackMetaAddToCart(product.id, product.name, product.price);
 
       // Track TikTok Pixel AddToCart event
       trackTikTokAddToCart(product.id, product.name, finalPrice);
@@ -178,11 +144,9 @@ const ProductDetail = () => {
   };
 
   // Calculate sale price (needed for tracking)
-  // Use variation price if selected, otherwise use product price
-  const displayPrice = selectedVariation ? selectedVariation.price : product?.price || 0;
   const productSale = sales?.find((s) => s.product_id === product?.id);
   const globalSale = sales?.find((s) => s.is_global);
-  const { finalPrice, discount } = calculateSalePrice(displayPrice, productSale, globalSale);
+  const { finalPrice, discount } = calculateSalePrice(product?.price || 0, productSale, globalSale);
 
   // Track TikTok Pixel ViewContent event when product loads
   useEffect(() => {
@@ -350,8 +314,8 @@ const ProductDetail = () => {
                         </p>
                       </div>
                     </div>
-                   ) : (
-                    <p className="text-2xl md:text-3xl font-bold text-accent">{formatPrice(displayPrice)}</p>
+                  ) : (
+                    <p className="text-2xl md:text-3xl font-bold text-accent">{formatPrice(product.price)}</p>
                   )}
                 </div>
 
@@ -365,28 +329,6 @@ const ProductDetail = () => {
                     ) : (
                       <p className="text-sm font-medium text-destructive">Out of stock</p>
                     )}
-                  </div>
-                )}
-
-                {variations && variations.length > 0 && (
-                  <div>
-                    <h2 className="font-semibold text-base md:text-lg mb-2">Select Variation</h2>
-                    <div className="flex flex-wrap gap-2">
-                      {variations.map((variation) => (
-                        <Button
-                          key={variation.id}
-                          variant={selectedVariation?.id === variation.id ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => setSelectedVariation(variation)}
-                          className="min-w-[80px]"
-                        >
-                          <div className="text-center">
-                            <div className="font-semibold">{variation.name}</div>
-                            <div className="text-xs">{formatPrice(variation.price)}</div>
-                          </div>
-                        </Button>
-                      ))}
-                    </div>
                   </div>
                 )}
 

@@ -109,9 +109,6 @@ export type Database = {
           quantity: number
           updated_at: string | null
           user_id: string
-          variation_id: string | null
-          variation_name: string | null
-          variation_price: number | null
         }
         Insert: {
           created_at?: string | null
@@ -120,9 +117,6 @@ export type Database = {
           quantity?: number
           updated_at?: string | null
           user_id: string
-          variation_id?: string | null
-          variation_name?: string | null
-          variation_price?: number | null
         }
         Update: {
           created_at?: string | null
@@ -131,9 +125,6 @@ export type Database = {
           quantity?: number
           updated_at?: string | null
           user_id?: string
-          variation_id?: string | null
-          variation_name?: string | null
-          variation_price?: number | null
         }
         Relationships: [
           {
@@ -141,13 +132,6 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "cart_items_variation_id_fkey"
-            columns: ["variation_id"]
-            isOneToOne: false
-            referencedRelation: "product_variations"
             referencedColumns: ["id"]
           },
         ]
@@ -196,9 +180,6 @@ export type Database = {
           price: number
           product_id: string | null
           quantity: number
-          variation_id: string | null
-          variation_name: string | null
-          variation_price: number | null
         }
         Insert: {
           created_at?: string | null
@@ -207,9 +188,6 @@ export type Database = {
           price: number
           product_id?: string | null
           quantity: number
-          variation_id?: string | null
-          variation_name?: string | null
-          variation_price?: number | null
         }
         Update: {
           created_at?: string | null
@@ -218,9 +196,6 @@ export type Database = {
           price?: number
           product_id?: string | null
           quantity?: number
-          variation_id?: string | null
-          variation_name?: string | null
-          variation_price?: number | null
         }
         Relationships: [
           {
@@ -235,13 +210,6 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "order_items_variation_id_fkey"
-            columns: ["variation_id"]
-            isOneToOne: false
-            referencedRelation: "product_variations"
             referencedColumns: ["id"]
           },
         ]
@@ -328,44 +296,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "product_images_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      product_variations: {
-        Row: {
-          created_at: string
-          id: string
-          name: string
-          price: number
-          product_id: string
-          sort_order: number
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          name: string
-          price: number
-          product_id: string
-          sort_order?: number
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          name?: string
-          price?: number
-          product_id?: string
-          sort_order?: number
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "product_variations_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"

@@ -9,7 +9,6 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { ImageUpload } from "./ImageUpload";
 import { VideoUpload } from "./VideoUpload";
-import { VariationManager, Variation } from "./VariationManager";
 
 interface ProductDialogProps {
   open: boolean;
@@ -35,7 +34,6 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
     is_featured: false,
     shipping_cost: "",
   });
-  const [variations, setVariations] = useState<Variation[]>([]);
 
   useEffect(() => {
     if (product) {
@@ -52,25 +50,6 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
         is_featured: product.is_featured || false,
         shipping_cost: product.shipping_cost?.toString() || "",
       });
-      
-      // Fetch variations if editing
-      if (product.id) {
-        supabase
-          .from("product_variations")
-          .select("*")
-          .eq("product_id", product.id)
-          .order("sort_order")
-          .then(({ data }) => {
-            if (data) {
-              setVariations(data.map(v => ({
-                id: v.id,
-                name: v.name,
-                price: v.price.toString(),
-                sort_order: v.sort_order,
-              })));
-            }
-          });
-      }
     } else {
       setFormData({
         name: "",
@@ -85,7 +64,6 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
         is_featured: false,
         shipping_cost: "",
       });
-      setVariations([]);
     }
   }, [product, open]);
 
@@ -108,51 +86,21 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
         shipping_cost: parseFloat(formData.shipping_cost) || 0,
       };
 
-      let productId: string;
-
       if (product) {
         const { error } = await supabase
           .from("products")
           .update(productData)
           .eq("id", product.id);
         if (error) throw error;
-        productId = product.id;
-        
-        // Delete existing variations
-        await supabase
-          .from("product_variations")
-          .delete()
-          .eq("product_id", productId);
+        toast({ title: "Product updated successfully" });
       } else {
-        const { data, error } = await supabase
+        const { error } = await supabase
           .from("products")
-          .insert([productData])
-          .select()
-          .single();
+          .insert([productData]);
         if (error) throw error;
-        productId = data.id;
+        toast({ title: "Product created successfully" });
       }
 
-      // Insert variations if any
-      if (variations.length > 0) {
-        const variationsData = variations
-          .filter(v => v.name && v.price)
-          .map((v, index) => ({
-            product_id: productId,
-            name: v.name,
-            price: parseFloat(v.price),
-            sort_order: index,
-          }));
-        
-        if (variationsData.length > 0) {
-          const { error: varError } = await supabase
-            .from("product_variations")
-            .insert(variationsData);
-          if (varError) throw varError;
-        }
-      }
-
-      toast({ title: product ? "Product updated successfully" : "Product created successfully" });
       onSuccess();
       onOpenChange(false);
     } catch (error: any) {
@@ -282,11 +230,6 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
             value={formData.video_url}
             onChange={(value) => setFormData({ ...formData, video_url: value })}
             folder="products"
-          />
-
-          <VariationManager
-            variations={variations}
-            onChange={setVariations}
           />
 
           <div className="flex items-center space-x-2">
