@@ -286,7 +286,7 @@ const ProductDetail = () => {
                   <h1 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold mb-4 leading-tight">
                     {product.name}
                   </h1>
-                  {product.sku && <p className="text-sm text-muted-foreground mb-4">SKU: {product.sku}</p>}
+                  {product.sku}
 
                   {/* Price Section */}
                   <div className="bg-gradient-to-br from-primary/10 to-accent/10 rounded-xl p-6 border-2 border-primary/20 mb-6">
