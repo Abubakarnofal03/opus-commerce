@@ -221,25 +221,25 @@ const Admin = () => {
       }
     }
 
-    const exportData = filteredOrders.flatMap((order) => {
+    // Sort orders by order_number in ascending order
+    const sortedOrders = [...filteredOrders].sort((a, b) => a.order_number - b.order_number);
+
+    const exportData = sortedOrders.flatMap((order) => {
       return order.order_items?.map((item: any, index: number) => ({
         'Order ID': order.order_number,
         'Order Date': format(new Date(order.created_at), 'PPP'),
-        'Status': order.status,
-        'Customer First Name': order.first_name,
-        'Customer Last Name': order.last_name,
+        'Customer Name': `${order.first_name} ${order.last_name}`,
         'Email': order.email || 'N/A',
-        'Phone': order.phone,
+        'Phone Number': order.phone,
         'Address': order.shipping_address,
         'City': order.shipping_city,
-        'State': order.shipping_state,
-        'Zip': order.shipping_zip,
         'Product Name': item.products?.name || 'N/A',
         'Quantity': item.quantity,
         'Price': item.price,
         'Item Total': item.price * item.quantity,
         'Order Total': index === 0 ? Number(order.total_amount) : '',
-        'Notes': order.notes || 'N/A',
+        'Status': order.status,
+        'Courier Company': '',
       }));
     });
 
