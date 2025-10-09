@@ -22,61 +22,70 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-
 const ProductDetail = () => {
-  const { slug } = useParams();
+  const {
+    slug
+  } = useParams();
   const [quantity, setQuantity] = useState(1);
   const [user, setUser] = useState<any>(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [zoomDialogOpen, setZoomDialogOpen] = useState(false);
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({
+      data: {
+        session
+      }
+    }) => {
       setUser(session?.user ?? null);
     });
   }, []);
-
-  const { data: product, isLoading } = useQuery({
+  const {
+    data: product,
+    isLoading
+  } = useQuery({
     queryKey: ["product", slug],
     queryFn: async () => {
-      const { data, error } = await supabase.from("products").select("*, categories(*)").eq("slug", slug).single();
+      const {
+        data,
+        error
+      } = await supabase.from("products").select("*, categories(*)").eq("slug", slug).single();
       if (error) throw error;
       return data;
-    },
+    }
   });
-
-  const { data: sales } = useQuery({
+  const {
+    data: sales
+  } = useQuery({
     queryKey: ["sales"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("sales")
-        .select("*")
-        .eq("is_active", true)
-        .gt("end_date", new Date().toISOString());
+      const {
+        data,
+        error
+      } = await supabase.from("sales").select("*").eq("is_active", true).gt("end_date", new Date().toISOString());
       if (error) throw error;
       return data;
-    },
+    }
   });
-
-  const { data: relatedProducts } = useQuery({
+  const {
+    data: relatedProducts
+  } = useQuery({
     queryKey: ["related-products", product?.category_id],
     queryFn: async () => {
       if (!product?.category_id) return [];
-      const { data, error } = await supabase
-        .from("products")
-        .select("*, categories(*)")
-        .eq("category_id", product.category_id)
-        .neq("id", product.id)
-        .limit(4);
+      const {
+        data,
+        error
+      } = await supabase.from("products").select("*, categories(*)").eq("category_id", product.category_id).neq("id", product.id).limit(4);
       if (error) throw error;
       return data;
     },
-    enabled: !!product,
+    enabled: !!product
   });
-
   const addToCart = useMutation({
     mutationFn: async () => {
       if (!user) {
@@ -85,70 +94,73 @@ const ProductDetail = () => {
           quantity,
           product_name: product.name,
           product_price: product.price,
-          product_image: product.images?.[0],
+          product_image: product.images?.[0]
         });
         return;
       }
-
-      const { data: existingItem } = await supabase
-        .from("cart_items")
-        .select("*")
-        .eq("user_id", user.id)
-        .eq("product_id", product.id)
-        .maybeSingle();
-
+      const {
+        data: existingItem
+      } = await supabase.from("cart_items").select("*").eq("user_id", user.id).eq("product_id", product.id).maybeSingle();
       if (existingItem) {
-        const { error } = await supabase
-          .from("cart_items")
-          .update({ quantity: existingItem.quantity + quantity })
-          .eq("id", existingItem.id);
+        const {
+          error
+        } = await supabase.from("cart_items").update({
+          quantity: existingItem.quantity + quantity
+        }).eq("id", existingItem.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("cart_items").insert({
+        const {
+          error
+        } = await supabase.from("cart_items").insert({
           user_id: user.id,
           product_id: product.id,
-          quantity,
+          quantity
         });
         if (error) throw error;
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["cart"] });
+      queryClient.invalidateQueries({
+        queryKey: ["cart"]
+      });
 
       // Calculate sale price for tracking
-      const productSale = sales?.find((s) => s.product_id === product.id);
-      const globalSale = sales?.find((s) => s.is_global);
-      const { finalPrice } = calculateSalePrice(product.price, productSale, globalSale);
+      const productSale = sales?.find(s => s.product_id === product.id);
+      const globalSale = sales?.find(s => s.is_global);
+      const {
+        finalPrice
+      } = calculateSalePrice(product.price, productSale, globalSale);
 
       // Track Meta Pixel AddToCart event
       trackMetaAddToCart(product.id, product.name, product.price);
 
       // Track TikTok Pixel AddToCart event
       trackTikTokAddToCart(product.id, product.name, finalPrice);
-
       toast({
         title: "Added to cart",
-        description: "Product has been added to your cart.",
+        description: "Product has been added to your cart."
       });
     },
     onError: (error: any) => {
       toast({
         title: "Error",
         description: error.message,
-        variant: "destructive",
+        variant: "destructive"
       });
-    },
+    }
   });
-
   const handleBuyNow = async () => {
     await addToCart.mutateAsync();
     navigate("/checkout");
   };
 
   // Calculate sale price (needed for tracking)
-  const productSale = sales?.find((s) => s.product_id === product?.id);
-  const globalSale = sales?.find((s) => s.is_global);
-  const { finalPrice, discount } = calculateSalePrice(product?.price || 0, productSale, globalSale);
+  const productSale = sales?.find(s => s.product_id === product?.id);
+  const globalSale = sales?.find(s => s.is_global);
+  const {
+    finalPrice,
+    discount
+  } = calculateSalePrice(product?.price || 0, productSale, globalSale);
 
   // Track TikTok Pixel ViewContent event when product loads
   useEffect(() => {
@@ -156,69 +168,48 @@ const ProductDetail = () => {
       trackViewContent(product.id, product.name, finalPrice);
     }
   }, [product, finalPrice]);
-
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex flex-col">
+    return <div className="min-h-screen flex flex-col">
         <Navbar />
         <LoadingScreen message="Loading product details..." />
         <Footer />
-      </div>
-    );
+      </div>;
   }
-
   if (!product) {
-    return (
-      <div className="min-h-screen flex flex-col">
+    return <div className="min-h-screen flex flex-col">
         <Navbar />
         <div className="flex-1 flex items-center justify-center">
           <p className="text-muted-foreground">Product not found</p>
         </div>
         <Footer />
-      </div>
-    );
+      </div>;
   }
-
   const productImages = product.images || [];
-
   const structuredData = {
     "@context": "https://schema.org",
-    "@graph": [
-      organizationSchema,
-      productSchema({
-        name: product.name,
-        description: product.description || product.name,
-        price: finalPrice,
-        images: productImages,
-        sku: product.sku,
-        stock_quantity: product.stock_quantity,
-      }),
-      breadcrumbSchema([
-        { name: "Home", url: "/" },
-        { name: "Shop", url: "/shop" },
-        ...(product.categories
-          ? [{ name: product.categories.name, url: `/shop?category=${product.categories.slug}` }]
-          : []),
-        { name: product.name, url: `/product/${product.slug}` },
-      ]),
-    ],
+    "@graph": [organizationSchema, productSchema({
+      name: product.name,
+      description: product.description || product.name,
+      price: finalPrice,
+      images: productImages,
+      sku: product.sku,
+      stock_quantity: product.stock_quantity
+    }), breadcrumbSchema([{
+      name: "Home",
+      url: "/"
+    }, {
+      name: "Shop",
+      url: "/shop"
+    }, ...(product.categories ? [{
+      name: product.categories.name,
+      url: `/shop?category=${product.categories.slug}`
+    }] : []), {
+      name: product.name,
+      url: `/product/${product.slug}`
+    }])]
   };
-
-  return (
-    <>
-      <SEOHead
-        title={product.meta_title || `${product.name} | Buy Online at The Shopping Cart`}
-        description={
-          product.meta_description ||
-          product.description ||
-          `Buy ${product.name} online in Pakistan. Premium quality products at TheShoppingCart.shop with fast delivery.`
-        }
-        keywords={product.focus_keywords || [product.name, product.categories?.name || "", "buy online Pakistan"]}
-        canonicalUrl={`https://theshoppingcart.shop/product/${product.slug}`}
-        ogImage={productImages[0]}
-        ogType="product"
-        structuredData={structuredData}
-      />
+  return <>
+      <SEOHead title={product.meta_title || `${product.name} | Buy Online at The Shopping Cart`} description={product.meta_description || product.description || `Buy ${product.name} online in Pakistan. Premium quality products at TheShoppingCart.shop with fast delivery.`} keywords={product.focus_keywords || [product.name, product.categories?.name || "", "buy online Pakistan"]} canonicalUrl={`https://theshoppingcart.shop/product/${product.slug}`} ogImage={productImages[0]} ogType="product" structuredData={structuredData} />
 
       <div className="min-h-screen flex flex-col">
         <Navbar />
@@ -234,17 +225,12 @@ const ProductDetail = () => {
               <Link to="/shop" className="text-muted-foreground hover:text-primary transition-colors">
                 Shop
               </Link>
-              {product.categories && (
-                <>
+              {product.categories && <>
                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                  <Link
-                    to={`/shop?category=${product.categories.slug}`}
-                    className="text-muted-foreground hover:text-primary transition-colors"
-                  >
+                  <Link to={`/shop?category=${product.categories.slug}`} className="text-muted-foreground hover:text-primary transition-colors">
                     {product.categories.name}
                   </Link>
-                </>
-              )}
+                </>}
               <ChevronRight className="h-4 w-4 text-muted-foreground" />
               <span className="text-foreground font-medium truncate max-w-[200px]">{product.name}</span>
             </div>
@@ -252,104 +238,51 @@ const ProductDetail = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
               {/* Media Gallery */}
               <div className="space-y-4">
-                {(product.video_url || (product.images && product.images.length > 0)) &&
-                (product.video_url ? 1 : 0) + (product.images?.length || 0) > 1 ? (
-                  <Carousel className="w-full">
+                {(product.video_url || product.images && product.images.length > 0) && (product.video_url ? 1 : 0) + (product.images?.length || 0) > 1 ? <Carousel className="w-full">
                     <CarouselContent>
-                      {product.video_url && (
-                        <CarouselItem key="video">
+                      {product.video_url && <CarouselItem key="video">
                           <div className="aspect-square bg-muted rounded-xl overflow-hidden border-2 border-border/50">
-                            <video
-                              src={product.video_url}
-                              controls
-                              className="w-full h-full object-cover"
-                              poster={product.images?.[0]}
-                            >
+                            <video src={product.video_url} controls className="w-full h-full object-cover" poster={product.images?.[0]}>
                               Your browser does not support the video tag.
                             </video>
                           </div>
-                        </CarouselItem>
-                      )}
-                      {product.images?.map((image, index) => (
-                        <CarouselItem key={`image-${index}`}>
-                          <div
-                            className="aspect-square bg-muted rounded-xl overflow-hidden cursor-zoom-in border-2 border-border/50 hover:border-primary/50 transition-colors"
-                            onClick={() => {
-                              setSelectedImageIndex(index);
-                              setZoomDialogOpen(true);
-                            }}
-                          >
-                            <img
-                              src={image}
-                              alt={`${product.name} ${index + 1}`}
-                              className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                            />
+                        </CarouselItem>}
+                      {product.images?.map((image, index) => <CarouselItem key={`image-${index}`}>
+                          <div className="aspect-square bg-muted rounded-xl overflow-hidden cursor-zoom-in border-2 border-border/50 hover:border-primary/50 transition-colors" onClick={() => {
+                      setSelectedImageIndex(index);
+                      setZoomDialogOpen(true);
+                    }}>
+                            <img src={image} alt={`${product.name} ${index + 1}`} className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
                           </div>
-                        </CarouselItem>
-                      ))}
+                        </CarouselItem>)}
                     </CarouselContent>
                     <CarouselPrevious className="left-4" />
                     <CarouselNext className="right-4" />
-                  </Carousel>
-                ) : (
-                  <>
-                    {product.video_url ? (
-                      <div className="aspect-square bg-muted rounded-xl overflow-hidden border-2 border-border/50">
-                        <video
-                          src={product.video_url}
-                          controls
-                          className="w-full h-full object-cover"
-                          poster={product.images?.[0]}
-                        >
+                  </Carousel> : <>
+                    {product.video_url ? <div className="aspect-square bg-muted rounded-xl overflow-hidden border-2 border-border/50">
+                        <video src={product.video_url} controls className="w-full h-full object-cover" poster={product.images?.[0]}>
                           Your browser does not support the video tag.
                         </video>
-                      </div>
-                    ) : product.images?.[0] ? (
-                      <div
-                        className="aspect-square bg-muted rounded-xl overflow-hidden cursor-zoom-in border-2 border-border/50 hover:border-primary/50 transition-colors"
-                        onClick={() => {
-                          setSelectedImageIndex(0);
-                          setZoomDialogOpen(true);
-                        }}
-                      >
+                      </div> : product.images?.[0] ? <div className="aspect-square bg-muted rounded-xl overflow-hidden cursor-zoom-in border-2 border-border/50 hover:border-primary/50 transition-colors" onClick={() => {
+                  setSelectedImageIndex(0);
+                  setZoomDialogOpen(true);
+                }}>
                         <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
-                      </div>
-                    ) : null}
-                  </>
-                )}
+                      </div> : null}
+                  </>}
 
                 {/* Trust Banner */}
                 <Card className="bg-gradient-to-r from-primary/5 via-accent/5 to-primary/5 border-primary/20">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-center gap-8 flex-wrap">
-                      <div className="flex items-center gap-2">
-                        <ShieldCheck className="h-5 w-5 text-primary" />
-                        <span className="text-sm font-medium">Secure Checkout</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <RotateCcw className="h-5 w-5 text-primary" />
-                        <span className="text-sm font-medium">7-Day Returns</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Package className="h-5 w-5 text-primary" />
-                        <span className="text-sm font-medium">Authentic Products</span>
-                      </div>
-                    </div>
-                  </CardContent>
+                  
                 </Card>
               </div>
 
               {/* Product Info */}
               <div className="space-y-6">
                 <div>
-                  {product.categories && (
-                    <Link
-                      to={`/shop?category=${product.categories.slug}`}
-                      className="inline-block text-sm font-medium text-primary hover:underline mb-2"
-                    >
+                  {product.categories && <Link to={`/shop?category=${product.categories.slug}`} className="inline-block text-sm font-medium text-primary hover:underline mb-2">
                       {product.categories.name}
-                    </Link>
-                  )}
+                    </Link>}
                   <h1 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold mb-4 leading-tight">
                     {product.name}
                   </h1>
@@ -357,8 +290,7 @@ const ProductDetail = () => {
 
                   {/* Price Section */}
                   <div className="bg-gradient-to-br from-primary/10 to-accent/10 rounded-xl p-6 border-2 border-primary/20 mb-6">
-                    {discount ? (
-                      <>
+                    {discount ? <>
                         <div className="flex items-center gap-3 mb-2">
                           <Badge variant="destructive" className="text-base px-3 py-1">
                             {discount}% OFF
@@ -372,46 +304,26 @@ const ProductDetail = () => {
                         <p className="text-lg font-semibold text-green-600 dark:text-green-400">
                           You Save: {formatPrice(product.price - finalPrice)}
                         </p>
-                      </>
-                    ) : (
-                      <p className="text-4xl md:text-5xl font-bold text-primary">{formatPrice(product.price)}</p>
-                    )}
+                      </> : <p className="text-4xl md:text-5xl font-bold text-primary">{formatPrice(product.price)}</p>}
                   </div>
                 </div>
 
                 {/* Stock Alert */}
-                {product.stock_quantity !== undefined && product.stock_quantity < 10 && (
-                  <div className="bg-gradient-to-r from-orange-500/10 to-red-500/10 border-2 border-orange-500/50 rounded-lg p-4 animate-pulse">
-                    {product.stock_quantity > 0 ? (
-                      <p className="text-base font-bold text-orange-600 dark:text-orange-400 text-center">
+                {product.stock_quantity !== undefined && product.stock_quantity < 10 && <div className="bg-gradient-to-r from-orange-500/10 to-red-500/10 border-2 border-orange-500/50 rounded-lg p-4 animate-pulse">
+                    {product.stock_quantity > 0 ? <p className="text-base font-bold text-orange-600 dark:text-orange-400 text-center">
                         ⚡ Hurry! Only {product.stock_quantity} {product.stock_quantity === 1 ? "item" : "items"} left in stock
-                      </p>
-                    ) : (
-                      <p className="text-base font-bold text-destructive text-center">❌ Out of stock</p>
-                    )}
-                  </div>
-                )}
+                      </p> : <p className="text-base font-bold text-destructive text-center">❌ Out of stock</p>}
+                  </div>}
 
                 {/* Quantity Selector */}
                 <div className="bg-muted/50 rounded-xl p-6">
                   <h2 className="font-semibold text-lg mb-3">Quantity</h2>
                   <div className="flex items-center space-x-4">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-12 w-12 rounded-full border-2"
-                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    >
+                    <Button variant="outline" size="icon" className="h-12 w-12 rounded-full border-2" onClick={() => setQuantity(Math.max(1, quantity - 1))}>
                       <Minus className="h-5 w-5" />
                     </Button>
                     <span className="text-2xl font-bold w-16 text-center">{quantity}</span>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-12 w-12 rounded-full border-2"
-                      onClick={() => setQuantity(Math.min(product.stock_quantity || 99, quantity + 1))}
-                      disabled={product.stock_quantity === 0}
-                    >
+                    <Button variant="outline" size="icon" className="h-12 w-12 rounded-full border-2" onClick={() => setQuantity(Math.min(product.stock_quantity || 99, quantity + 1))} disabled={product.stock_quantity === 0}>
                       <Plus className="h-5 w-5" />
                     </Button>
                   </div>
@@ -419,22 +331,11 @@ const ProductDetail = () => {
 
                 {/* Action Buttons */}
                 <div className="space-y-3">
-                  <Button
-                    className="w-full text-lg h-14 font-bold shadow-lg hover:shadow-xl transition-all"
-                    size="lg"
-                    onClick={handleBuyNow}
-                    disabled={addToCart.isPending || product.stock_quantity === 0}
-                  >
+                  <Button className="w-full text-lg h-14 font-bold shadow-lg hover:shadow-xl transition-all" size="lg" onClick={handleBuyNow} disabled={addToCart.isPending || product.stock_quantity === 0}>
                     <ShoppingCart className="mr-2 h-6 w-6" />
                     Buy Now
                   </Button>
-                  <Button
-                    className="w-full text-lg h-14 font-bold"
-                    variant="outline"
-                    size="lg"
-                    onClick={() => addToCart.mutate()}
-                    disabled={addToCart.isPending || product.stock_quantity === 0}
-                  >
+                  <Button className="w-full text-lg h-14 font-bold" variant="outline" size="lg" onClick={() => addToCart.mutate()} disabled={addToCart.isPending || product.stock_quantity === 0}>
                     Add to Cart
                   </Button>
                 </div>
@@ -518,33 +419,20 @@ const ProductDetail = () => {
             <div className="mt-16">
               <Tabs defaultValue="description" className="w-full">
                 <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 bg-transparent">
-                  <TabsTrigger
-                    value="description"
-                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-6 py-3"
-                  >
+                  <TabsTrigger value="description" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-6 py-3">
                     Description
                   </TabsTrigger>
-                  <TabsTrigger
-                    value="reviews"
-                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-6 py-3"
-                  >
+                  <TabsTrigger value="reviews" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-6 py-3">
                     Customer Reviews
                   </TabsTrigger>
-                  <TabsTrigger
-                    value="shipping"
-                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-6 py-3"
-                  >
+                  <TabsTrigger value="shipping" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-6 py-3">
                     Shipping & Returns
                   </TabsTrigger>
                 </TabsList>
                 <TabsContent value="description" className="py-8">
-                  {product.description ? (
-                    <div className="prose prose-lg max-w-none dark:prose-invert">
+                  {product.description ? <div className="prose prose-lg max-w-none dark:prose-invert">
                       <p className="text-base leading-relaxed whitespace-pre-wrap">{product.description}</p>
-                    </div>
-                  ) : (
-                    <p className="text-muted-foreground">No description available.</p>
-                  )}
+                    </div> : <p className="text-muted-foreground">No description available.</p>}
                 </TabsContent>
                 <TabsContent value="reviews" className="py-8">
                   <ProductReviews productId={product.id} />
@@ -625,8 +513,7 @@ const ProductDetail = () => {
             </div>
 
             {/* Related Products */}
-            {relatedProducts && relatedProducts.length > 0 && (
-              <div className="mt-20">
+            {relatedProducts && relatedProducts.length > 0 && <div className="mt-20">
                 <div className="text-center mb-10">
                   <h2 className="font-display text-3xl md:text-4xl font-bold mb-3">
                     You May Also Like
@@ -634,91 +521,61 @@ const ProductDetail = () => {
                   <p className="text-muted-foreground">Handpicked products just for you</p>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-                  {relatedProducts.map((relatedProduct) => {
-                    const relatedProductSale = sales?.find((s) => s.product_id === relatedProduct.id);
-                    const relatedGlobalSale = sales?.find((s) => s.is_global);
-                    const { finalPrice: relatedFinalPrice, discount: relatedDiscount } = calculateSalePrice(
-                      relatedProduct.price,
-                      relatedProductSale,
-                      relatedGlobalSale,
-                    );
-
-                    return (
-                      <Link to={`/product/${relatedProduct.slug}`} key={relatedProduct.id}>
+                  {relatedProducts.map(relatedProduct => {
+                const relatedProductSale = sales?.find(s => s.product_id === relatedProduct.id);
+                const relatedGlobalSale = sales?.find(s => s.is_global);
+                const {
+                  finalPrice: relatedFinalPrice,
+                  discount: relatedDiscount
+                } = calculateSalePrice(relatedProduct.price, relatedProductSale, relatedGlobalSale);
+                return <Link to={`/product/${relatedProduct.slug}`} key={relatedProduct.id}>
                         <Card className="group glass-card glass-hover overflow-hidden rounded-xl relative border-2 border-border/50 hover:border-primary/50 transition-all hover:shadow-xl">
-                          {relatedDiscount && (
-                            <Badge variant="destructive" className="absolute top-3 left-3 z-10 text-xs font-bold">
+                          {relatedDiscount && <Badge variant="destructive" className="absolute top-3 left-3 z-10 text-xs font-bold">
                               {relatedDiscount}% OFF
-                            </Badge>
-                          )}
+                            </Badge>}
                           <div className="aspect-square bg-muted relative overflow-hidden">
-                            {relatedProduct.images?.[0] && (
-                              <img
-                                src={relatedProduct.images[0]}
-                                alt={relatedProduct.name}
-                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                              />
-                            )}
+                            {relatedProduct.images?.[0] && <img src={relatedProduct.images[0]} alt={relatedProduct.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />}
                           </div>
                           <CardContent className="p-4">
                             <h3 className="font-display text-sm md:text-base font-semibold mb-2 truncate group-hover:text-primary transition-colors">
                               {relatedProduct.name}
                             </h3>
                             <div className="mb-3">
-                              {relatedDiscount ? (
-                                <div className="flex items-center gap-2">
+                              {relatedDiscount ? <div className="flex items-center gap-2">
                                   <p className="text-base md:text-lg font-bold text-primary">
                                     {formatPrice(relatedFinalPrice)}
                                   </p>
                                   <p className="text-xs text-muted-foreground line-through">
                                     {formatPrice(relatedProduct.price)}
                                   </p>
-                                </div>
-                              ) : (
-                                <p className="text-base md:text-lg font-bold text-primary">
+                                </div> : <p className="text-base md:text-lg font-bold text-primary">
                                   {formatPrice(relatedProduct.price)}
-                                </p>
-                              )}
+                                </p>}
                             </div>
                             <Button className="w-full text-xs md:text-sm" size="sm">
                               View Details
                             </Button>
                           </CardContent>
                         </Card>
-                      </Link>
-                    );
-                  })}
+                      </Link>;
+              })}
                 </div>
-              </div>
-            )}
+              </div>}
           </div>
         </main>
 
         {/* Image Zoom Dialog */}
         <Dialog open={zoomDialogOpen} onOpenChange={setZoomDialogOpen}>
           <DialogContent className="max-w-4xl w-full p-0 overflow-hidden">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute right-4 top-4 z-50 rounded-full bg-background/80 hover:bg-background"
-              onClick={() => setZoomDialogOpen(false)}
-            >
+            <Button variant="ghost" size="icon" className="absolute right-4 top-4 z-50 rounded-full bg-background/80 hover:bg-background" onClick={() => setZoomDialogOpen(false)}>
               <X className="h-4 w-4" />
             </Button>
-            {product.images && product.images[selectedImageIndex] && (
-              <img
-                src={product.images[selectedImageIndex]}
-                alt={`${product.name} ${selectedImageIndex + 1}`}
-                className="w-full h-auto max-h-[90vh] object-contain"
-              />
-            )}
+            {product.images && product.images[selectedImageIndex] && <img src={product.images[selectedImageIndex]} alt={`${product.name} ${selectedImageIndex + 1}`} className="w-full h-auto max-h-[90vh] object-contain" />}
           </DialogContent>
         </Dialog>
 
         <Footer />
       </div>
-    </>
-  );
+    </>;
 };
-
 export default ProductDetail;
