@@ -223,7 +223,7 @@ const Admin = () => {
 
     const exportData = filteredOrders.flatMap((order) => {
       return order.order_items?.map((item: any, index: number) => ({
-        'Order ID': order.id,
+        'Order ID': order.order_number,
         'Order Date': format(new Date(order.created_at), 'PPP'),
         'Status': order.status,
         'Customer First Name': order.first_name,
@@ -356,7 +356,7 @@ const Admin = () => {
                         <CollapsibleTrigger asChild>
                           <Button variant="ghost" className="flex items-center gap-2 p-0 h-auto hover:bg-transparent w-full sm:w-auto justify-start">
                             <div className="text-left">
-                              <CardTitle className="text-base sm:text-lg">Order #{order.id.slice(0, 8)}</CardTitle>
+                              <CardTitle className="text-base sm:text-lg">Order #{order.order_number}</CardTitle>
                               <p className="text-xs sm:text-sm text-muted-foreground">
                                 {format(new Date(order.created_at), 'PPP')}
                               </p>
