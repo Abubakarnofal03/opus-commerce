@@ -125,7 +125,7 @@ const OrderConfirmation = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div>
                   <p className="text-sm text-muted-foreground">Order Number</p>
-                  <p className="font-semibold">#{order.order_number}</p>
+                  <p className="font-semibold">{order.id.slice(0, 8).toUpperCase()}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Order Date</p>

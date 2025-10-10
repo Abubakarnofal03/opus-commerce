@@ -82,7 +82,7 @@ const Orders = () => {
                     <div className="flex justify-between items-start">
                       <div>
                         <CardTitle className="text-lg">
-                          Order #{order.order_number}
+                          Order #{order.id.slice(0, 8)}
                         </CardTitle>
                         <p className="text-sm text-muted-foreground mt-1">
                           Placed on {format(new Date(order.created_at), 'PPP')}

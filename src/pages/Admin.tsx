@@ -221,25 +221,25 @@ const Admin = () => {
       }
     }
 
-    // Sort orders by order_number in ascending order
-    const sortedOrders = [...filteredOrders].sort((a, b) => a.order_number - b.order_number);
-
-    const exportData = sortedOrders.flatMap((order) => {
+    const exportData = filteredOrders.flatMap((order) => {
       return order.order_items?.map((item: any, index: number) => ({
-        'Order ID': order.order_number,
+        'Order ID': order.id,
         'Order Date': format(new Date(order.created_at), 'PPP'),
-        'Customer Name': `${order.first_name} ${order.last_name}`,
+        'Status': order.status,
+        'Customer First Name': order.first_name,
+        'Customer Last Name': order.last_name,
         'Email': order.email || 'N/A',
-        'Phone Number': order.phone,
+        'Phone': order.phone,
         'Address': order.shipping_address,
         'City': order.shipping_city,
+        'State': order.shipping_state,
+        'Zip': order.shipping_zip,
         'Product Name': item.products?.name || 'N/A',
         'Quantity': item.quantity,
         'Price': item.price,
         'Item Total': item.price * item.quantity,
         'Order Total': index === 0 ? Number(order.total_amount) : '',
-        'Status': order.status,
-        'Courier Company': '',
+        'Notes': order.notes || 'N/A',
       }));
     });
 
@@ -356,7 +356,7 @@ const Admin = () => {
                         <CollapsibleTrigger asChild>
                           <Button variant="ghost" className="flex items-center gap-2 p-0 h-auto hover:bg-transparent w-full sm:w-auto justify-start">
                             <div className="text-left">
-                              <CardTitle className="text-base sm:text-lg">Order #{order.order_number}</CardTitle>
+                              <CardTitle className="text-base sm:text-lg">Order #{order.id.slice(0, 8)}</CardTitle>
                               <p className="text-xs sm:text-sm text-muted-foreground">
                                 {format(new Date(order.created_at), 'PPP')}
                               </p>
