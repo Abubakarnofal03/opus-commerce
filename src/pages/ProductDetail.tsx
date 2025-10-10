@@ -182,7 +182,11 @@ const ProductDetail = () => {
   const displayPrice = selectedVariation ? selectedVariation.price : product?.price || 0;
   const productSale = sales?.find((s) => s.product_id === product?.id);
   const globalSale = sales?.find((s) => s.is_global);
-  const { finalPrice, discount } = calculateSalePrice(displayPrice, productSale, globalSale);
+  const applySaleToVariation = selectedVariation ? selectedVariation.apply_sale !== false : true;
+  const { finalPrice, discount } = calculateSalePrice(displayPrice, productSale, globalSale, applySaleToVariation);
+  
+  // Calculate total price (finalPrice * quantity)
+  const totalPrice = finalPrice * quantity;
 
   // Track TikTok Pixel ViewContent event when product loads
   useEffect(() => {
@@ -344,14 +348,26 @@ const ProductDetail = () => {
                     <div className="space-y-2">
                       <Badge className="bg-destructive text-destructive-foreground">{discount}% OFF</Badge>
                       <div className="flex items-center gap-3">
-                        <p className="text-2xl md:text-3xl font-bold text-destructive">{formatPrice(finalPrice)}</p>
+                        <p className="text-2xl md:text-3xl font-bold text-destructive">{formatPrice(totalPrice)}</p>
                         <p className="text-lg md:text-xl text-muted-foreground line-through">
-                          {formatPrice(product.price)}
+                          {formatPrice(displayPrice * quantity)}
                         </p>
                       </div>
+                      {quantity > 1 && (
+                        <p className="text-sm text-muted-foreground">
+                          {formatPrice(finalPrice)} × {quantity}
+                        </p>
+                      )}
                     </div>
                    ) : (
-                    <p className="text-2xl md:text-3xl font-bold text-accent">{formatPrice(displayPrice)}</p>
+                    <div>
+                      <p className="text-2xl md:text-3xl font-bold text-accent">{formatPrice(totalPrice)}</p>
+                      {quantity > 1 && (
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {formatPrice(displayPrice)} × {quantity}
+                        </p>
+                      )}
+                    </div>
                   )}
                 </div>
 
@@ -370,22 +386,53 @@ const ProductDetail = () => {
 
                 {variations && variations.length > 0 && (
                   <div>
-                    <h2 className="font-semibold text-base md:text-lg mb-2">Select Variation</h2>
-                    <div className="flex flex-wrap gap-2">
-                      {variations.map((variation) => (
-                        <Button
-                          key={variation.id}
-                          variant={selectedVariation?.id === variation.id ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => setSelectedVariation(variation)}
-                          className="min-w-[80px]"
-                        >
-                          <div className="text-center">
-                            <div className="font-semibold">{variation.name}</div>
-                            <div className="text-xs">{formatPrice(variation.price)}</div>
-                          </div>
-                        </Button>
-                      ))}
+                    <h2 className="font-semibold text-base md:text-lg mb-3">Select Variation</h2>
+                    <div className="flex flex-wrap gap-3">
+                      {variations.map((variation) => {
+                        const varSale = sales?.find((s) => s.product_id === product?.id);
+                        const varGlobalSale = sales?.find((s) => s.is_global);
+                        const varApplySale = variation.apply_sale !== false;
+                        const { finalPrice: varFinalPrice, discount: varDiscount } = calculateSalePrice(
+                          variation.price,
+                          varSale,
+                          varGlobalSale,
+                          varApplySale
+                        );
+                        
+                        return (
+                          <button
+                            key={variation.id}
+                            onClick={() => {
+                              setSelectedVariation(variation);
+                              setQuantity(1);
+                            }}
+                            className={`
+                              relative px-4 py-3 rounded-xl transition-all duration-200
+                              ${selectedVariation?.id === variation.id
+                                ? 'bg-primary text-primary-foreground shadow-lg scale-105 ring-2 ring-primary ring-offset-2'
+                                : 'bg-card border-2 border-border hover:border-primary hover:shadow-md'
+                              }
+                            `}
+                          >
+                            <div className="text-center space-y-1">
+                              <div className="font-semibold text-sm">{variation.name}</div>
+                              {varDiscount ? (
+                                <div className="space-y-0.5">
+                                  <div className="text-xs font-bold">{formatPrice(varFinalPrice)}</div>
+                                  <div className="text-xs line-through opacity-60">{formatPrice(variation.price)}</div>
+                                </div>
+                              ) : (
+                                <div className="text-xs font-medium">{formatPrice(variation.price)}</div>
+                              )}
+                            </div>
+                            {varDiscount && (
+                              <div className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                                -{varDiscount}%
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 )}

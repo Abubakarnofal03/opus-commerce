@@ -254,6 +254,7 @@ export type Database = {
           id: string
           last_name: string
           notes: string | null
+          order_number: number
           phone: string
           shipping_address: string
           shipping_city: string
@@ -272,6 +273,7 @@ export type Database = {
           id?: string
           last_name?: string
           notes?: string | null
+          order_number?: number
           phone: string
           shipping_address: string
           shipping_city: string
@@ -290,6 +292,7 @@ export type Database = {
           id?: string
           last_name?: string
           notes?: string | null
+          order_number?: number
           phone?: string
           shipping_address?: string
           shipping_city?: string
@@ -337,6 +340,7 @@ export type Database = {
       }
       product_variations: {
         Row: {
+          apply_sale: boolean
           created_at: string
           id: string
           name: string
@@ -346,6 +350,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          apply_sale?: boolean
           created_at?: string
           id?: string
           name: string
@@ -355,6 +360,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          apply_sale?: boolean
           created_at?: string
           id?: string
           name?: string

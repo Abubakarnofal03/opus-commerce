@@ -10,6 +10,7 @@ export interface Variation {
   name: string;
   price: string;
   sort_order: number;
+  apply_sale: boolean;
 }
 
 interface VariationManagerProps {
@@ -23,6 +24,7 @@ export function VariationManager({ variations, onChange }: VariationManagerProps
       name: "",
       price: "",
       sort_order: variations.length,
+      apply_sale: true,
     };
     onChange([...variations, newVariation]);
   };
@@ -32,7 +34,7 @@ export function VariationManager({ variations, onChange }: VariationManagerProps
     onChange(updated);
   };
 
-  const updateVariation = (index: number, field: keyof Variation, value: string) => {
+  const updateVariation = (index: number, field: keyof Variation, value: string | boolean) => {
     const updated = variations.map((v, i) => 
       i === index ? { ...v, [field]: value } : v
     );
@@ -58,26 +60,40 @@ export function VariationManager({ variations, onChange }: VariationManagerProps
                   <div className="mt-2">
                     <GripVertical className="h-4 w-4 text-muted-foreground" />
                   </div>
-                  <div className="flex-1 grid grid-cols-2 gap-2">
-                    <div>
-                      <Label className="text-xs">Name</Label>
-                      <Input
-                        placeholder="e.g., 1 pc, 2 pcs"
-                        value={variation.name}
-                        onChange={(e) => updateVariation(index, "name", e.target.value)}
-                        className="h-8"
-                      />
+                  <div className="flex-1 space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <Label className="text-xs">Name</Label>
+                        <Input
+                          placeholder="e.g., 1 pc, 2 pcs"
+                          value={variation.name}
+                          onChange={(e) => updateVariation(index, "name", e.target.value)}
+                          className="h-8"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Price</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder="0.00"
+                          value={variation.price}
+                          onChange={(e) => updateVariation(index, "price", e.target.value)}
+                          className="h-8"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <Label className="text-xs">Price</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        placeholder="0.00"
-                        value={variation.price}
-                        onChange={(e) => updateVariation(index, "price", e.target.value)}
-                        className="h-8"
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id={`apply-sale-${index}`}
+                        checked={variation.apply_sale}
+                        onChange={(e) => updateVariation(index, "apply_sale", e.target.checked)}
+                        className="rounded border-input"
                       />
+                      <Label htmlFor={`apply-sale-${index}`} className="text-xs cursor-pointer">
+                        Apply sale discount to this variation
+                      </Label>
                     </div>
                   </div>
                   <Button

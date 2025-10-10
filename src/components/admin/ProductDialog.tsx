@@ -67,6 +67,7 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
                 name: v.name,
                 price: v.price.toString(),
                 sort_order: v.sort_order,
+                apply_sale: v.apply_sale ?? true,
               })));
             }
           });
@@ -142,6 +143,7 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
             name: v.name,
             price: parseFloat(v.price),
             sort_order: index,
+            apply_sale: v.apply_sale,
           }));
         
         if (variationsData.length > 0) {

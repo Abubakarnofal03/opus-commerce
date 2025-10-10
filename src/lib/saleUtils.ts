@@ -11,8 +11,14 @@ export interface Sale {
 export const calculateSalePrice = (
   originalPrice: number,
   productSale: Sale | null,
-  globalSale: Sale | null
+  globalSale: Sale | null,
+  applySale: boolean = true
 ): { finalPrice: number; discount: number | null } => {
+  // If applySale is false, return original price without discount
+  if (!applySale) {
+    return { finalPrice: originalPrice, discount: null };
+  }
+
   // Product-specific sale takes priority over global sale
   const activeSale = productSale || globalSale;
   
