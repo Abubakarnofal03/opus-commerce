@@ -21,7 +21,7 @@ import ProductReviews from "@/components/ProductReviews";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 
-const ProductDetail = () => {
+const ProductDetail = ({ key }: { key?: string }) => {
   const { slug } = useParams();
   const [quantity, setQuantity] = useState(1);
   const [user, setUser] = useState<any>(null);
@@ -31,6 +31,18 @@ const ProductDetail = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  
+  // Reset component state when slug changes
+  useEffect(() => {
+    setQuantity(1);
+    setSelectedImageIndex(0);
+    setSelectedVariation(null);
+    
+    // Invalidate all queries to ensure fresh data
+    queryClient.invalidateQueries({ queryKey: ['product', slug] });
+    queryClient.invalidateQueries({ queryKey: ['product-variations'] });
+    queryClient.invalidateQueries({ queryKey: ['related-products'] });
+  }, [slug, queryClient]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -591,8 +603,19 @@ const ProductDetail = () => {
                               </p>
                             )}
                           </div>
-                          <Button asChild className="w-full text-xs md:text-sm" size="sm">
-                            <Link to={`/product/${relatedProduct.slug}`}>View Details</Link>
+                          <Button 
+                            asChild 
+                            className="w-full text-xs md:text-sm" 
+                            size="sm"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              // Force a full page reload to ensure fresh data
+                              window.location.href = `/product/${relatedProduct.slug}`;
+                            }}
+                          >
+                            <Link to={`/product/${relatedProduct.slug}`} onClick={(e) => e.preventDefault()}>
+                              View Details
+                            </Link>
                           </Button>
                         </CardContent>
                       </Card>
