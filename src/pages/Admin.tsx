@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { Package, ShoppingBag, DollarSign, Plus, Pencil, Trash2, Image as ImageIcon, Download, ChevronDown, ChevronUp, CalendarIcon } from "lucide-react";
+import { Package, ShoppingBag, DollarSign, Plus, Pencil, Trash2, Image as ImageIcon, Download, ChevronDown, ChevronUp, CalendarIcon, BarChart3, Filter } from "lucide-react";
 import { ProductDialog } from "@/components/admin/ProductDialog";
 import { CategoryDialog } from "@/components/admin/CategoryDialog";
 import { BannerDialog } from "@/components/admin/BannerDialog";
@@ -19,6 +19,7 @@ import { BlogDialog } from "@/components/admin/BlogDialog";
 import { SaleDialog } from "@/components/admin/SaleDialog";
 import { MetaCatalogSync } from "@/components/admin/MetaCatalogSync";
 import ReviewDialog from "@/components/admin/ReviewDialog";
+import { OrderAnalytics } from "@/components/admin/OrderAnalytics";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatPrice } from "@/lib/currency";
@@ -45,6 +46,8 @@ const Admin = () => {
   const [exportDialog, setExportDialog] = useState(false);
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
+  const [selectedCity, setSelectedCity] = useState<string>("all");
+  const [selectedProduct, setSelectedProduct] = useState<string>("all");
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -328,6 +331,7 @@ const Admin = () => {
           <Tabs defaultValue="orders">
             <TabsList className="w-full flex flex-wrap gap-1 h-auto p-1">
               <TabsTrigger value="orders" className="text-xs md:text-sm flex-1 min-w-[80px]">Orders</TabsTrigger>
+              <TabsTrigger value="analytics" className="text-xs md:text-sm flex-1 min-w-[80px]">Analytics</TabsTrigger>
               <TabsTrigger value="products" className="text-xs md:text-sm flex-1 min-w-[80px]">Products</TabsTrigger>
               <TabsTrigger value="categories" className="text-xs md:text-sm flex-1 min-w-[80px]">Categories</TabsTrigger>
               <TabsTrigger value="reviews" className="text-xs md:text-sm flex-1 min-w-[80px]">Reviews</TabsTrigger>
@@ -356,7 +360,7 @@ const Admin = () => {
                         <CollapsibleTrigger asChild>
                           <Button variant="ghost" className="flex items-center gap-2 p-0 h-auto hover:bg-transparent w-full sm:w-auto justify-start">
                             <div className="text-left">
-                              <CardTitle className="text-base sm:text-lg">Order #{order.id.slice(0, 8)}</CardTitle>
+                              <CardTitle className="text-base sm:text-lg">Order #{order.order_number}</CardTitle>
                               <p className="text-xs sm:text-sm text-muted-foreground">
                                 {format(new Date(order.created_at), 'PPP')}
                               </p>
@@ -440,6 +444,17 @@ const Admin = () => {
                   </Card>
                 </Collapsible>
               ))}
+            </TabsContent>
+
+            <TabsContent value="analytics">
+              <OrderAnalytics
+                orders={orders || []}
+                products={products || []}
+                selectedCity={selectedCity}
+                setSelectedCity={setSelectedCity}
+                selectedProduct={selectedProduct}
+                setSelectedProduct={setSelectedProduct}
+              />
             </TabsContent>
 
             <TabsContent value="products">
