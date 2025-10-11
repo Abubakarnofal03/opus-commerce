@@ -301,7 +301,7 @@ const Admin = () => {
           'Item Total': item.price * item.quantity,
           'Order Total': index === 0 ? Number(order.total_amount) : '',
           'Status': order.status,
-          'Notes': order.notes || 'N/A',
+          'Notes': order.admin_notes || 'N/A',
           'Courier Company': order.courier_company || 'N/A',
         };
       });
