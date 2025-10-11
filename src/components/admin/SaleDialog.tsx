@@ -22,6 +22,7 @@ export const SaleDialog = () => {
   const [productId, setProductId] = useState<string>("");
   const [discountPercentage, setDiscountPercentage] = useState("10");
   const [endDate, setEndDate] = useState("");
+  const [editingSaleId, setEditingSaleId] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -49,25 +50,35 @@ export const SaleDialog = () => {
     },
   });
 
-  const createSale = useMutation({
+  const saveSale = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from('sales').insert({
-        product_id: isGlobal ? null : productId,
-        discount_percentage: parseFloat(discountPercentage),
-        end_date: new Date(endDate).toISOString(),
-        is_global: isGlobal,
-      });
-      if (error) throw error;
+      if (editingSaleId) {
+        const { error } = await supabase.from('sales').update({
+          product_id: isGlobal ? null : productId,
+          discount_percentage: parseFloat(discountPercentage),
+          end_date: new Date(endDate).toISOString(),
+          is_global: isGlobal,
+        }).eq('id', editingSaleId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('sales').insert({
+          product_id: isGlobal ? null : productId,
+          discount_percentage: parseFloat(discountPercentage),
+          end_date: new Date(endDate).toISOString(),
+          is_global: isGlobal,
+        });
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sales'] });
       queryClient.invalidateQueries({ queryKey: ['active-global-sale'] });
-      toast({ title: "Sale created successfully" });
+      toast({ title: editingSaleId ? "Sale updated successfully" : "Sale created successfully" });
       setOpen(false);
       resetForm();
     },
     onError: () => {
-      toast({ title: "Failed to create sale", variant: "destructive" });
+      toast({ title: editingSaleId ? "Failed to update sale" : "Failed to create sale", variant: "destructive" });
     },
   });
 
@@ -88,6 +99,15 @@ export const SaleDialog = () => {
     setProductId("");
     setDiscountPercentage("10");
     setEndDate("");
+    setEditingSaleId(null);
+  };
+
+  const handleEdit = (sale: any) => {
+    setEditingSaleId(sale.id);
+    setIsGlobal(sale.is_global);
+    setProductId(sale.product_id || "");
+    setDiscountPercentage(sale.discount_percentage.toString());
+    setEndDate(new Date(sale.end_date).toISOString().slice(0, 16));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -100,7 +120,7 @@ export const SaleDialog = () => {
       toast({ title: "Please select an end date", variant: "destructive" });
       return;
     }
-    createSale.mutate();
+    saveSale.mutate();
   };
 
   return (
@@ -113,7 +133,7 @@ export const SaleDialog = () => {
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Manage Sales</DialogTitle>
+          <DialogTitle>{editingSaleId ? 'Edit Sale' : 'Manage Sales'}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -164,15 +184,22 @@ export const SaleDialog = () => {
             />
           </div>
 
-          <Button type="submit" disabled={createSale.isPending}>
-            {createSale.isPending ? "Creating..." : "Create Sale"}
-          </Button>
+          <div className="flex gap-2">
+            <Button type="submit" disabled={saveSale.isPending}>
+              {saveSale.isPending ? (editingSaleId ? "Updating..." : "Creating...") : (editingSaleId ? "Update Sale" : "Create Sale")}
+            </Button>
+            {editingSaleId && (
+              <Button type="button" variant="outline" onClick={resetForm}>
+                Cancel Edit
+              </Button>
+            )}
+          </div>
         </form>
 
         <div className="mt-6 space-y-2">
           <h3 className="font-semibold">Active Sales</h3>
           {sales?.map((sale) => (
-            <div key={sale.id} className="flex items-center justify-between p-3 glass-card rounded-lg">
+            <div key={sale.id} className="flex items-center justify-between p-3 glass-card rounded-lg hover:bg-accent/50 cursor-pointer transition-colors" onClick={() => handleEdit(sale)}>
               <div className="flex-1">
                 <p className="font-medium">
                   {sale.is_global ? "Global Sale" : sale.products?.name}
@@ -184,7 +211,10 @@ export const SaleDialog = () => {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => deleteSale.mutate(sale.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  deleteSale.mutate(sale.id);
+                }}
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
