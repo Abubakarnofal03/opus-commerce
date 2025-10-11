@@ -460,7 +460,7 @@ const Admin = () => {
                         <CollapsibleTrigger asChild>
                           <Button variant="ghost" className="flex items-center gap-2 p-0 h-auto hover:bg-transparent w-full sm:w-auto justify-start">
                             <div className="text-left">
-                              <CardTitle className="text-base sm:text-lg">Order #{index + 1}</CardTitle>
+                              <CardTitle className="text-base sm:text-lg">Order #{order.order_number}</CardTitle>
                               <p className="text-xs sm:text-sm text-muted-foreground">
                                 {format(new Date(order.created_at), 'PPP')}
                               </p>
