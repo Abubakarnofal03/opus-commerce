@@ -33,7 +33,11 @@ export const setGuestCart = (cart: GuestCartItem[]): void => {
 
 export const addToGuestCart = (item: GuestCartItem): void => {
   const cart = getGuestCart();
-  const existingIndex = cart.findIndex(i => i.product_id === item.product_id);
+  // Match by both product_id and variation_id to handle variations correctly
+  const existingIndex = cart.findIndex(i => 
+    i.product_id === item.product_id && 
+    i.variation_id === item.variation_id
+  );
   
   if (existingIndex >= 0) {
     cart[existingIndex].quantity += item.quantity;

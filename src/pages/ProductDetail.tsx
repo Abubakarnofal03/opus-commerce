@@ -114,45 +114,54 @@ const ProductDetail = ({ key }: { key?: string }) => {
     mutationFn: async () => {
       // Determine the price to use (variation price or product price)
       const priceToUse = selectedVariation ? selectedVariation.price : product.price;
-      
-      if (!user) {
+
+      if (user) {
+        // Check if item already exists in cart (considering variation)
+        const { data: existingItems } = await supabase
+          .from("cart_items")
+          .select("*")
+          .eq("user_id", user.id)
+          .eq("product_id", product.id);
+
+        let existingItem = null;
+        if (existingItems && existingItems.length > 0) {
+          // Find exact match including variation
+          existingItem = existingItems.find(item => 
+            item.variation_id === (selectedVariation?.id || null)
+          );
+        }
+
+        if (existingItem) {
+          // Update quantity of existing item
+          const { error } = await supabase
+            .from("cart_items")
+            .update({ quantity: existingItem.quantity + quantity })
+            .eq("id", existingItem.id);
+          if (error) throw error;
+        } else {
+          // Insert new cart item
+          const { error } = await supabase.from("cart_items").insert({
+            user_id: user.id,
+            product_id: product.id,
+            quantity,
+            variation_id: selectedVariation?.id || null,
+            variation_name: selectedVariation?.name || null,
+            variation_price: selectedVariation?.price || null,
+          });
+          if (error) throw error;
+        }
+      } else {
+        // Guest cart
         addToGuestCart({
           product_id: product.id,
           quantity,
           product_name: product.name,
-          product_price: priceToUse,
+          product_price: product.price,
           product_image: product.images?.[0],
-          variation_id: selectedVariation?.id,
-          variation_name: selectedVariation?.name,
-          variation_price: selectedVariation?.price,
-        });
-        return;
-      }
-
-      const { data: existingItem } = await supabase
-        .from("cart_items")
-        .select("*")
-        .eq("user_id", user.id)
-        .eq("product_id", product.id)
-        .eq("variation_id", selectedVariation?.id || null)
-        .maybeSingle();
-
-      if (existingItem) {
-        const { error } = await supabase
-          .from("cart_items")
-          .update({ quantity: existingItem.quantity + quantity })
-          .eq("id", existingItem.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("cart_items").insert({
-          user_id: user.id,
-          product_id: product.id,
-          quantity,
           variation_id: selectedVariation?.id || null,
           variation_name: selectedVariation?.name || null,
           variation_price: selectedVariation?.price || null,
         });
-        if (error) throw error;
       }
     },
     onSuccess: () => {

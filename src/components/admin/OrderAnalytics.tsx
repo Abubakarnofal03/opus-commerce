@@ -88,7 +88,9 @@ export const OrderAnalytics = ({
       .slice(0, 10);
   }, [orders]);
 
-  const totalRevenue = filteredOrders.reduce((sum, order) => sum + Number(order.total_amount), 0);
+  // Calculate revenue only for delivered orders
+  const deliveredOrders = filteredOrders.filter(order => order.status === 'delivered');
+  const totalRevenue = deliveredOrders.reduce((sum, order) => sum + Number(order.total_amount), 0);
   const totalOrders = filteredOrders.length;
   const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 

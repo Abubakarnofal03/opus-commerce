@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { Package, ShoppingBag, DollarSign, Plus, Pencil, Trash2, Image as ImageIcon, Download, ChevronDown, ChevronUp, CalendarIcon, BarChart3, Filter } from "lucide-react";
+import { Package, ShoppingBag, DollarSign, Plus, Pencil, Trash2, Image as ImageIcon, Download, ChevronDown, ChevronUp, CalendarIcon, BarChart3, Filter, Search } from "lucide-react";
 import { ProductDialog } from "@/components/admin/ProductDialog";
 import { CategoryDialog } from "@/components/admin/CategoryDialog";
 import { BannerDialog } from "@/components/admin/BannerDialog";
@@ -48,6 +48,11 @@ const Admin = () => {
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [selectedCity, setSelectedCity] = useState<string>("all");
   const [selectedProduct, setSelectedProduct] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [productFilter, setProductFilter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [editingNote, setEditingNote] = useState<{ orderId: string; note: string } | null>(null);
+  const [exportStatusFilter, setExportStatusFilter] = useState<string>("all");
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -106,7 +111,7 @@ const Admin = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('orders')
-        .select('*, order_items(*, products(*))')
+        .select('*, order_items(*, products(*, product_variations(*)))')
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data;
@@ -163,6 +168,21 @@ const Admin = () => {
     },
   });
 
+  const updateAdminNote = useMutation({
+    mutationFn: async ({ orderId, note }: { orderId: string; note: string }) => {
+      const { error } = await supabase
+        .from('orders')
+        .update({ admin_notes: note })
+        .eq('id', orderId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+      toast({ title: "Note updated" });
+      setEditingNote(null);
+    },
+  });
+
   const deleteItem = useMutation({
     mutationFn: async ({ type, id }: { type: string; id: string }) => {
       const { error } = await supabase.from(type as any).delete().eq('id', id);
@@ -204,8 +224,14 @@ const Admin = () => {
 
     let filteredOrders = orders;
     
+    // Apply status filter
+    if (exportStatusFilter !== "all") {
+      filteredOrders = filteredOrders.filter(order => order.status === exportStatusFilter);
+    }
+    
+    // Apply date filter
     if (filterByDate && startDate && endDate) {
-      filteredOrders = orders.filter((order) => {
+      filteredOrders = filteredOrders.filter((order) => {
         const orderDate = new Date(order.created_at);
         const start = new Date(startDate);
         start.setHours(0, 0, 0, 0);
@@ -224,26 +250,32 @@ const Admin = () => {
       }
     }
 
-    const exportData = filteredOrders.flatMap((order) => {
-      return order.order_items?.map((item: any, index: number) => ({
-        'Order ID': order.id,
-        'Order Date': format(new Date(order.created_at), 'PPP'),
-        'Status': order.status,
-        'Customer First Name': order.first_name,
-        'Customer Last Name': order.last_name,
-        'Email': order.email || 'N/A',
-        'Phone': order.phone,
-        'Address': order.shipping_address,
-        'City': order.shipping_city,
-        'State': order.shipping_state,
-        'Zip': order.shipping_zip,
-        'Product Name': item.products?.name || 'N/A',
-        'Quantity': item.quantity,
-        'Price': item.price,
-        'Item Total': item.price * item.quantity,
-        'Order Total': index === 0 ? Number(order.total_amount) : '',
-        'Notes': order.notes || 'N/A',
-      }));
+    // Create sequential IDs for export
+    const exportData = filteredOrders.flatMap((order, orderIndex) => {
+      const sequentialId = orderIndex + 1;
+      return order.order_items?.map((item: any, index: number) => {
+        const variationInfo = item.variation_name ? ` (${item.variation_name})` : '';
+        return {
+          'Order ID': sequentialId,
+          'Order Date': format(new Date(order.created_at), 'PPP'),
+          'Status': order.status,
+          'Customer First Name': order.first_name,
+          'Customer Last Name': order.last_name,
+          'Email': order.email || 'N/A',
+          'Phone': order.phone,
+          'Address': order.shipping_address,
+          'City': order.shipping_city,
+          'State': order.shipping_state,
+          'Zip': order.shipping_zip,
+          'Product Name': (item.products?.name || 'N/A') + variationInfo,
+          'Quantity': item.quantity,
+          'Price': item.price,
+          'Item Total': item.price * item.quantity,
+          'Order Total': index === 0 ? Number(order.total_amount) : '',
+          'Customer Notes': order.notes || 'N/A',
+          'Admin Notes': order.admin_notes || 'N/A',
+        };
+      });
     });
 
     const worksheet = XLSX.utils.json_to_sheet(exportData);
@@ -266,10 +298,26 @@ const Admin = () => {
     setEndDate(undefined);
   };
 
+  // Filter and search orders
+  const filteredOrders = orders?.filter(order => {
+    const matchesStatus = statusFilter === "all" || order.status === statusFilter;
+    const matchesProduct = productFilter === "all" || order.order_items?.some((item: any) => item.product_id === productFilter);
+    const matchesSearch = !searchQuery || 
+      order.order_number.toString().includes(searchQuery) ||
+      order.first_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      order.last_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      order.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      order.phone.includes(searchQuery) ||
+      order.order_items?.some((item: any) => 
+        item.products?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    return matchesStatus && matchesProduct && matchesSearch;
+  }) || [];
+
   const stats = {
     totalOrders: orders?.length || 0,
     totalProducts: products?.length || 0,
-    totalRevenue: orders?.reduce((sum, order) => sum + Number(order.total_amount), 0) || 0,
+    totalRevenue: orders?.filter(order => order.status === 'delivered').reduce((sum, order) => sum + Number(order.total_amount), 0) || 0,
   };
 
   if (!isAdmin) {
@@ -341,14 +389,66 @@ const Admin = () => {
             </TabsList>
 
             <TabsContent value="orders" className="space-y-4">
-              <div className="flex justify-end mb-4">
-                <Button onClick={() => setExportDialog(true)} variant="outline" className="w-full sm:w-auto text-xs sm:text-sm">
-                  <Download className="h-4 w-4 mr-2" />
-                  <span className="hidden sm:inline">Export Orders to Excel</span>
-                  <span className="sm:hidden">Export Orders</span>
-                </Button>
-              </div>
-              {orders?.map((order) => (
+              <Card className="mb-4">
+                <CardContent className="pt-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Search</label>
+                      <input
+                        type="text"
+                        placeholder="Order ID, name, product..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full px-3 py-2 border rounded-md"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Filter by Status</label>
+                      <Select value={statusFilter} onValueChange={setStatusFilter}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Statuses</SelectItem>
+                          <SelectItem value="pending">Pending</SelectItem>
+                          <SelectItem value="processing">Processing</SelectItem>
+                          <SelectItem value="shipped">Shipped</SelectItem>
+                          <SelectItem value="delivered">Delivered</SelectItem>
+                          <SelectItem value="cancelled">Cancelled</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Filter by Product</label>
+                      <Select value={productFilter} onValueChange={setProductFilter}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Products</SelectItem>
+                          {products?.map(product => (
+                            <SelectItem key={product.id} value={product.id}>{product.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex items-end">
+                      <Button onClick={() => setExportDialog(true)} variant="outline" className="w-full">
+                        <Download className="h-4 w-4 mr-2" />
+                        Export to Excel
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              {filteredOrders.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  No orders match your filters
+                </div>
+              ) : null}
+              
+              {filteredOrders.map((order, index) => (
                 <Collapsible 
                   key={order.id}
                   open={expandedOrders.has(order.id)}
@@ -360,7 +460,7 @@ const Admin = () => {
                         <CollapsibleTrigger asChild>
                           <Button variant="ghost" className="flex items-center gap-2 p-0 h-auto hover:bg-transparent w-full sm:w-auto justify-start">
                             <div className="text-left">
-                              <CardTitle className="text-base sm:text-lg">Order #{order.order_number}</CardTitle>
+                              <CardTitle className="text-base sm:text-lg">Order #{index + 1}</CardTitle>
                               <p className="text-xs sm:text-sm text-muted-foreground">
                                 {format(new Date(order.created_at), 'PPP')}
                               </p>
@@ -392,9 +492,29 @@ const Admin = () => {
                     <CardContent>
                       <div className="space-y-2">
                         {order.order_items?.map((item: any) => (
-                          <div key={item.id} className="flex justify-between text-sm">
-                            <span>{item.products?.name} x {item.quantity}</span>
-                            <span>{formatPrice(item.price * item.quantity)}</span>
+                          <div key={item.id} className="flex flex-col sm:flex-row justify-between gap-2 text-sm border-b pb-2">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">{item.products?.name}</span>
+                                {item.variation_name && (
+                                  <Badge variant="outline" className="text-xs">
+                                    {item.variation_name}
+                                  </Badge>
+                                )}
+                              </div>
+                              <span className="text-muted-foreground">Qty: {item.quantity}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold">{formatPrice(item.price * item.quantity)}</span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => navigate(`/product/${item.products?.slug}`)}
+                                className="h-8"
+                              >
+                                View Product
+                              </Button>
+                            </div>
                           </div>
                         ))}
                         <div className="border-t pt-2 flex justify-between font-bold">
@@ -429,10 +549,54 @@ const Admin = () => {
 
                           {order.notes && (
                             <>
-                              <h4 className="font-semibold text-sm pt-2">Order Notes</h4>
+                              <h4 className="font-semibold text-sm pt-2">Customer Notes</h4>
                               <p className="text-sm text-muted-foreground">{order.notes}</p>
                             </>
                           )}
+
+                          <div className="pt-2">
+                            <h4 className="font-semibold text-sm mb-2">Admin Notes</h4>
+                            {editingNote?.orderId === order.id ? (
+                              <div className="space-y-2">
+                                <textarea
+                                  value={editingNote.note}
+                                  onChange={(e) => setEditingNote({ orderId: order.id, note: e.target.value })}
+                                  className="w-full px-3 py-2 border rounded-md text-sm"
+                                  rows={3}
+                                  placeholder="Add admin notes..."
+                                />
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    onClick={() => updateAdminNote.mutate({ orderId: order.id, note: editingNote.note })}
+                                  >
+                                    Save
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setEditingNote(null)}
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="space-y-2">
+                                <p className="text-sm text-muted-foreground">
+                                  {order.admin_notes || 'No admin notes'}
+                                </p>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setEditingNote({ orderId: order.id, note: order.admin_notes || '' })}
+                                >
+                                  <Pencil className="h-3 w-3 mr-1" />
+                                  Edit Note
+                                </Button>
+                              </div>
+                            )}
+                          </div>
 
                           <div className="text-sm">
                             <span className="text-muted-foreground">Order ID:</span>
@@ -857,13 +1021,30 @@ const Admin = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Export Orders to Excel</AlertDialogTitle>
             <AlertDialogDescription>
-              Choose to export all orders or filter by date range.
+              Choose to export all orders or filter by date range and status.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Filter by Status</label>
+              <Select value={exportStatusFilter} onValueChange={setExportStatusFilter}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="processing">Processing</SelectItem>
+                  <SelectItem value="shipped">Shipped</SelectItem>
+                  <SelectItem value="delivered">Delivered</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Start Date</label>
+                <label className="text-sm font-medium">Start Date (Optional)</label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -886,7 +1067,7 @@ const Admin = () => {
                 </Popover>
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">End Date</label>
+                <label className="text-sm font-medium">End Date (Optional)</label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
