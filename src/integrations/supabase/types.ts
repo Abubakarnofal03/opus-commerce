@@ -249,7 +249,9 @@ export type Database = {
       orders: {
         Row: {
           admin_notes: string | null
+          courier_company: string | null
           created_at: string | null
+          customer_confirmation: string | null
           email: string | null
           first_name: string
           id: string
@@ -269,7 +271,9 @@ export type Database = {
         }
         Insert: {
           admin_notes?: string | null
+          courier_company?: string | null
           created_at?: string | null
+          customer_confirmation?: string | null
           email?: string | null
           first_name?: string
           id?: string
@@ -289,7 +293,9 @@ export type Database = {
         }
         Update: {
           admin_notes?: string | null
+          courier_company?: string | null
           created_at?: string | null
+          customer_confirmation?: string | null
           email?: string | null
           first_name?: string
           id?: string

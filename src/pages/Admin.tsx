@@ -52,6 +52,8 @@ const Admin = () => {
   const [productFilter, setProductFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [editingNote, setEditingNote] = useState<{ orderId: string; note: string } | null>(null);
+  const [editingCustomerConfirmation, setEditingCustomerConfirmation] = useState<{ orderId: string; confirmation: string } | null>(null);
+  const [editingCourierCompany, setEditingCourierCompany] = useState<{ orderId: string; courier: string } | null>(null);
   const [exportStatusFilter, setExportStatusFilter] = useState<string>("all");
 
   useEffect(() => {
@@ -183,6 +185,36 @@ const Admin = () => {
     },
   });
 
+  const updateCustomerConfirmation = useMutation({
+    mutationFn: async ({ orderId, confirmation }: { orderId: string; confirmation: string }) => {
+      const { error } = await supabase
+        .from('orders')
+        .update({ customer_confirmation: confirmation })
+        .eq('id', orderId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+      toast({ title: "Customer confirmation updated" });
+      setEditingCustomerConfirmation(null);
+    },
+  });
+
+  const updateCourierCompany = useMutation({
+    mutationFn: async ({ orderId, courier }: { orderId: string; courier: string }) => {
+      const { error } = await supabase
+        .from('orders')
+        .update({ courier_company: courier })
+        .eq('id', orderId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+      toast({ title: "Courier company updated" });
+      setEditingCourierCompany(null);
+    },
+  });
+
   const deleteItem = useMutation({
     mutationFn: async ({ type, id }: { type: string; id: string }) => {
       const { error } = await supabase.from(type as any).delete().eq('id', id);
@@ -250,30 +282,27 @@ const Admin = () => {
       }
     }
 
-    // Create sequential IDs for export
-    const exportData = filteredOrders.flatMap((order, orderIndex) => {
-      const sequentialId = orderIndex + 1;
+    // Create export data with exact sequence requested
+    const exportData = filteredOrders.flatMap((order) => {
       return order.order_items?.map((item: any, index: number) => {
         const variationInfo = item.variation_name ? ` (${item.variation_name})` : '';
         return {
-          'Order ID': sequentialId,
+          'Order ID': order.order_number,
           'Order Date': format(new Date(order.created_at), 'PPP'),
-          'Status': order.status,
-          'Customer First Name': order.first_name,
-          'Customer Last Name': order.last_name,
+          'Customer Name': `${order.first_name} ${order.last_name}`,
           'Email': order.email || 'N/A',
-          'Phone': order.phone,
+          'Customer Confirmation': order.customer_confirmation || 'N/A',
+          'Phone Number': order.phone,
           'Address': order.shipping_address,
           'City': order.shipping_city,
-          'State': order.shipping_state,
-          'Zip': order.shipping_zip,
           'Product Name': (item.products?.name || 'N/A') + variationInfo,
           'Quantity': item.quantity,
           'Price': item.price,
           'Item Total': item.price * item.quantity,
           'Order Total': index === 0 ? Number(order.total_amount) : '',
-          'Customer Notes': order.notes || 'N/A',
-          'Admin Notes': order.admin_notes || 'N/A',
+          'Status': order.status,
+          'Notes': order.notes || 'N/A',
+          'Courier Company': order.courier_company || 'N/A',
         };
       });
     });
@@ -553,6 +582,94 @@ const Admin = () => {
                               <p className="text-sm text-muted-foreground">{order.notes}</p>
                             </>
                           )}
+
+                          <div className="pt-2">
+                            <h4 className="font-semibold text-sm mb-2">Customer Confirmation</h4>
+                            {editingCustomerConfirmation?.orderId === order.id ? (
+                              <div className="space-y-2">
+                                <input
+                                  type="text"
+                                  value={editingCustomerConfirmation.confirmation}
+                                  onChange={(e) => setEditingCustomerConfirmation({ orderId: order.id, confirmation: e.target.value })}
+                                  className="w-full px-3 py-2 border rounded-md text-sm"
+                                  placeholder="Add customer confirmation..."
+                                />
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    onClick={() => updateCustomerConfirmation.mutate({ orderId: order.id, confirmation: editingCustomerConfirmation.confirmation })}
+                                  >
+                                    Save
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setEditingCustomerConfirmation(null)}
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="space-y-2">
+                                <p className="text-sm text-muted-foreground">
+                                  {order.customer_confirmation || 'No customer confirmation'}
+                                </p>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setEditingCustomerConfirmation({ orderId: order.id, confirmation: order.customer_confirmation || '' })}
+                                >
+                                  <Pencil className="h-3 w-3 mr-1" />
+                                  Edit
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="pt-2">
+                            <h4 className="font-semibold text-sm mb-2">Courier Company</h4>
+                            {editingCourierCompany?.orderId === order.id ? (
+                              <div className="space-y-2">
+                                <input
+                                  type="text"
+                                  value={editingCourierCompany.courier}
+                                  onChange={(e) => setEditingCourierCompany({ orderId: order.id, courier: e.target.value })}
+                                  className="w-full px-3 py-2 border rounded-md text-sm"
+                                  placeholder="Add courier company..."
+                                />
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    onClick={() => updateCourierCompany.mutate({ orderId: order.id, courier: editingCourierCompany.courier })}
+                                  >
+                                    Save
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setEditingCourierCompany(null)}
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="space-y-2">
+                                <p className="text-sm text-muted-foreground">
+                                  {order.courier_company || 'No courier company'}
+                                </p>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setEditingCourierCompany({ orderId: order.id, courier: order.courier_company || '' })}
+                                >
+                                  <Pencil className="h-3 w-3 mr-1" />
+                                  Edit
+                                </Button>
+                              </div>
+                            )}
+                          </div>
 
                           <div className="pt-2">
                             <h4 className="font-semibold text-sm mb-2">Admin Notes</h4>
