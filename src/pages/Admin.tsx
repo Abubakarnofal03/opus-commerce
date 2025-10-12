@@ -282,6 +282,9 @@ const Admin = () => {
       }
     }
 
+    // Sort orders by order ID in ascending order
+    filteredOrders = filteredOrders.sort((a, b) => a.order_number - b.order_number);
+
     // Create export data with exact sequence requested
     const exportData = filteredOrders.flatMap((order) => {
       return order.order_items?.map((item: any, index: number) => {
