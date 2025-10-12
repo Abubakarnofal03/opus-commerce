@@ -407,6 +407,7 @@ export type Database = {
           stock_quantity: number | null
           updated_at: string | null
           video_url: string | null
+          weight_kg: number | null
         }
         Insert: {
           category_id?: string | null
@@ -426,6 +427,7 @@ export type Database = {
           stock_quantity?: number | null
           updated_at?: string | null
           video_url?: string | null
+          weight_kg?: number | null
         }
         Update: {
           category_id?: string | null
@@ -445,6 +447,7 @@ export type Database = {
           stock_quantity?: number | null
           updated_at?: string | null
           video_url?: string | null
+          weight_kg?: number | null
         }
         Relationships: [
           {

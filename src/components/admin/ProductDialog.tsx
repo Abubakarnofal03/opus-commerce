@@ -34,6 +34,7 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
     video_url: "",
     is_featured: false,
     shipping_cost: "",
+    weight_kg: "",
   });
   const [variations, setVariations] = useState<Variation[]>([]);
 
@@ -51,6 +52,7 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
         video_url: product.video_url || "",
         is_featured: product.is_featured || false,
         shipping_cost: product.shipping_cost?.toString() || "",
+        weight_kg: product.weight_kg?.toString() || "",
       });
       
       // Fetch variations if editing
@@ -85,6 +87,7 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
         video_url: "",
         is_featured: false,
         shipping_cost: "",
+        weight_kg: "",
       });
       setVariations([]);
     }
@@ -107,6 +110,7 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
         video_url: formData.video_url || null,
         is_featured: formData.is_featured,
         shipping_cost: parseFloat(formData.shipping_cost) || 0,
+        weight_kg: formData.weight_kg ? parseFloat(formData.weight_kg) : null,
       };
 
       let productId: string;
@@ -248,6 +252,20 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
                 id="sku"
                 value={formData.sku}
                 onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="weight_kg">Weight (kg)</Label>
+              <Input
+                id="weight_kg"
+                type="number"
+                step="0.01"
+                value={formData.weight_kg}
+                onChange={(e) => setFormData({ ...formData, weight_kg: e.target.value })}
+                placeholder="Optional"
               />
             </div>
           </div>

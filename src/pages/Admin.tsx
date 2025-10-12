@@ -44,8 +44,11 @@ const Admin = () => {
   const [deleteDialog, setDeleteDialog] = useState({ open: false, type: "", id: "", name: "" });
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
   const [exportDialog, setExportDialog] = useState(false);
+  const [instaWorldDialog, setInstaWorldDialog] = useState(false);
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
+  const [instaStartDate, setInstaStartDate] = useState<Date | undefined>(undefined);
+  const [instaEndDate, setInstaEndDate] = useState<Date | undefined>(undefined);
   const [selectedCity, setSelectedCity] = useState<string>("all");
   const [selectedProduct, setSelectedProduct] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -241,6 +244,118 @@ const Admin = () => {
         newSet.add(orderId);
       }
       return newSet;
+    });
+  };
+
+  const exportOrdersToInstaWorld = (filterByDate: boolean = false) => {
+    if (!orders || orders.length === 0) {
+      toast({
+        title: "No orders to export",
+        description: "There are no orders available to download.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    let filteredOrders = orders;
+    
+    // Apply date filter
+    if (filterByDate && instaStartDate && instaEndDate) {
+      filteredOrders = filteredOrders.filter((order) => {
+        const orderDate = new Date(order.created_at);
+        const start = new Date(instaStartDate);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(instaEndDate);
+        end.setHours(23, 59, 59, 999);
+        return orderDate >= start && orderDate <= end;
+      });
+
+      if (filteredOrders.length === 0) {
+        toast({
+          title: "No orders found",
+          description: "No orders found in the selected date range.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    // Sort orders by order ID in ascending order
+    filteredOrders = filteredOrders.sort((a, b) => a.order_number - b.order_number);
+
+    // Create CSV data for INSTA WORLD
+    const csvData = filteredOrders.flatMap((order) => {
+      const orderItems = order.order_items || [];
+      return orderItems.map((item: any) => {
+        const product = products?.find(p => p.id === item.product_id);
+        const itemTitle = item.variation_name 
+          ? `${product?.name || 'N/A'} - ${item.variation_name}`
+          : product?.name || 'N/A';
+        
+        return {
+          ref_no: order.order_number,
+          consignee_first_name: order.first_name,
+          consignee_last_name: order.last_name,
+          consignee_email: order.email || "",
+          consignee_phone: order.phone,
+          consignee_city: order.shipping_city,
+          consignee_address: order.shipping_address,
+          amount: order.total_amount,
+          financial_status: "COD",
+          remarks: order.admin_notes || order.notes || "",
+          item_title: itemTitle,
+          item_price: item.price,
+          item_quantity: item.quantity,
+          item_sku: product?.sku || "",
+          item_kg: product?.weight_kg || "",
+        };
+      });
+    });
+
+    // Convert to CSV format
+    const headers = [
+      "ref_no", "consignee_first_name", "consignee_last_name", "consignee_email",
+      "consignee_phone", "consignee_city", "consignee_address", "amount",
+      "financial_status", "remarks", "item_title", "item_price",
+      "item_quantity", "item_sku", "item_kg"
+    ];
+
+    const csvContent = [
+      headers.join(","),
+      ...csvData.map(row => 
+        headers.map(header => {
+          const value = row[header as keyof typeof row]?.toString() || "";
+          // Escape commas and quotes
+          return value.includes(",") || value.includes('"') 
+            ? `"${value.replace(/"/g, '""')}"` 
+            : value;
+        }).join(",")
+      )
+    ].join("\n");
+
+    // Create and download CSV file
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    
+    const dateRangeStr = filterByDate && instaStartDate && instaEndDate 
+      ? `_${format(instaStartDate, 'yyyy-MM-dd')}_to_${format(instaEndDate, 'yyyy-MM-dd')}`
+      : '';
+    const fileName = `insta_world_orders${dateRangeStr}_${format(new Date(), 'yyyy-MM-dd_HH-mm')}.csv`;
+    link.setAttribute("download", fileName);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    setInstaWorldDialog(false);
+    setInstaStartDate(undefined);
+    setInstaEndDate(undefined);
+    
+    toast({
+      title: "Export successful",
+      description: `Downloaded ${filteredOrders.length} orders to ${fileName}`,
     });
   };
 
@@ -464,10 +579,14 @@ const Admin = () => {
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="flex items-end">
-                      <Button onClick={() => setExportDialog(true)} variant="outline" className="w-full">
+                    <div className="flex items-end gap-2">
+                      <Button onClick={() => setExportDialog(true)} variant="outline" className="flex-1">
                         <Download className="h-4 w-4 mr-2" />
                         Export to Excel
+                      </Button>
+                      <Button onClick={() => setInstaWorldDialog(true)} className="flex-1">
+                        <Download className="h-4 w-4 mr-2" />
+                        INSTA WORLD
                       </Button>
                     </div>
                   </div>
@@ -1223,6 +1342,85 @@ const Admin = () => {
             <Button
               onClick={() => exportOrdersToExcel(true)}
               disabled={!startDate || !endDate}
+              className="w-full sm:w-auto"
+            >
+              Export Filtered Orders
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* INSTA WORLD Export Dialog */}
+      <AlertDialog open={instaWorldDialog} onOpenChange={setInstaWorldDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Export Orders for INSTA WORLD</AlertDialogTitle>
+            <AlertDialogDescription>
+              Choose to export all orders or filter by date range. File will be in CSV format.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Start Date (Optional)</label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start text-left font-normal"
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {instaStartDate ? format(instaStartDate, "PPP") : "Pick start date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={instaStartDate}
+                      onSelect={setInstaStartDate}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">End Date (Optional)</label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start text-left font-normal"
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {instaEndDate ? format(instaEndDate, "PPP") : "Pick end date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={instaEndDate}
+                      onSelect={setInstaEndDate}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+          </div>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <Button
+              onClick={() => exportOrdersToInstaWorld(false)}
+              variant="outline"
+              className="w-full sm:w-auto"
+            >
+              Export All Orders
+            </Button>
+            <Button
+              onClick={() => exportOrdersToInstaWorld(true)}
+              disabled={!instaStartDate || !instaEndDate}
               className="w-full sm:w-auto"
             >
               Export Filtered Orders
