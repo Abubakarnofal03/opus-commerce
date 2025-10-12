@@ -58,6 +58,7 @@ const Admin = () => {
   const [editingCustomerConfirmation, setEditingCustomerConfirmation] = useState<{ orderId: string; confirmation: string } | null>(null);
   const [editingCourierCompany, setEditingCourierCompany] = useState<{ orderId: string; courier: string } | null>(null);
   const [exportStatusFilter, setExportStatusFilter] = useState<string>("all");
+  const [instaStatusFilter, setInstaStatusFilter] = useState<string>("all");
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -259,6 +260,11 @@ const Admin = () => {
 
     let filteredOrders = orders;
     
+    // Apply status filter
+    if (instaStatusFilter !== "all") {
+      filteredOrders = filteredOrders.filter(order => order.status === instaStatusFilter);
+    }
+    
     // Apply date filter
     if (filterByDate && instaStartDate && instaEndDate) {
       filteredOrders = filteredOrders.filter((order) => {
@@ -352,6 +358,7 @@ const Admin = () => {
     setInstaWorldDialog(false);
     setInstaStartDate(undefined);
     setInstaEndDate(undefined);
+    setInstaStatusFilter("all");
     
     toast({
       title: "Export successful",
@@ -1356,10 +1363,27 @@ const Admin = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Export Orders for INSTA WORLD</AlertDialogTitle>
             <AlertDialogDescription>
-              Choose to export all orders or filter by date range. File will be in CSV format.
+              Choose to export all orders or filter by status and date range. File will be in CSV format.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Filter by Status</label>
+              <Select value={instaStatusFilter} onValueChange={setInstaStatusFilter}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="processing">Processing</SelectItem>
+                  <SelectItem value="shipped">Shipped</SelectItem>
+                  <SelectItem value="delivered">Delivered</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Start Date (Optional)</label>
