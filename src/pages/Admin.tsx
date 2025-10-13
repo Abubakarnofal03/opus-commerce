@@ -57,6 +57,7 @@ const Admin = () => {
   const [editingNote, setEditingNote] = useState<{ orderId: string; note: string } | null>(null);
   const [editingCustomerConfirmation, setEditingCustomerConfirmation] = useState<{ orderId: string; confirmation: string } | null>(null);
   const [editingCourierCompany, setEditingCourierCompany] = useState<{ orderId: string; courier: string } | null>(null);
+  const [editingAddress, setEditingAddress] = useState<{ orderId: string; address: string } | null>(null);
   const [exportStatusFilter, setExportStatusFilter] = useState<string>("all");
   const [instaStatusFilter, setInstaStatusFilter] = useState<string>("all");
 
@@ -219,6 +220,21 @@ const Admin = () => {
     },
   });
 
+  const updateShippingAddress = useMutation({
+    mutationFn: async ({ orderId, address }: { orderId: string; address: string }) => {
+      const { error } = await supabase
+        .from('orders')
+        .update({ shipping_address: address })
+        .eq('id', orderId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+      toast({ title: "Shipping address updated" });
+      setEditingAddress(null);
+    },
+  });
+
   const deleteItem = useMutation({
     mutationFn: async ({ type, id }: { type: string; id: string }) => {
       const { error } = await supabase.from(type as any).delete().eq('id', id);
@@ -286,11 +302,19 @@ const Admin = () => {
       }
     }
 
+    // Email validation regex
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
     // Sort orders by order ID in ascending order
     filteredOrders = filteredOrders.sort((a, b) => a.order_number - b.order_number);
 
     // Create CSV data for INSTA WORLD
     const csvData = filteredOrders.flatMap((order) => {
+      // Validate email - skip orders with invalid emails
+      if (order.email && !emailRegex.test(order.email)) {
+        return [];
+      }
+
       const orderItems = order.order_items || [];
       return orderItems.map((item: any) => {
         const product = products?.find(p => p.id === item.product_id);
@@ -318,6 +342,15 @@ const Admin = () => {
       });
     });
 
+    if (csvData.length === 0) {
+      toast({
+        title: "No valid orders to export",
+        description: "All orders have invalid email addresses.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Convert to CSV format
     const headers = [
       "ref_no", "consignee_first_name", "consignee_last_name", "consignee_email",
@@ -331,7 +364,13 @@ const Admin = () => {
       ...csvData.map(row => 
         headers.map(header => {
           const value = row[header as keyof typeof row]?.toString() || "";
-          // Escape commas and quotes
+          
+          // Special handling for phone numbers - force as text
+          if (header === "consignee_phone") {
+            return `"${value}"`;
+          }
+          
+          // Escape commas and quotes for other fields
           return value.includes(",") || value.includes('"') 
             ? `"${value.replace(/"/g, '""')}"` 
             : value;
@@ -699,10 +738,49 @@ const Admin = () => {
                             </div>
                           </div>
 
-                          <h4 className="font-semibold text-sm pt-2">Shipping Address</h4>
-                          <div className="text-sm space-y-1">
-                            <p>{order.shipping_address}</p>
-                            <p>{order.shipping_city}, {order.shipping_state} {order.shipping_zip}</p>
+                          <div className="pt-2">
+                            <h4 className="font-semibold text-sm mb-2">Shipping Address</h4>
+                            {editingAddress?.orderId === order.id ? (
+                              <div className="space-y-2">
+                                <textarea
+                                  value={editingAddress.address}
+                                  onChange={(e) => setEditingAddress({ orderId: order.id, address: e.target.value })}
+                                  className="w-full px-3 py-2 border rounded-md text-sm"
+                                  rows={3}
+                                  placeholder="Enter shipping address..."
+                                />
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    onClick={() => updateShippingAddress.mutate({ orderId: order.id, address: editingAddress.address })}
+                                  >
+                                    Save
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setEditingAddress(null)}
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="space-y-2">
+                                <div className="text-sm space-y-1">
+                                  <p>{order.shipping_address}</p>
+                                  <p>{order.shipping_city}, {order.shipping_state} {order.shipping_zip}</p>
+                                </div>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setEditingAddress({ orderId: order.id, address: order.shipping_address || '' })}
+                                >
+                                  <Pencil className="h-3 w-3 mr-1" />
+                                  Edit Address
+                                </Button>
+                              </div>
+                            )}
                           </div>
 
                           {order.notes && (

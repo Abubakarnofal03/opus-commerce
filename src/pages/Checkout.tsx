@@ -383,13 +383,14 @@ const Checkout = () => {
                       )}
                     </div>
                     <div className="md:col-span-2">
-                      <Label htmlFor="addressLine1" className="text-sm">Address Line 1 *</Label>
+                      <Label htmlFor="addressLine1" className="text-sm">Address (Please mention house no, street no, area, city) *</Label>
                       <Input
                         id="addressLine1"
                         name="addressLine1"
                         value={formData.addressLine1}
                         onChange={handleInputChange}
                         required
+                        placeholder="e.g. House 123, Street 4, DHA Phase 2, Karachi"
                         className={`mt-1 ${showErrors && !formData.addressLine1 ? 'border-destructive' : ''}`}
                       />
                       {showErrors && !formData.addressLine1 && (
