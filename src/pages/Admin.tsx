@@ -60,6 +60,7 @@ const Admin = () => {
   const [editingAddress, setEditingAddress] = useState<{ orderId: string; address: string } | null>(null);
   const [exportStatusFilter, setExportStatusFilter] = useState<string>("all");
   const [instaStatusFilter, setInstaStatusFilter] = useState<string>("all");
+  const [instaProductFilter, setInstaProductFilter] = useState<string>("all");
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -279,6 +280,14 @@ const Admin = () => {
     // Apply status filter
     if (instaStatusFilter !== "all") {
       filteredOrders = filteredOrders.filter(order => order.status === instaStatusFilter);
+    }
+    
+    // Apply product filter
+    if (instaProductFilter !== "all") {
+      filteredOrders = filteredOrders.filter(order => {
+        const orderItems = order.order_items || [];
+        return orderItems.some((item: any) => item.product_id === instaProductFilter);
+      });
     }
     
     // Apply date filter
@@ -1436,7 +1445,18 @@ const Admin = () => {
       </AlertDialog>
 
       {/* INSTA WORLD Export Dialog */}
-      <AlertDialog open={instaWorldDialog} onOpenChange={setInstaWorldDialog}>
+      <AlertDialog 
+        open={instaWorldDialog} 
+        onOpenChange={(open) => {
+          setInstaWorldDialog(open);
+          if (!open) {
+            setInstaStatusFilter("all");
+            setInstaProductFilter("all");
+            setInstaStartDate(undefined);
+            setInstaEndDate(undefined);
+          }
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Export Orders for INSTA WORLD</AlertDialogTitle>
@@ -1458,6 +1478,23 @@ const Admin = () => {
                   <SelectItem value="shipped">Shipped</SelectItem>
                   <SelectItem value="delivered">Delivered</SelectItem>
                   <SelectItem value="cancelled">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Filter by Product</label>
+              <Select value={instaProductFilter} onValueChange={setInstaProductFilter}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Products</SelectItem>
+                  {products?.map((product) => (
+                    <SelectItem key={product.id} value={product.id}>
+                      {product.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
