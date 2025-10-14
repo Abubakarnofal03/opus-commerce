@@ -282,7 +282,7 @@ const ProductDetail = ({ key }: { key?: string }) => {
       <div className="min-h-screen flex flex-col">
         <Navbar />
 
-        <main className="flex-1 py-8 md:py-12">
+        <main className="flex-1 py-8 md:py-12 bg-gradient-to-b from-leather-smoked/10 via-background to-background">
           <div className="container mx-auto px-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
               {/* Media Gallery */}
@@ -295,7 +295,7 @@ const ProductDetail = ({ key }: { key?: string }) => {
                       {/* Video as first carousel item */}
                       {product.video_url && (
                         <CarouselItem key="video">
-                          <div className="aspect-square bg-muted rounded-lg overflow-hidden">
+                          <div className="aspect-square bg-gradient-to-br from-leather-espresso/10 to-leather-charcoal/10 rounded-xl overflow-hidden border-2 border-leather-tan/20 shadow-leather">
                             <video
                               src={product.video_url}
                               controls
@@ -311,7 +311,7 @@ const ProductDetail = ({ key }: { key?: string }) => {
                       {product.images?.map((image, index) => (
                         <CarouselItem key={`image-${index}`}>
                           <div
-                            className="aspect-square bg-muted rounded-lg overflow-hidden cursor-zoom-in"
+                            className="aspect-square bg-gradient-to-br from-leather-espresso/10 to-leather-charcoal/10 rounded-xl overflow-hidden cursor-zoom-in border-2 border-leather-tan/20 hover:border-leather-gold/50 shadow-leather hover:shadow-gold-glow transition-all duration-300"
                             onClick={() => {
                               setSelectedImageIndex(index);
                               setZoomDialogOpen(true);
@@ -333,7 +333,7 @@ const ProductDetail = ({ key }: { key?: string }) => {
                   /* Single item display */
                   <>
                     {product.video_url ? (
-                      <div className="aspect-square bg-muted rounded-lg overflow-hidden">
+                      <div className="aspect-square bg-gradient-to-br from-leather-espresso/10 to-leather-charcoal/10 rounded-xl overflow-hidden border-2 border-leather-tan/20 shadow-leather">
                         <video
                           src={product.video_url}
                           controls
@@ -345,7 +345,7 @@ const ProductDetail = ({ key }: { key?: string }) => {
                       </div>
                     ) : product.images?.[0] ? (
                       <div
-                        className="aspect-square bg-muted rounded-lg overflow-hidden cursor-zoom-in"
+                        className="aspect-square bg-gradient-to-br from-leather-espresso/10 to-leather-charcoal/10 rounded-xl overflow-hidden cursor-zoom-in border-2 border-leather-tan/20 hover:border-leather-gold/50 shadow-leather hover:shadow-gold-glow transition-all duration-300"
                         onClick={() => {
                           setSelectedImageIndex(0);
                           setZoomDialogOpen(true);
@@ -359,18 +359,18 @@ const ProductDetail = ({ key }: { key?: string }) => {
               </div>
 
               <div className="space-y-4 md:space-y-6">
-                <div>
-                  <p className="text-xs md:text-sm text-muted-foreground mb-2">{product.categories?.name}</p>
-                  {product.sku && <p className="text-xs md:text-sm text-muted-foreground mb-2">SKU: {product.sku}</p>}
-                  <h1 className="font-display text-2xl md:text-3xl lg:text-4xl font-bold mb-3 md:mb-4">
+                <div className="glass-card p-6 md:p-8 rounded-xl border-leather-tan/20">
+                  <p className="text-xs md:text-sm text-leather-gold font-semibold mb-2 uppercase tracking-wider">{product.categories?.name}</p>
+                  {product.sku && <p className="text-xs md:text-sm text-muted-foreground mb-3">SKU: <span className="text-leather-cognac font-medium">{product.sku}</span></p>}
+                  <h1 className="font-display text-2xl md:text-3xl lg:text-4xl font-bold mb-4 md:mb-6 text-refined leading-tight">
                     {product.name}
                   </h1>
                   {discount ? (
-                    <div className="space-y-2">
-                      <Badge className="bg-destructive text-destructive-foreground">{discount}% OFF</Badge>
-                      <div className="flex items-center gap-3">
-                        <p className="text-2xl md:text-3xl font-bold text-destructive">{formatPrice(totalPrice)}</p>
-                        <p className="text-lg md:text-xl text-muted-foreground line-through">
+                    <div className="space-y-3">
+                      <Badge className="bg-gradient-to-r from-destructive to-red-700 text-white font-bold px-4 py-2 text-sm shadow-lg animate-pulse">{discount}% OFF SALE</Badge>
+                      <div className="flex items-baseline gap-3">
+                        <p className="text-3xl md:text-4xl lg:text-5xl font-bold text-destructive">{formatPrice(totalPrice)}</p>
+                        <p className="text-lg md:text-xl text-muted-foreground line-through opacity-60">
                           {formatPrice(displayPrice * quantity)}
                         </p>
                       </div>
@@ -382,7 +382,7 @@ const ProductDetail = ({ key }: { key?: string }) => {
                     </div>
                    ) : (
                     <div>
-                      <p className="text-2xl md:text-3xl font-bold text-accent">{formatPrice(totalPrice)}</p>
+                      <p className="text-3xl md:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-leather-gold to-leather-cognac bg-clip-text text-transparent">{formatPrice(totalPrice)}</p>
                       {quantity > 1 && (
                         <p className="text-sm text-muted-foreground mt-1">
                           {formatPrice(displayPrice)} × {quantity}
@@ -393,14 +393,14 @@ const ProductDetail = ({ key }: { key?: string }) => {
                 </div>
 
                 {product.stock_quantity !== undefined && product.stock_quantity < 10 && (
-                  <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg p-3">
+                  <div className="glass-card border-2 border-orange-500/30 bg-gradient-to-r from-orange-500/10 to-red-500/10 rounded-xl p-4 animate-pulse">
                     {product.stock_quantity > 0 ? (
-                      <p className="text-sm font-medium text-orange-700 dark:text-orange-400">
-                        Hurry! Only {product.stock_quantity} {product.stock_quantity === 1 ? "item" : "items"} left in
-                        stock
+                      <p className="text-sm font-bold text-orange-600 dark:text-orange-400">
+                        🔥 Hurry! Only {product.stock_quantity} {product.stock_quantity === 1 ? "item" : "items"} left in
+                        stock!
                       </p>
                     ) : (
-                      <p className="text-sm font-medium text-destructive">Out of stock</p>
+                      <p className="text-sm font-bold text-destructive">❌ Out of stock</p>
                     )}
                   </div>
                 )}
@@ -484,17 +484,16 @@ const ProductDetail = ({ key }: { key?: string }) => {
 
                 <div className="space-y-3 pt-2 md:pt-4">
                   <Button
-                    className="w-full text-sm md:text-base"
-                    variant="outline"
+                    className="w-full text-sm md:text-base h-12 md:h-14 btn-liquid-secondary btn-leather-texture font-semibold"
                     size="lg"
                     onClick={() => addToCart.mutate()}
                     disabled={addToCart.isPending || product.stock_quantity === 0}
                   >
-                    <ShoppingCart className="mr-2 h-4 w-4 md:h-5 md:w-5" />
+                    <ShoppingCart className="mr-2 h-5 w-5 md:h-6 md:w-6 icon-cart" />
                     Add to Cart
                   </Button>
                   <Button
-                    className="w-full text-sm md:text-base"
+                    className="w-full text-sm md:text-base h-12 md:h-14 btn-liquid-primary btn-leather-texture font-bold text-white"
                     size="lg"
                     onClick={handleBuyNow}
                     disabled={addToCart.isPending || product.stock_quantity === 0}
@@ -503,48 +502,49 @@ const ProductDetail = ({ key }: { key?: string }) => {
                   </Button>
                 </div>
                 {/* Trust Badges */}
-                <div className="grid grid-cols-2 gap-3 py-4 border-y border-border">
-                  <div className="flex items-center gap-2">
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                      <ShieldCheck className="h-4 w-4 text-primary" />
+                <div className="grid grid-cols-2 gap-4 py-6 border-y-2 border-leather-tan/20">
+                  <div className="flex items-center gap-3">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-leather-gold/20 to-leather-cognac/20 flex items-center justify-center shadow-inner">
+                      <ShieldCheck className="h-5 w-5 text-leather-gold" />
                     </div>
                     <div>
-                      <p className="text-xs font-medium leading-tight">7 Day Easy</p>
-                      <p className="text-xs text-muted-foreground leading-tight">Return</p>
+                      <p className="text-xs font-bold leading-tight text-foreground">7 Day Easy</p>
+                      <p className="text-xs text-leather-cognac leading-tight">Return</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Banknote className="h-4 w-4 text-primary" />
+                  <div className="flex items-center gap-3">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-leather-gold/20 to-leather-cognac/20 flex items-center justify-center shadow-inner">
+                      <Banknote className="h-5 w-5 text-leather-cognac" />
                     </div>
                     <div>
-                      <p className="text-xs font-medium leading-tight">Cash on</p>
-                      <p className="text-xs text-muted-foreground leading-tight">Delivery</p>
+                      <p className="text-xs font-bold leading-tight text-foreground">Cash on</p>
+                      <p className="text-xs text-leather-cognac leading-tight">Delivery</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Truck className="h-4 w-4 text-primary" />
+                  <div className="flex items-center gap-3">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-leather-gold/20 to-leather-cognac/20 flex items-center justify-center shadow-inner">
+                      <Truck className="h-5 w-5 text-leather-gold" />
                     </div>
                     <div>
-                      <p className="text-xs font-medium leading-tight">Free Delivery</p>
-                      <p className="text-xs text-muted-foreground leading-tight">All Pakistan</p>
+                      <p className="text-xs font-bold leading-tight text-foreground">Free Delivery</p>
+                      <p className="text-xs text-leather-cognac leading-tight">All Pakistan</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Package className="h-4 w-4 text-primary" />
+                  <div className="flex items-center gap-3">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-leather-gold/20 to-leather-cognac/20 flex items-center justify-center shadow-inner">
+                      <Package className="h-5 w-5 text-leather-cognac" />
                     </div>
                     <div>
-                      <p className="text-xs font-medium leading-tight">100% Original</p>
-                      <p className="text-xs text-muted-foreground leading-tight">Products</p>
+                      <p className="text-xs font-bold leading-tight text-foreground">100% Original</p>
+                      <p className="text-xs text-leather-cognac leading-tight">Products</p>
                     </div>
                   </div>
                 </div>
                 {product.description && (
-                  <div>
-                    <h2 className="font-semibold text-base md:text-lg mb-2">Description</h2>
-                    <p className="text-sm md:text-base text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                  <div className="glass-card p-6 rounded-xl border-leather-tan/20">
+                    <h2 className="font-display text-xl md:text-2xl font-bold mb-4 text-leather-gold">Product Description</h2>
+                    <div className="divider-gold mb-4" />
+                    <p className="text-sm md:text-base text-foreground/90 leading-relaxed whitespace-pre-wrap">
                       {product.description}
                     </p>
                   </div>
@@ -560,9 +560,14 @@ const ProductDetail = ({ key }: { key?: string }) => {
             {/* Related Products */}
             {relatedProducts && relatedProducts.length > 0 && (
               <div className="mt-12 md:mt-20">
-                <h2 className="font-display text-2xl md:text-3xl font-bold mb-6 md:mb-8 text-center">
-                  Related Products
-                </h2>
+                <div className="text-center mb-8">
+                  <h2 className="font-display text-2xl md:text-3xl lg:text-4xl font-bold mb-3 gold-accent pb-6">
+                    You May Also Like
+                  </h2>
+                  <p className="text-muted-foreground max-w-2xl mx-auto">
+                    Discover more from our curated collection
+                  </p>
+                </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
                   {relatedProducts.map((relatedProduct) => {
                     const relatedProductSale = sales?.find((s) => s.product_id === relatedProduct.id);
@@ -576,20 +581,23 @@ const ProductDetail = ({ key }: { key?: string }) => {
                     return (
                       <Card
                         key={relatedProduct.id}
-                        className="glass-card glass-hover overflow-hidden rounded-xl relative"
+                        className="glass-card overflow-hidden rounded-xl relative border-leather-tan/20 hover:border-leather-gold/50 shadow-leather hover:shadow-gold-glow transition-all duration-300 group cursor-pointer"
                       >
                         {relatedDiscount && (
-                          <Badge className="absolute top-2 left-2 z-10 bg-destructive text-destructive-foreground text-xs">
+                          <Badge className="absolute top-3 left-3 z-10 bg-gradient-to-r from-destructive to-red-700 text-white font-bold px-3 py-1 shadow-lg">
                             {relatedDiscount}% OFF
                           </Badge>
                         )}
-                        <div className="aspect-square bg-muted relative overflow-hidden">
+                        <div className="aspect-square bg-gradient-to-br from-leather-espresso/10 to-leather-charcoal/10 relative overflow-hidden">
                           {relatedProduct.images?.[0] && (
-                            <img
-                              src={relatedProduct.images[0]}
-                              alt={relatedProduct.name}
-                              className="w-full h-full object-cover"
-                            />
+                            <>
+                              <img
+                                src={relatedProduct.images[0]}
+                                alt={relatedProduct.name}
+                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-leather-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                            </>
                           )}
                         </div>
                         <CardContent className="p-3 md:p-4">
@@ -598,23 +606,23 @@ const ProductDetail = ({ key }: { key?: string }) => {
                           </h3>
                           <div className="mb-2 md:mb-3">
                             {relatedDiscount ? (
-                              <div className="flex items-center gap-2">
-                                <p className="text-base md:text-lg font-bold text-destructive">
+                              <div className="flex items-baseline gap-2">
+                                <p className="text-lg md:text-xl font-bold text-destructive">
                                   {formatPrice(relatedFinalPrice)}
                                 </p>
-                                <p className="text-xs text-muted-foreground line-through">
+                                <p className="text-xs text-muted-foreground line-through opacity-60">
                                   {formatPrice(relatedProduct.price)}
                                 </p>
                               </div>
                             ) : (
-                              <p className="text-base md:text-lg font-bold text-accent">
+                              <p className="text-lg md:text-xl font-bold bg-gradient-to-r from-leather-gold to-leather-cognac bg-clip-text text-transparent">
                                 {formatPrice(relatedProduct.price)}
                               </p>
                             )}
                           </div>
                           <Button 
                             asChild 
-                            className="w-full text-xs md:text-sm" 
+                            className="w-full text-xs md:text-sm btn-liquid-primary btn-leather-texture font-semibold text-white" 
                             size="sm"
                             onClick={(e) => {
                               e.preventDefault();
