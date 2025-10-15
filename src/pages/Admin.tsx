@@ -311,19 +311,11 @@ const Admin = () => {
       }
     }
 
-    // Email validation regex
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
     // Sort orders by order ID in ascending order
     filteredOrders = filteredOrders.sort((a, b) => a.order_number - b.order_number);
 
     // Create CSV data for INSTA WORLD
     const csvData = filteredOrders.flatMap((order) => {
-      // Validate email - skip orders with invalid emails
-      if (order.email && !emailRegex.test(order.email)) {
-        return [];
-      }
-
       const orderItems = order.order_items || [];
       return orderItems.map((item: any) => {
         const product = products?.find(p => p.id === item.product_id);
@@ -350,15 +342,6 @@ const Admin = () => {
         };
       });
     });
-
-    if (csvData.length === 0) {
-      toast({
-        title: "No valid orders to export",
-        description: "All orders have invalid email addresses.",
-        variant: "destructive",
-      });
-      return;
-    }
 
     // Convert to CSV format
     const headers = [
