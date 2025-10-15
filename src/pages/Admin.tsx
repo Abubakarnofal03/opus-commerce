@@ -355,17 +355,16 @@ const Admin = () => {
       headers.join(","),
       ...csvData.map(row => 
         headers.map(header => {
-          const value = row[header as keyof typeof row]?.toString() || "";
+          let value = row[header as keyof typeof row]?.toString() || "";
           
-          // Special handling for phone numbers - force as text
-          if (header === "consignee_phone") {
-            return `"${value}"`;
-          }
+          // Remove line breaks and carriage returns that break CSV format
+          value = value.replace(/[\r\n]+/g, ' ').trim();
           
-          // Escape commas and quotes for other fields
-          return value.includes(",") || value.includes('"') 
-            ? `"${value.replace(/"/g, '""')}"` 
-            : value;
+          // Escape quotes by doubling them
+          value = value.replace(/"/g, '""');
+          
+          // Always wrap fields in quotes to prevent CSV issues
+          return `"${value}"`;
         }).join(",")
       )
     ].join("\n");
