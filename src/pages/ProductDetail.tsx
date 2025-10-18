@@ -205,8 +205,12 @@ const ProductDetail = ({ key }: { key?: string }) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cart"] });
 
-      // Calculate sale price for tracking (use variation price if selected)
-      const basePrice = selectedVariation ? selectedVariation.price : product.price;
+      // Calculate sale price for tracking (use color > variation > product price)
+      const basePrice = selectedColor 
+        ? selectedColor.price 
+        : selectedVariation 
+        ? selectedVariation.price 
+        : product.price;
       const productSale = sales?.find((s) => s.product_id === product.id);
       const globalSale = sales?.find((s) => s.is_global);
       const { finalPrice } = calculateSalePrice(basePrice, productSale, globalSale);
@@ -237,12 +241,20 @@ const ProductDetail = ({ key }: { key?: string }) => {
   };
 
   // Calculate sale price (needed for tracking)
-  // Use variation price if selected, otherwise use product price
-  const displayPrice = selectedVariation ? selectedVariation.price : product?.price || 0;
+  // Use color price if selected, otherwise variation price, otherwise product price
+  const displayPrice = selectedColor 
+    ? selectedColor.price 
+    : selectedVariation 
+    ? selectedVariation.price 
+    : product?.price || 0;
   const productSale = sales?.find((s) => s.product_id === product?.id);
   const globalSale = sales?.find((s) => s.is_global);
-  const applySaleToVariation = selectedVariation ? selectedVariation.apply_sale !== false : true;
-  const { finalPrice, discount } = calculateSalePrice(displayPrice, productSale, globalSale, applySaleToVariation);
+  const applySaleToItem = selectedColor 
+    ? selectedColor.apply_sale !== false 
+    : selectedVariation 
+    ? selectedVariation.apply_sale !== false 
+    : true;
+  const { finalPrice, discount } = calculateSalePrice(displayPrice, productSale, globalSale, applySaleToItem);
   
   // Calculate total price (finalPrice * quantity)
   const totalPrice = finalPrice * quantity;
@@ -443,11 +455,12 @@ const ProductDetail = ({ key }: { key?: string }) => {
                   </div>
                 )}
 
-                {variations && variations.length > 0 && (
+{variations && variations.length > 0 && (
                   <div>
                     <h2 className="font-semibold text-base md:text-lg mb-3">Select Variation</h2>
                     <div className="flex flex-wrap gap-3">
                       {variations.map((variation) => {
+                        const isOutOfStock = variation.quantity === 0;
                         const varSale = sales?.find((s) => s.product_id === product?.id);
                         const varGlobalSale = sales?.find((s) => s.is_global);
                         const varApplySale = variation.apply_sale !== false;
@@ -462,18 +475,28 @@ const ProductDetail = ({ key }: { key?: string }) => {
                           <button
                             key={variation.id}
                             onClick={() => {
-                              setSelectedVariation(variation);
-                              setQuantity(1);
+                              if (!isOutOfStock) {
+                                setSelectedVariation(variation);
+                                setQuantity(1);
+                              }
                             }}
+                            disabled={isOutOfStock}
                             className={`
                               relative px-4 py-3 rounded-xl transition-all duration-200
-                              ${selectedVariation?.id === variation.id
+                              ${isOutOfStock 
+                                ? 'opacity-40 cursor-not-allowed bg-card border-2 border-border' 
+                                : selectedVariation?.id === variation.id
                                 ? 'bg-primary text-primary-foreground shadow-lg scale-105 ring-2 ring-primary ring-offset-2'
                                 : 'bg-card border-2 border-border hover:border-primary hover:shadow-md'
                               }
                             `}
                           >
-                            <div className="text-center space-y-1">
+                            {isOutOfStock && (
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <X className="h-12 w-12 text-destructive opacity-70" strokeWidth={3} />
+                              </div>
+                            )}
+                            <div className={`text-center space-y-1 ${isOutOfStock ? 'opacity-50' : ''}`}>
                               <div className="font-semibold text-sm">{variation.name}</div>
                               {varDiscount ? (
                                 <div className="space-y-0.5">
@@ -483,10 +506,84 @@ const ProductDetail = ({ key }: { key?: string }) => {
                               ) : (
                                 <div className="text-xs font-medium">{formatPrice(variation.price)}</div>
                               )}
+                              {isOutOfStock && (
+                                <div className="text-[10px] font-bold text-destructive">Out of Stock</div>
+                              )}
                             </div>
-                            {varDiscount && (
+                            {varDiscount && !isOutOfStock && (
                               <div className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full">
                                 -{varDiscount}%
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {colors && colors.length > 0 && (
+                  <div>
+                    <h2 className="font-semibold text-base md:text-lg mb-3">Select Color</h2>
+                    <div className="flex flex-wrap gap-3">
+                      {colors.map((color) => {
+                        const isOutOfStock = color.quantity === 0;
+                        const colorSale = sales?.find((s) => s.product_id === product?.id);
+                        const colorGlobalSale = sales?.find((s) => s.is_global);
+                        const colorApplySale = color.apply_sale !== false;
+                        const { finalPrice: colorFinalPrice, discount: colorDiscount } = calculateSalePrice(
+                          color.price,
+                          colorSale,
+                          colorGlobalSale,
+                          colorApplySale
+                        );
+                        
+                        return (
+                          <button
+                            key={color.id}
+                            onClick={() => {
+                              if (!isOutOfStock) {
+                                setSelectedColor(color);
+                                setQuantity(1);
+                              }
+                            }}
+                            disabled={isOutOfStock}
+                            className={`
+                              relative px-4 py-3 rounded-xl transition-all duration-200 flex items-center gap-2
+                              ${isOutOfStock 
+                                ? 'opacity-40 cursor-not-allowed bg-card border-2 border-border' 
+                                : selectedColor?.id === color.id
+                                ? 'bg-primary text-primary-foreground shadow-lg scale-105 ring-2 ring-primary ring-offset-2'
+                                : 'bg-card border-2 border-border hover:border-primary hover:shadow-md'
+                              }
+                            `}
+                          >
+                            {isOutOfStock && (
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <X className="h-12 w-12 text-destructive opacity-70" strokeWidth={3} />
+                              </div>
+                            )}
+                            <div
+                              className="w-6 h-6 rounded-full border-2 border-border"
+                              style={{ backgroundColor: color.color_code }}
+                            />
+                            <div className={`text-center space-y-1 ${isOutOfStock ? 'opacity-50' : ''}`}>
+                              <div className="font-semibold text-sm">{color.name}</div>
+                              {colorDiscount ? (
+                                <div className="space-y-0.5">
+                                  <div className="text-xs font-bold">{formatPrice(colorFinalPrice)}</div>
+                                  <div className="text-xs line-through opacity-60">{formatPrice(color.price)}</div>
+                                </div>
+                              ) : (
+                                <div className="text-xs font-medium">{formatPrice(color.price)}</div>
+                              )}
+                              {isOutOfStock && (
+                                <div className="text-[10px] font-bold text-destructive">Out of Stock</div>
+                              )}
+                            </div>
+                            {colorDiscount && !isOutOfStock && (
+                              <div className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                                -{colorDiscount}%
                               </div>
                             )}
                           </button>

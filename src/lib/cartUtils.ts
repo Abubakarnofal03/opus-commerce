@@ -9,6 +9,10 @@ export interface GuestCartItem {
   variation_id?: string;
   variation_name?: string;
   variation_price?: number;
+  color_id?: string;
+  color_name?: string;
+  color_code?: string;
+  color_price?: number;
 }
 
 const CART_STORAGE_KEY = 'guest_cart';
@@ -33,10 +37,11 @@ export const setGuestCart = (cart: GuestCartItem[]): void => {
 
 export const addToGuestCart = (item: GuestCartItem): void => {
   const cart = getGuestCart();
-  // Match by both product_id and variation_id to handle variations correctly
+  // Match by product_id, variation_id, and color_id to handle variations and colors correctly
   const existingIndex = cart.findIndex(i => 
     i.product_id === item.product_id && 
-    i.variation_id === item.variation_id
+    i.variation_id === item.variation_id &&
+    i.color_id === item.color_id
   );
   
   if (existingIndex >= 0) {

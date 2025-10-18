@@ -103,6 +103,10 @@ export type Database = {
       }
       cart_items: {
         Row: {
+          color_code: string | null
+          color_id: string | null
+          color_name: string | null
+          color_price: number | null
           created_at: string | null
           id: string
           product_id: string
@@ -114,6 +118,10 @@ export type Database = {
           variation_price: number | null
         }
         Insert: {
+          color_code?: string | null
+          color_id?: string | null
+          color_name?: string | null
+          color_price?: number | null
           created_at?: string | null
           id?: string
           product_id: string
@@ -125,6 +133,10 @@ export type Database = {
           variation_price?: number | null
         }
         Update: {
+          color_code?: string | null
+          color_id?: string | null
+          color_name?: string | null
+          color_price?: number | null
           created_at?: string | null
           id?: string
           product_id?: string
@@ -136,6 +148,13 @@ export type Database = {
           variation_price?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "cart_items_color_id_fkey"
+            columns: ["color_id"]
+            isOneToOne: false
+            referencedRelation: "product_colors"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "cart_items_product_id_fkey"
             columns: ["product_id"]
