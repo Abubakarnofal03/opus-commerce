@@ -315,6 +315,53 @@ export type Database = {
         }
         Relationships: []
       }
+      product_colors: {
+        Row: {
+          apply_sale: boolean
+          color_code: string
+          created_at: string
+          id: string
+          name: string
+          price: number
+          product_id: string
+          quantity: number
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          apply_sale?: boolean
+          color_code: string
+          created_at?: string
+          id?: string
+          name: string
+          price: number
+          product_id: string
+          quantity?: number
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          apply_sale?: boolean
+          color_code?: string
+          created_at?: string
+          id?: string
+          name?: string
+          price?: number
+          product_id?: string
+          quantity?: number
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_colors_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_images: {
         Row: {
           created_at: string
@@ -355,6 +402,7 @@ export type Database = {
           name: string
           price: number
           product_id: string
+          quantity: number
           sort_order: number
           updated_at: string
         }
@@ -365,6 +413,7 @@ export type Database = {
           name: string
           price: number
           product_id: string
+          quantity?: number
           sort_order?: number
           updated_at?: string
         }
@@ -375,6 +424,7 @@ export type Database = {
           name?: string
           price?: number
           product_id?: string
+          quantity?: number
           sort_order?: number
           updated_at?: string
         }

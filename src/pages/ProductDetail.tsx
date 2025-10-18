@@ -28,6 +28,7 @@ const ProductDetail = ({ key }: { key?: string }) => {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [zoomDialogOpen, setZoomDialogOpen] = useState(false);
   const [selectedVariation, setSelectedVariation] = useState<any>(null);
+  const [selectedColor, setSelectedColor] = useState<any>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -37,10 +38,12 @@ const ProductDetail = ({ key }: { key?: string }) => {
     setQuantity(1);
     setSelectedImageIndex(0);
     setSelectedVariation(null);
+    setSelectedColor(null);
     
     // Invalidate all queries to ensure fresh data
     queryClient.invalidateQueries({ queryKey: ['product', slug] });
     queryClient.invalidateQueries({ queryKey: ['product-variations'] });
+    queryClient.invalidateQueries({ queryKey: ['product-colors'] });
     queryClient.invalidateQueries({ queryKey: ['related-products'] });
   }, [slug, queryClient]);
 
@@ -103,6 +106,21 @@ const ProductDetail = ({ key }: { key?: string }) => {
     enabled: !!product,
   });
 
+  const { data: colors } = useQuery({
+    queryKey: ["product-colors", product?.id],
+    queryFn: async () => {
+      if (!product?.id) return [];
+      const { data, error } = await supabase
+        .from("product_colors")
+        .select("*")
+        .eq("product_id", product.id)
+        .order("sort_order");
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!product,
+  });
+
   // Set first variation as default when variations load
   useEffect(() => {
     if (variations && variations.length > 0 && !selectedVariation) {
@@ -110,13 +128,24 @@ const ProductDetail = ({ key }: { key?: string }) => {
     }
   }, [variations, selectedVariation]);
 
+  // Set first color as default when colors load
+  useEffect(() => {
+    if (colors && colors.length > 0 && !selectedColor) {
+      setSelectedColor(colors[0]);
+    }
+  }, [colors, selectedColor]);
+
   const addToCart = useMutation({
     mutationFn: async () => {
-      // Determine the price to use (variation price or product price)
-      const priceToUse = selectedVariation ? selectedVariation.price : product.price;
+      // Determine the price to use (color > variation > product)
+      const priceToUse = selectedColor 
+        ? selectedColor.price 
+        : selectedVariation 
+        ? selectedVariation.price 
+        : product.price;
 
       if (user) {
-        // Check if item already exists in cart (considering variation)
+        // Check if item already exists in cart (considering both variation and color)
         const { data: existingItems } = await supabase
           .from("cart_items")
           .select("*")
@@ -125,9 +154,10 @@ const ProductDetail = ({ key }: { key?: string }) => {
 
         let existingItem = null;
         if (existingItems && existingItems.length > 0) {
-          // Find exact match including variation
+          // Find exact match including variation and color
           existingItem = existingItems.find(item => 
-            item.variation_id === (selectedVariation?.id || null)
+            item.variation_id === (selectedVariation?.id || null) &&
+            item.color_id === (selectedColor?.id || null)
           );
         }
 
@@ -147,6 +177,10 @@ const ProductDetail = ({ key }: { key?: string }) => {
             variation_id: selectedVariation?.id || null,
             variation_name: selectedVariation?.name || null,
             variation_price: selectedVariation?.price || null,
+            color_id: selectedColor?.id || null,
+            color_name: selectedColor?.name || null,
+            color_code: selectedColor?.color_code || null,
+            color_price: selectedColor?.price || null,
           });
           if (error) throw error;
         }
@@ -161,6 +195,10 @@ const ProductDetail = ({ key }: { key?: string }) => {
           variation_id: selectedVariation?.id || null,
           variation_name: selectedVariation?.name || null,
           variation_price: selectedVariation?.price || null,
+          color_id: selectedColor?.id || null,
+          color_name: selectedColor?.name || null,
+          color_code: selectedColor?.color_code || null,
+          color_price: selectedColor?.price || null,
         });
       }
     },

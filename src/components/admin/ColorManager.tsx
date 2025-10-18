@@ -5,40 +5,42 @@ import { Label } from "@/components/ui/label";
 import { Plus, Trash2, GripVertical } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
-export interface Variation {
+export interface Color {
   id?: string;
   name: string;
+  color_code: string;
   price: string;
   quantity: string;
   sort_order: number;
   apply_sale: boolean;
 }
 
-interface VariationManagerProps {
-  variations: Variation[];
-  onChange: (variations: Variation[]) => void;
+interface ColorManagerProps {
+  colors: Color[];
+  onChange: (colors: Color[]) => void;
 }
 
-export function VariationManager({ variations, onChange }: VariationManagerProps) {
-  const addVariation = () => {
-    const newVariation: Variation = {
+export function ColorManager({ colors, onChange }: ColorManagerProps) {
+  const addColor = () => {
+    const newColor: Color = {
       name: "",
+      color_code: "#000000",
       price: "",
       quantity: "0",
-      sort_order: variations.length,
+      sort_order: colors.length,
       apply_sale: true,
     };
-    onChange([...variations, newVariation]);
+    onChange([...colors, newColor]);
   };
 
-  const removeVariation = (index: number) => {
-    const updated = variations.filter((_, i) => i !== index);
+  const removeColor = (index: number) => {
+    const updated = colors.filter((_, i) => i !== index);
     onChange(updated);
   };
 
-  const updateVariation = (index: number, field: keyof Variation, value: string | boolean) => {
-    const updated = variations.map((v, i) => 
-      i === index ? { ...v, [field]: value } : v
+  const updateColor = (index: number, field: keyof Color, value: string | boolean) => {
+    const updated = colors.map((c, i) => 
+      i === index ? { ...c, [field]: value } : c
     );
     onChange(updated);
   };
@@ -46,16 +48,16 @@ export function VariationManager({ variations, onChange }: VariationManagerProps
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <Label>Product Variations (Optional)</Label>
-        <Button type="button" size="sm" variant="outline" onClick={addVariation}>
+        <Label>Product Colors (Optional)</Label>
+        <Button type="button" size="sm" variant="outline" onClick={addColor}>
           <Plus className="h-4 w-4 mr-1" />
-          Add Variation
+          Add Color
         </Button>
       </div>
       
-      {variations.length > 0 && (
+      {colors.length > 0 && (
         <div className="space-y-2">
-          {variations.map((variation, index) => (
+          {colors.map((color, index) => (
             <Card key={index}>
               <CardContent className="p-3">
                 <div className="flex items-start gap-2">
@@ -67,11 +69,29 @@ export function VariationManager({ variations, onChange }: VariationManagerProps
                       <div>
                         <Label className="text-xs">Name</Label>
                         <Input
-                          placeholder="e.g., 1 pc, 2 pcs"
-                          value={variation.name}
-                          onChange={(e) => updateVariation(index, "name", e.target.value)}
+                          placeholder="e.g., Red, Blue"
+                          value={color.name}
+                          onChange={(e) => updateColor(index, "name", e.target.value)}
                           className="h-8"
                         />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Color Code</Label>
+                        <div className="flex gap-1">
+                          <Input
+                            type="color"
+                            value={color.color_code}
+                            onChange={(e) => updateColor(index, "color_code", e.target.value)}
+                            className="h-8 w-12 p-1 cursor-pointer"
+                          />
+                          <Input
+                            type="text"
+                            value={color.color_code}
+                            onChange={(e) => updateColor(index, "color_code", e.target.value)}
+                            placeholder="#000000"
+                            className="h-8 flex-1"
+                          />
+                        </div>
                       </div>
                       <div>
                         <Label className="text-xs">Price</Label>
@@ -79,18 +99,20 @@ export function VariationManager({ variations, onChange }: VariationManagerProps
                           type="number"
                           step="0.01"
                           placeholder="0.00"
-                          value={variation.price}
-                          onChange={(e) => updateVariation(index, "price", e.target.value)}
+                          value={color.price}
+                          onChange={(e) => updateColor(index, "price", e.target.value)}
                           className="h-8"
                         />
                       </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
                       <div>
                         <Label className="text-xs">Quantity</Label>
                         <Input
                           type="number"
                           placeholder="0"
-                          value={variation.quantity}
-                          onChange={(e) => updateVariation(index, "quantity", e.target.value)}
+                          value={color.quantity}
+                          onChange={(e) => updateColor(index, "quantity", e.target.value)}
                           className="h-8"
                         />
                       </div>
@@ -98,13 +120,13 @@ export function VariationManager({ variations, onChange }: VariationManagerProps
                     <div className="flex items-center space-x-2">
                       <input
                         type="checkbox"
-                        id={`apply-sale-${index}`}
-                        checked={variation.apply_sale}
-                        onChange={(e) => updateVariation(index, "apply_sale", e.target.checked)}
+                        id={`apply-sale-color-${index}`}
+                        checked={color.apply_sale}
+                        onChange={(e) => updateColor(index, "apply_sale", e.target.checked)}
                         className="rounded border-input"
                       />
-                      <Label htmlFor={`apply-sale-${index}`} className="text-xs cursor-pointer">
-                        Apply sale discount to this variation
+                      <Label htmlFor={`apply-sale-color-${index}`} className="text-xs cursor-pointer">
+                        Apply sale discount to this color
                       </Label>
                     </div>
                   </div>
@@ -113,7 +135,7 @@ export function VariationManager({ variations, onChange }: VariationManagerProps
                     size="icon"
                     variant="ghost"
                     className="h-8 w-8 mt-4"
-                    onClick={() => removeVariation(index)}
+                    onClick={() => removeColor(index)}
                   >
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>

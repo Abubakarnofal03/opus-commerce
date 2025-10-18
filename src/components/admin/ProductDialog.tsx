@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ImageUpload } from "./ImageUpload";
 import { VideoUpload } from "./VideoUpload";
 import { VariationManager, Variation } from "./VariationManager";
+import { ColorManager, Color } from "./ColorManager";
 
 interface ProductDialogProps {
   open: boolean;
@@ -37,6 +38,7 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
     weight_kg: "",
   });
   const [variations, setVariations] = useState<Variation[]>([]);
+  const [colors, setColors] = useState<Color[]>([]);
 
   useEffect(() => {
     if (product) {
@@ -68,8 +70,29 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
                 id: v.id,
                 name: v.name,
                 price: v.price.toString(),
+                quantity: v.quantity?.toString() || "0",
                 sort_order: v.sort_order,
                 apply_sale: v.apply_sale ?? true,
+              })));
+            }
+          });
+
+        // Fetch colors if editing
+        supabase
+          .from("product_colors")
+          .select("*")
+          .eq("product_id", product.id)
+          .order("sort_order")
+          .then(({ data }) => {
+            if (data) {
+              setColors(data.map(c => ({
+                id: c.id,
+                name: c.name,
+                color_code: c.color_code,
+                price: c.price.toString(),
+                quantity: c.quantity.toString(),
+                sort_order: c.sort_order,
+                apply_sale: c.apply_sale ?? true,
               })));
             }
           });
@@ -90,6 +113,7 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
         weight_kg: "",
       });
       setVariations([]);
+      setColors([]);
     }
   }, [product, open]);
 
@@ -123,9 +147,14 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
         if (error) throw error;
         productId = product.id;
         
-        // Delete existing variations
+        // Delete existing variations and colors
         await supabase
           .from("product_variations")
+          .delete()
+          .eq("product_id", productId);
+        
+        await supabase
+          .from("product_colors")
           .delete()
           .eq("product_id", productId);
       } else {
@@ -146,6 +175,7 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
             product_id: productId,
             name: v.name,
             price: parseFloat(v.price),
+            quantity: parseInt(v.quantity) || 0,
             sort_order: index,
             apply_sale: v.apply_sale,
           }));
@@ -155,6 +185,28 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
             .from("product_variations")
             .insert(variationsData);
           if (varError) throw varError;
+        }
+      }
+
+      // Insert colors if any
+      if (colors.length > 0) {
+        const colorsData = colors
+          .filter(c => c.name && c.price && c.color_code)
+          .map((c, index) => ({
+            product_id: productId,
+            name: c.name,
+            color_code: c.color_code,
+            price: parseFloat(c.price),
+            quantity: parseInt(c.quantity) || 0,
+            sort_order: index,
+            apply_sale: c.apply_sale,
+          }));
+        
+        if (colorsData.length > 0) {
+          const { error: colorError } = await supabase
+            .from("product_colors")
+            .insert(colorsData);
+          if (colorError) throw colorError;
         }
       }
 
@@ -307,6 +359,11 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
           <VariationManager
             variations={variations}
             onChange={setVariations}
+          />
+
+          <ColorManager
+            colors={colors}
+            onChange={setColors}
           />
 
           <div className="flex items-center space-x-2">
