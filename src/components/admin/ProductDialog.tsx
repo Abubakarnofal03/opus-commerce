@@ -89,7 +89,7 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
                 id: c.id,
                 name: c.name,
                 color_code: c.color_code,
-                price: c.price.toString(),
+                price: c.price ? c.price.toString() : "",
                 quantity: c.quantity.toString(),
                 sort_order: c.sort_order,
                 apply_sale: c.apply_sale ?? true,
