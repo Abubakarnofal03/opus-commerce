@@ -198,7 +198,9 @@ const ProductDetail = ({ key }: { key?: string }) => {
           color_id: selectedColor?.id || null,
           color_name: selectedColor?.name || null,
           color_code: selectedColor?.color_code || null,
-          color_price: selectedColor?.price || null,
+          color_price: (selectedColor?.price && parseFloat(selectedColor.price) > 0) 
+            ? parseFloat(selectedColor.price) 
+            : null,
         });
       }
     },
@@ -206,8 +208,8 @@ const ProductDetail = ({ key }: { key?: string }) => {
       queryClient.invalidateQueries({ queryKey: ["cart"] });
 
       // Calculate sale price for tracking (use color > variation > product price)
-      const basePrice = selectedColor 
-        ? selectedColor.price 
+      const basePrice = (selectedColor?.price && parseFloat(selectedColor.price) > 0)
+        ? parseFloat(selectedColor.price)
         : selectedVariation 
         ? selectedVariation.price 
         : product.price;
@@ -241,9 +243,9 @@ const ProductDetail = ({ key }: { key?: string }) => {
   };
 
   // Calculate sale price (needed for tracking)
-  // Use color price if selected, otherwise variation price, otherwise product price
-  const displayPrice = selectedColor 
-    ? selectedColor.price 
+  // Use color price if selected and has value, otherwise variation price, otherwise product price
+  const displayPrice = (selectedColor?.price && parseFloat(selectedColor.price) > 0)
+    ? parseFloat(selectedColor.price)
     : selectedVariation 
     ? selectedVariation.price 
     : product?.price || 0;
