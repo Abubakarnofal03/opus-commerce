@@ -530,11 +530,17 @@ const ProductDetail = ({ key }: { key?: string }) => {
                     <div className="flex flex-wrap gap-3">
                       {colors.map((color) => {
                         const isOutOfStock = color.quantity === 0;
+                        // Use color price if set, otherwise fall back to variation or product price
+                        const colorDisplayPrice = (color.price && color.price > 0) 
+                          ? color.price
+                          : selectedVariation 
+                          ? selectedVariation.price
+                          : product?.price || 0;
                         const colorSale = sales?.find((s) => s.product_id === product?.id);
                         const colorGlobalSale = sales?.find((s) => s.is_global);
                         const colorApplySale = color.apply_sale !== false;
                         const { finalPrice: colorFinalPrice, discount: colorDiscount } = calculateSalePrice(
-                          color.price,
+                          colorDisplayPrice,
                           colorSale,
                           colorGlobalSale,
                           colorApplySale
@@ -574,10 +580,10 @@ const ProductDetail = ({ key }: { key?: string }) => {
                               {colorDiscount ? (
                                 <div className="space-y-0.5">
                                   <div className="text-xs font-bold">{formatPrice(colorFinalPrice)}</div>
-                                  <div className="text-xs line-through opacity-60">{formatPrice(color.price)}</div>
+                                  <div className="text-xs line-through opacity-60">{formatPrice(colorDisplayPrice)}</div>
                                 </div>
                               ) : (
-                                <div className="text-xs font-medium">{formatPrice(color.price)}</div>
+                                <div className="text-xs font-medium">{formatPrice(colorDisplayPrice)}</div>
                               )}
                               {isOutOfStock && (
                                 <div className="text-[10px] font-bold text-destructive">Out of Stock</div>
