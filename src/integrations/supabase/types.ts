@@ -209,6 +209,10 @@ export type Database = {
       }
       order_items: {
         Row: {
+          color_code: string | null
+          color_id: string | null
+          color_name: string | null
+          color_price: number | null
           created_at: string | null
           id: string
           order_id: string
@@ -220,6 +224,10 @@ export type Database = {
           variation_price: number | null
         }
         Insert: {
+          color_code?: string | null
+          color_id?: string | null
+          color_name?: string | null
+          color_price?: number | null
           created_at?: string | null
           id?: string
           order_id: string
@@ -231,6 +239,10 @@ export type Database = {
           variation_price?: number | null
         }
         Update: {
+          color_code?: string | null
+          color_id?: string | null
+          color_name?: string | null
+          color_price?: number | null
           created_at?: string | null
           id?: string
           order_id?: string
