@@ -119,7 +119,7 @@ const Admin = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('orders')
-        .select('*, order_items(*, products(*, product_variations(*)), variation_id, variation_name, variation_price, color_id, color_name, color_code, color_price)')
+        .select('*, order_items(*, products(*, product_variations(*)))')
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data;
