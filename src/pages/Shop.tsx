@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ShoppingCart, Star } from "lucide-react";
 import { addToGuestCart } from "@/lib/cartUtils";
 import { formatPrice } from "@/lib/currency";
-import { LoadingScreen } from "@/components/LoadingScreen";
+import { Skeleton } from "@/components/ui/skeleton";
 import { SEOHead } from "@/components/SEOHead";
 import { organizationSchema, breadcrumbSchema } from "@/lib/structuredData";
 import {
@@ -163,11 +163,68 @@ const Shop = () => {
     }
   };
 
+  const renderSkeletonLoader = () => (
+    <section className="py-8 md:py-12">
+      <div className="container mx-auto px-4">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 md:gap-8">
+          {/* Filters Sidebar Skeleton */}
+          <div className="lg:col-span-1 space-y-4 md:space-y-6">
+            <Card className="glass-card rounded-xl">
+              <CardContent className="p-4 md:p-6">
+                <Skeleton className="h-6 w-20 mb-4" />
+                <div className="space-y-4 md:space-y-6">
+                  <div>
+                    <Skeleton className="h-4 w-16 mb-3" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                  <div>
+                    <Skeleton className="h-4 w-20 mb-3" />
+                    <div className="grid grid-cols-2 gap-2">
+                      <Skeleton className="h-16 w-full" />
+                      <Skeleton className="h-16 w-full" />
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Products Grid Skeleton */}
+          <div className="lg:col-span-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+              {[...Array(6)].map((_, index) => (
+                <Card key={index} className="glass-card overflow-hidden rounded-xl">
+                  <Skeleton className="aspect-square w-full" />
+                  <CardContent className="p-3 md:p-4 space-y-2">
+                    <Skeleton className="h-3 w-24" />
+                    <Skeleton className="h-5 w-full" />
+                    <Skeleton className="h-3 w-16" />
+                    <Skeleton className="h-6 w-28" />
+                    <div className="grid grid-cols-2 gap-2 mt-3">
+                      <Skeleton className="h-8 w-full" />
+                      <Skeleton className="h-8 w-full" />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
-        <LoadingScreen message="Loading products..." />
+        <section className="py-8 md:py-12 bg-muted/30">
+          <div className="container mx-auto px-4">
+            <Skeleton className="h-12 w-64 mx-auto mb-4" />
+            <Skeleton className="h-4 w-96 mx-auto" />
+          </div>
+        </section>
+        {renderSkeletonLoader()}
         <Footer />
       </div>
     );
