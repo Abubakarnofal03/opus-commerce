@@ -61,6 +61,11 @@ const Admin = () => {
   const [exportStatusFilter, setExportStatusFilter] = useState<string>("all");
   const [instaStatusFilter, setInstaStatusFilter] = useState<string>("all");
   const [instaProductFilter, setInstaProductFilter] = useState<string>("all");
+  const [customExportDialog, setCustomExportDialog] = useState(false);
+  const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
+  const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
+  const [customStatusFilter, setCustomStatusFilter] = useState<string>("all");
+  const [customProductFilter, setCustomProductFilter] = useState<string>("all");
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -396,6 +401,156 @@ const Admin = () => {
     });
   };
 
+  const exportOrdersToCustomFormat = (filterByDate: boolean = false) => {
+    if (!orders || orders.length === 0) {
+      toast({
+        title: "No orders to export",
+        description: "There are no orders available to download.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    let filteredOrders = orders;
+    
+    // Apply status filter
+    if (customStatusFilter !== "all") {
+      filteredOrders = filteredOrders.filter(order => order.status === customStatusFilter);
+    }
+    
+    // Apply product filter
+    if (customProductFilter !== "all") {
+      filteredOrders = filteredOrders.filter(order => {
+        const orderItems = order.order_items || [];
+        return orderItems.some((item: any) => item.product_id === customProductFilter);
+      });
+    }
+    
+    // Apply date filter
+    if (filterByDate && customStartDate && customEndDate) {
+      filteredOrders = filteredOrders.filter((order) => {
+        const orderDate = new Date(order.created_at);
+        const start = new Date(customStartDate);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(customEndDate);
+        end.setHours(23, 59, 59, 999);
+        return orderDate >= start && orderDate <= end;
+      });
+
+      if (filteredOrders.length === 0) {
+        toast({
+          title: "No orders found",
+          description: "No orders found in the selected date range.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    // Sort orders by order ID in ascending order
+    filteredOrders = filteredOrders.sort((a, b) => a.order_number - b.order_number);
+
+    // Create CSV data - one row per order
+    const csvData = filteredOrders.map((order) => {
+      const orderItems = order.order_items || [];
+      
+      // Calculate total quantity
+      const totalQuantity = orderItems.reduce((sum: number, item: any) => sum + item.quantity, 0);
+      
+      // Calculate total booking weight
+      const totalWeight = orderItems.reduce((sum: number, item: any) => {
+        const product = products?.find(p => p.id === item.product_id);
+        const weight = product?.weight_kg || 0;
+        return sum + (weight * item.quantity);
+      }, 0);
+
+      return {
+        order_reference: order.order_number,
+        order_amount: order.total_amount,
+        order_detail: "",
+        customer_name: `${order.first_name} ${order.last_name}`,
+        customer_phone: order.phone,
+        order_address: order.shipping_address,
+        city: order.shipping_city,
+        items: totalQuantity,
+        airway_bill_copies: "1",
+        notes: order.admin_notes || order.notes || "",
+        address_code: "001",
+        return_address_code: "",
+        order_type: "normal",
+        booking_weight: totalWeight.toFixed(2),
+      };
+    });
+
+    // Convert to CSV format
+    const headers = [
+      "Order Reference Number", "Order Amount", "Order Detail", "Customer Name",
+      "Customer Phone", "Order Address", "City", "Items (quantity)",
+      "Airway Bill Copies", "Notes", "Address Code", "Return Address Code",
+      "Order Type", "Booking Weight"
+    ];
+
+    const csvContent = [
+      headers.join(","),
+      ...csvData.map(row => 
+        [
+          row.order_reference,
+          row.order_amount,
+          row.order_detail,
+          row.customer_name,
+          row.customer_phone,
+          row.order_address,
+          row.city,
+          row.items,
+          row.airway_bill_copies,
+          row.notes,
+          row.address_code,
+          row.return_address_code,
+          row.order_type,
+          row.booking_weight,
+        ].map(value => {
+          let strValue = value?.toString() || "";
+          
+          // Remove line breaks and carriage returns
+          strValue = strValue.replace(/[\r\n]+/g, ' ').trim();
+          
+          // Escape quotes by doubling them
+          strValue = strValue.replace(/"/g, '""');
+          
+          // Always wrap fields in quotes
+          return `"${strValue}"`;
+        }).join(",")
+      )
+    ].join("\n");
+
+    // Create and download CSV file
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    
+    const dateRangeStr = filterByDate && customStartDate && customEndDate 
+      ? `_${format(customStartDate, 'yyyy-MM-dd')}_to_${format(customEndDate, 'yyyy-MM-dd')}`
+      : '';
+    const fileName = `custom_orders${dateRangeStr}_${format(new Date(), 'yyyy-MM-dd_HH-mm')}.csv`;
+    link.setAttribute("download", fileName);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    setCustomExportDialog(false);
+    setCustomStartDate(undefined);
+    setCustomEndDate(undefined);
+    setCustomStatusFilter("all");
+    setCustomProductFilter("all");
+    
+    toast({
+      title: "Export successful",
+      description: `Downloaded ${filteredOrders.length} orders to ${fileName}`,
+    });
+  };
+
   const exportOrdersToExcel = (filterByDate: boolean = false) => {
     if (!orders || orders.length === 0) {
       toast({
@@ -617,14 +772,18 @@ const Admin = () => {
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="flex items-end gap-2">
-                      <Button onClick={() => setExportDialog(true)} variant="outline" className="flex-1">
+                    <div className="flex items-end gap-2 flex-wrap">
+                      <Button onClick={() => setExportDialog(true)} variant="outline" className="flex-1 min-w-[140px]">
                         <Download className="h-4 w-4 mr-2" />
-                        Export to Excel
+                        Excel
                       </Button>
-                      <Button onClick={() => setInstaWorldDialog(true)} className="flex-1">
+                      <Button onClick={() => setInstaWorldDialog(true)} variant="secondary" className="flex-1 min-w-[140px]">
                         <Download className="h-4 w-4 mr-2" />
                         INSTA WORLD
+                      </Button>
+                      <Button onClick={() => setCustomExportDialog(true)} className="flex-1 min-w-[140px]">
+                        <Download className="h-4 w-4 mr-2" />
+                        Custom Export
                       </Button>
                     </div>
                   </div>
@@ -1554,6 +1713,113 @@ const Admin = () => {
             <Button
               onClick={() => exportOrdersToInstaWorld(true)}
               disabled={!instaStartDate || !instaEndDate}
+              className="w-full sm:w-auto"
+            >
+              Export Filtered Orders
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Custom Export Dialog */}
+      <AlertDialog open={customExportDialog} onOpenChange={setCustomExportDialog}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Export Orders (Custom Format)</AlertDialogTitle>
+            <AlertDialogDescription>
+              Export orders with custom fields. You can filter by status, product, and date range.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Filter by Status</label>
+              <Select value={customStatusFilter} onValueChange={setCustomStatusFilter}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="processing">Processing</SelectItem>
+                  <SelectItem value="shipped">Shipped</SelectItem>
+                  <SelectItem value="delivered">Delivered</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Filter by Product</label>
+              <Select value={customProductFilter} onValueChange={setCustomProductFilter}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Products</SelectItem>
+                  {products?.map(product => (
+                    <SelectItem key={product.id} value={product.id}>{product.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Start Date (Optional)</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-left font-normal"
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {customStartDate ? format(customStartDate, "PPP") : "Pick start date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={customStartDate}
+                    onSelect={setCustomStartDate}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">End Date (Optional)</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-left font-normal"
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {customEndDate ? format(customEndDate, "PPP") : "Pick end date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={customEndDate}
+                    onSelect={setCustomEndDate}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <Button
+              onClick={() => exportOrdersToCustomFormat(false)}
+              variant="outline"
+              className="w-full sm:w-auto"
+            >
+              Export All Orders
+            </Button>
+            <Button
+              onClick={() => exportOrdersToCustomFormat(true)}
+              disabled={!customStartDate || !customEndDate}
               className="w-full sm:w-auto"
             >
               Export Filtered Orders
