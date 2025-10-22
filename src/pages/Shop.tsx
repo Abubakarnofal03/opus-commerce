@@ -10,7 +10,8 @@ import { Link, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { ShoppingCart, Star } from "lucide-react";
+import { ShoppingCart, Star, SlidersHorizontal } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { addToGuestCart } from "@/lib/cartUtils";
 import { formatPrice } from "@/lib/currency";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -34,6 +35,7 @@ const Shop = () => {
   const [debouncedMinPrice, setDebouncedMinPrice] = useState("0");
   const [debouncedMaxPrice, setDebouncedMaxPrice] = useState("50000");
   const [user, setUser] = useState<any>(null);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -285,9 +287,80 @@ const Shop = () => {
 
         <section className="py-8 md:py-12">
           <div className="container mx-auto px-4">
+            {/* Mobile Filter Button */}
+            <div className="lg:hidden mb-4">
+              <Sheet open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="outline" className="w-full">
+                    <SlidersHorizontal className="h-4 w-4 mr-2" />
+                    Filters
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-[280px] sm:w-[350px]">
+                  <SheetHeader>
+                    <SheetTitle>Filter Products</SheetTitle>
+                  </SheetHeader>
+                  <div className="mt-6 space-y-6">
+                    <div>
+                      <label className="text-sm font-medium mb-3 block">Category</label>
+                      <Select value={selectedCategory || "all"} onValueChange={handleCategoryChange}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="All Categories" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Categories</SelectItem>
+                          {categories?.map((category) => (
+                            <SelectItem key={category.id} value={category.slug}>
+                              {category.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-medium mb-3 block">
+                        Price Range
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label className="text-xs">Min</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            value={minPrice}
+                            onChange={(e) => setMinPrice(e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Max</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            value={maxPrice}
+                            onChange={(e) => setMaxPrice(e.target.value)}
+                          />
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Showing: {formatPrice(parseFloat(debouncedMinPrice))} - {formatPrice(parseFloat(debouncedMaxPrice))}
+                      </p>
+                    </div>
+
+                    <Button 
+                      className="w-full" 
+                      onClick={() => setMobileFiltersOpen(false)}
+                    >
+                      Apply Filters
+                    </Button>
+                  </div>
+                </SheetContent>
+              </Sheet>
+            </div>
+
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 md:gap-8">
-              {/* Filters Sidebar */}
-              <div className="lg:col-span-1 space-y-4 md:space-y-6">
+              {/* Filters Sidebar - Desktop Only */}
+              <div className="hidden lg:block lg:col-span-1 space-y-4 md:space-y-6">
                 <Card className="glass-card rounded-xl">
                   <CardContent className="p-4 md:p-6">
                     <h3 className="font-display text-base md:text-lg font-semibold mb-3 md:mb-4">Filters</h3>
@@ -346,7 +419,7 @@ const Shop = () => {
               </div>
 
               {/* Products Grid */}
-              <div className="lg:col-span-3">
+              <div className="col-span-1 lg:col-span-3">
                 {isLoading ? (
                   <div className="text-center py-12">
                     <p className="text-muted-foreground">Loading products...</p>
