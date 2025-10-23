@@ -957,6 +957,13 @@ const Admin = () => {
                 </CardContent>
               </Card>
               
+              <div className="flex items-center justify-between px-4 py-2 bg-muted/30 rounded-lg mb-4">
+                <p className="text-sm text-muted-foreground">
+                  Showing <span className="font-semibold text-foreground">{filteredOrders.length}</span> order{filteredOrders.length !== 1 ? 's' : ''}
+                  {statusFilter !== "all" && <span className="ml-1">({statusFilter})</span>}
+                </p>
+              </div>
+              
               {filteredOrders.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
                   No orders match your filters
