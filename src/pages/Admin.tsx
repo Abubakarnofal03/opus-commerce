@@ -463,11 +463,26 @@ const Admin = () => {
         const weight = product?.weight_kg || 0;
         return sum + (weight * item.quantity);
       }, 0);
+      
+      // Build order detail with item names and variations
+      const orderDetail = orderItems.map((item: any) => {
+        const product = products?.find(p => p.id === item.product_id);
+        let itemDetail = `${product?.name || 'Unknown Product'} (${item.quantity}x)`;
+        
+        if (item.variation_name) {
+          itemDetail += ` - ${item.variation_name}`;
+        }
+        if (item.color_name) {
+          itemDetail += ` - ${item.color_name}`;
+        }
+        
+        return itemDetail;
+      }).join('; ');
 
       return {
         order_reference: order.order_number,
         order_amount: order.total_amount,
-        order_detail: "",
+        order_detail: orderDetail,
         customer_name: `${order.first_name} ${order.last_name}`,
         customer_phone: order.phone,
         order_address: order.shipping_address,
