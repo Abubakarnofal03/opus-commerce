@@ -11,7 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { Package, ShoppingBag, DollarSign, Plus, Pencil, Trash2, Image as ImageIcon, Download, ChevronDown, ChevronUp, CalendarIcon, BarChart3, Filter, Search } from "lucide-react";
+import { Package, ShoppingBag, DollarSign, Plus, Pencil, Trash2, Image as ImageIcon, Download, ChevronDown, ChevronUp, CalendarIcon, BarChart3, Filter, Search, Save, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { ProductDialog } from "@/components/admin/ProductDialog";
 import { CategoryDialog } from "@/components/admin/CategoryDialog";
 import { BannerDialog } from "@/components/admin/BannerDialog";
@@ -66,6 +67,13 @@ const Admin = () => {
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
   const [customStatusFilter, setCustomStatusFilter] = useState<string>("all");
   const [customProductFilter, setCustomProductFilter] = useState<string>("all");
+  const [editingOrderItem, setEditingOrderItem] = useState<{ 
+    itemId: string; 
+    quantity: number; 
+    price: number;
+    variationId: string | null;
+    colorId: string | null;
+  } | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -167,6 +175,30 @@ const Admin = () => {
     },
   });
 
+  const { data: productVariations } = useQuery({
+    queryKey: ['product-variations'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('product_variations')
+        .select('*')
+        .order('sort_order');
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: productColors } = useQuery({
+    queryKey: ['product-colors'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('product_colors')
+        .select('*')
+        .order('sort_order');
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const updateOrderStatus = useMutation({
     mutationFn: async ({ orderId, status }: { orderId: string; status: string }) => {
       const { error } = await supabase
@@ -238,6 +270,126 @@ const Admin = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
       toast({ title: "Shipping address updated" });
       setEditingAddress(null);
+    },
+  });
+
+  const updateOrderItem = useMutation({
+    mutationFn: async ({ 
+      itemId, 
+      quantity, 
+      price,
+      variationId,
+      colorId,
+      orderId
+    }: { 
+      itemId: string; 
+      quantity: number; 
+      price: number;
+      variationId: string | null;
+      colorId: string | null;
+      orderId: string;
+    }) => {
+      // Get variation and color details
+      let variationName = null;
+      let variationPrice = null;
+      let colorName = null;
+      let colorPrice = null;
+      let colorCode = null;
+
+      if (variationId) {
+        const { data: variation } = await supabase
+          .from('product_variations')
+          .select('name, price')
+          .eq('id', variationId)
+          .single();
+        if (variation) {
+          variationName = variation.name;
+          variationPrice = variation.price;
+        }
+      }
+
+      if (colorId) {
+        const { data: color } = await supabase
+          .from('product_colors')
+          .select('name, price, color_code')
+          .eq('id', colorId)
+          .single();
+        if (color) {
+          colorName = color.name;
+          colorPrice = color.price;
+          colorCode = color.color_code;
+        }
+      }
+
+      // Update order item
+      const { error } = await supabase
+        .from('order_items')
+        .update({ 
+          quantity, 
+          price,
+          variation_id: variationId,
+          variation_name: variationName,
+          variation_price: variationPrice,
+          color_id: colorId,
+          color_name: colorName,
+          color_price: colorPrice,
+          color_code: colorCode
+        })
+        .eq('id', itemId);
+      if (error) throw error;
+
+      // Recalculate order total
+      const { data: orderItems } = await supabase
+        .from('order_items')
+        .select('price, quantity')
+        .eq('order_id', orderId);
+      
+      if (orderItems) {
+        const newTotal = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        await supabase
+          .from('orders')
+          .update({ total_amount: newTotal })
+          .eq('id', orderId);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+      toast({ title: "Order item updated" });
+      setEditingOrderItem(null);
+    },
+  });
+
+  const deleteOrderItem = useMutation({
+    mutationFn: async ({ itemId, orderId }: { itemId: string; orderId: string }) => {
+      const { error } = await supabase
+        .from('order_items')
+        .delete()
+        .eq('id', itemId);
+      if (error) throw error;
+
+      // Recalculate order total
+      const { data: orderItems } = await supabase
+        .from('order_items')
+        .select('price, quantity')
+        .eq('order_id', orderId);
+      
+      if (orderItems && orderItems.length > 0) {
+        const newTotal = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        await supabase
+          .from('orders')
+          .update({ total_amount: newTotal })
+          .eq('id', orderId);
+      } else {
+        // If no items left, set total to 0
+        await supabase
+          .from('orders')
+          .update({ total_amount: 0 })
+          .eq('id', orderId);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+      toast({ title: "Order item deleted" });
     },
   });
 
@@ -854,43 +1006,182 @@ const Admin = () => {
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-2">
-                        {order.order_items?.map((item: any) => (
-                          <div key={item.id} className="flex flex-col sm:flex-row justify-between gap-2 text-sm border-b pb-2">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium">{item.products?.name}</span>
-                                {item.variation_name && (
-                                  <Badge variant="outline" className="text-xs">
-                                    {item.variation_name}
-                                  </Badge>
-                                )}
-                                {item.color_name && (
-                                  <Badge variant="outline" className="text-xs flex items-center gap-1">
-                                    {item.color_code && (
-                                      <span 
-                                        className="inline-block w-3 h-3 rounded-full border" 
-                                        style={{ backgroundColor: item.color_code }}
+                        {order.order_items?.map((item: any) => {
+                          const isEditing = editingOrderItem?.itemId === item.id;
+                          const itemVariations = productVariations?.filter(v => v.product_id === item.product_id) || [];
+                          const itemColors = productColors?.filter(c => c.product_id === item.product_id) || [];
+
+                          return (
+                            <div key={item.id} className="flex flex-col gap-2 text-sm border-b pb-2">
+                              {isEditing ? (
+                                <div className="space-y-3 p-3 bg-muted/50 rounded-lg">
+                                  <div className="font-medium">{item.products?.name}</div>
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    <div>
+                                      <label className="text-xs text-muted-foreground">Quantity</label>
+                                      <Input
+                                        type="number"
+                                        min="1"
+                                        value={editingOrderItem.quantity}
+                                        onChange={(e) => setEditingOrderItem({
+                                          ...editingOrderItem,
+                                          quantity: parseInt(e.target.value) || 1
+                                        })}
+                                        className="h-8"
                                       />
+                                    </div>
+                                    <div>
+                                      <label className="text-xs text-muted-foreground">Price per item</label>
+                                      <Input
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        value={editingOrderItem.price}
+                                        onChange={(e) => setEditingOrderItem({
+                                          ...editingOrderItem,
+                                          price: parseFloat(e.target.value) || 0
+                                        })}
+                                        className="h-8"
+                                      />
+                                    </div>
+                                    {itemVariations.length > 0 && (
+                                      <div>
+                                        <label className="text-xs text-muted-foreground">Variation</label>
+                                        <Select
+                                          value={editingOrderItem.variationId || "none"}
+                                          onValueChange={(value) => setEditingOrderItem({
+                                            ...editingOrderItem,
+                                            variationId: value === "none" ? null : value
+                                          })}
+                                        >
+                                          <SelectTrigger className="h-8">
+                                            <SelectValue />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="none">No variation</SelectItem>
+                                            {itemVariations.map(v => (
+                                              <SelectItem key={v.id} value={v.id}>
+                                                {v.name}
+                                              </SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
                                     )}
-                                    {item.color_name}
-                                  </Badge>
-                                )}
-                              </div>
-                              <span className="text-muted-foreground">Qty: {item.quantity}</span>
+                                    {itemColors.length > 0 && (
+                                      <div>
+                                        <label className="text-xs text-muted-foreground">Color</label>
+                                        <Select
+                                          value={editingOrderItem.colorId || "none"}
+                                          onValueChange={(value) => setEditingOrderItem({
+                                            ...editingOrderItem,
+                                            colorId: value === "none" ? null : value
+                                          })}
+                                        >
+                                          <SelectTrigger className="h-8">
+                                            <SelectValue />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="none">No color</SelectItem>
+                                            {itemColors.map(c => (
+                                              <SelectItem key={c.id} value={c.id}>
+                                                <div className="flex items-center gap-2">
+                                                  <span 
+                                                    className="inline-block w-3 h-3 rounded-full border" 
+                                                    style={{ backgroundColor: c.color_code }}
+                                                  />
+                                                  {c.name}
+                                                </div>
+                                              </SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <Button
+                                      size="sm"
+                                      onClick={() => updateOrderItem.mutate({
+                                        itemId: item.id,
+                                        quantity: editingOrderItem.quantity,
+                                        price: editingOrderItem.price,
+                                        variationId: editingOrderItem.variationId,
+                                        colorId: editingOrderItem.colorId,
+                                        orderId: order.id
+                                      })}
+                                    >
+                                      <Save className="h-3 w-3 mr-1" />
+                                      Save
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => setEditingOrderItem(null)}
+                                    >
+                                      <X className="h-3 w-3 mr-1" />
+                                      Cancel
+                                    </Button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex flex-col sm:flex-row justify-between gap-2">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-medium">{item.products?.name}</span>
+                                      {item.variation_name && (
+                                        <Badge variant="outline" className="text-xs">
+                                          {item.variation_name}
+                                        </Badge>
+                                      )}
+                                      {item.color_name && (
+                                        <Badge variant="outline" className="text-xs flex items-center gap-1">
+                                          {item.color_code && (
+                                            <span 
+                                              className="inline-block w-3 h-3 rounded-full border" 
+                                              style={{ backgroundColor: item.color_code }}
+                                            />
+                                          )}
+                                          {item.color_name}
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    <span className="text-muted-foreground">Qty: {item.quantity} × {formatPrice(item.price)}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-semibold">{formatPrice(item.price * item.quantity)}</span>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => setEditingOrderItem({
+                                        itemId: item.id,
+                                        quantity: item.quantity,
+                                        price: item.price,
+                                        variationId: item.variation_id,
+                                        colorId: item.color_id
+                                      })}
+                                      className="h-8"
+                                    >
+                                      <Pencil className="h-3 w-3" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        if (confirm('Are you sure you want to delete this item?')) {
+                                          deleteOrderItem.mutate({ itemId: item.id, orderId: order.id });
+                                        }
+                                      }}
+                                      className="h-8 text-destructive hover:text-destructive"
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              )}
                             </div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-semibold">{formatPrice(item.price * item.quantity)}</span>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => navigate(`/product/${item.products?.slug}`)}
-                                className="h-8"
-                              >
-                                View Product
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                         <div className="border-t pt-2 flex justify-between font-bold">
                           <span>Total</span>
                           <span className="text-accent">{formatPrice(Number(order.total_amount))}</span>
