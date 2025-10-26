@@ -239,6 +239,8 @@ const ProductDetail = ({ key }: { key?: string }) => {
 
   const handleBuyNow = async () => {
     await addToCart.mutateAsync();
+    // Wait for cart to be refetched before navigating
+    await queryClient.refetchQueries({ queryKey: ["cart"] });
     navigate("/checkout");
   };
 
