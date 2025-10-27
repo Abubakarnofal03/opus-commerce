@@ -19,6 +19,7 @@ const Checkout = () => {
   const [user, setUser] = useState<any>(null);
   const [guestCart, setGuestCart] = useState<GuestCartItem[]>([]);
   const [showErrors, setShowErrors] = useState(false);
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -59,6 +60,7 @@ const Checkout = () => {
             }
           });
       }
+      setIsCheckingSession(false);
     });
     
     // Track Meta Pixel InitiateCheckout event when user lands on checkout page
@@ -294,14 +296,14 @@ const Checkout = () => {
     }));
   };
 
-  // Show loading state for logged-in users while cart is being fetched
-  if (user && isLoadingCart) {
+  // Show loading state while checking session or loading cart for logged-in users
+  if (isCheckingSession || (user && isLoadingCart)) {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
         <div className="flex-1 flex items-center justify-center px-4">
           <div className="text-center">
-            <p className="text-muted-foreground">Loading cart...</p>
+            <p className="text-muted-foreground">Loading...</p>
           </div>
         </div>
         <Footer />
