@@ -73,7 +73,7 @@ const Checkout = () => {
       if (!user) return [];
       const { data, error } = await supabase
         .from('cart_items')
-        .select('*, products(*), product_colors(*)')
+        .select('*, products(*)')
         .eq('user_id', user.id);
       if (error) throw error;
       return data;
