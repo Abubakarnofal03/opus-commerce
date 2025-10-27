@@ -17,34 +17,39 @@ export function ImageUpload({ label, value, onChange, multiple = false, folder }
   const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
 
-  const uploadImage = async (file: File): Promise<string | null> => {
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${folder}/${crypto.randomUUID()}.${fileExt}`;
-      
-      const { error: uploadError, data } = await supabase.storage
-        .from('store-images')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
+const uploadImage = async (file: File): Promise<string | null> => {
+  try {
+    const fileExt = file.name.split('.').pop();
+    const uniqueId =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : Math.random().toString(36).substring(2) + Date.now().toString(36);
 
-      if (uploadError) throw uploadError;
+    const fileName = `${folder}/${uniqueId}.${fileExt}`;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('store-images')
-        .getPublicUrl(fileName);
-
-      return publicUrl;
-    } catch (error: any) {
-      toast({
-        title: "Upload failed",
-        description: error.message,
-        variant: "destructive",
+    const { error: uploadError } = await supabase.storage
+      .from("store-images")
+      .upload(fileName, file, {
+        cacheControl: "3600",
+        upsert: false,
       });
-      return null;
-    }
-  };
+
+    if (uploadError) throw uploadError;
+
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from("store-images").getPublicUrl(fileName);
+
+    return publicUrl;
+  } catch (error: any) {
+    toast({
+      title: "Upload failed",
+      description: error.message,
+      variant: "destructive",
+    });
+    return null;
+  }
+};
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;

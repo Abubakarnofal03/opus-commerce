@@ -16,34 +16,42 @@ export function VideoUpload({ label, value, onChange, folder }: VideoUploadProps
   const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
 
-  const uploadVideo = async (file: File): Promise<string | null> => {
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${folder}/${crypto.randomUUID()}.${fileExt}`;
-      
-      const { error: uploadError, data } = await supabase.storage
-        .from('store-images')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
+const uploadVideo = async (file: File): Promise<string | null> => {
+  try {
+    const fileExt = file.name.split('.').pop();
 
-      if (uploadError) throw uploadError;
+    // ✅ Use a safe universal fallback for all environments
+    const uniqueId =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : Math.random().toString(36).substring(2) + Date.now().toString(36);
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('store-images')
-        .getPublicUrl(fileName);
+    const fileName = `${folder}/${uniqueId}.${fileExt}`;
 
-      return publicUrl;
-    } catch (error: any) {
-      toast({
-        title: "Upload failed",
-        description: error.message,
-        variant: "destructive",
+    const { error: uploadError } = await supabase.storage
+      .from("store-images")
+      .upload(fileName, file, {
+        cacheControl: "3600",
+        upsert: false,
       });
-      return null;
-    }
-  };
+
+    if (uploadError) throw uploadError;
+
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from("store-images").getPublicUrl(fileName);
+
+    return publicUrl;
+  } catch (error: any) {
+    toast({
+      title: "Upload failed",
+      description: error.message,
+      variant: "destructive",
+    });
+    return null;
+  }
+};
+
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
