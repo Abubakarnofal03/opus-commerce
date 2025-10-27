@@ -65,7 +65,7 @@ const Checkout = () => {
     trackMetaInitiateCheckout();
   }, []);
 
-  const { data: cartItems } = useQuery({
+  const { data: cartItems, isLoading: isLoadingCart } = useQuery({
     queryKey: ['cart', user?.id],
     queryFn: async () => {
       if (!user) return [];
@@ -293,6 +293,21 @@ const Checkout = () => {
       [name]: value,
     }));
   };
+
+  // Show loading state for logged-in users while cart is being fetched
+  if (user && isLoadingCart) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center px-4">
+          <div className="text-center">
+            <p className="text-muted-foreground">Loading cart...</p>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   if (!items || items.length === 0) {
     return (
