@@ -9,11 +9,12 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { getGuestCart, clearGuestCart, GuestCartItem } from "@/lib/cartUtils";
+import { getGuestCart, clearGuestCart, GuestCartItem, updateGuestCartQuantity, removeFromGuestCart } from "@/lib/cartUtils";
 import { formatPrice } from "@/lib/currency";
 import { trackInitiateCheckout as trackMetaInitiateCheckout } from "@/lib/metaPixel";
 import { trackInitiateCheckout as trackTikTokInitiateCheckout } from "@/lib/tiktokPixel";
 import { calculateSalePrice, Sale } from "@/lib/saleUtils";
+import { Trash2, Plus, Minus } from "lucide-react";
 
 const Checkout = () => {
   const [user, setUser] = useState<any>(null);
@@ -164,6 +165,45 @@ const Checkout = () => {
   const isPhoneValid = validatePhoneNumber(formData.phone).isValid;
   const isFormValid = formData.firstName && formData.city && isPhoneValid && 
                       formData.addressLine1;
+
+  // Mutations for cart operations
+  const updateQuantity = useMutation({
+    mutationFn: async ({ id, quantity }: { id: string; quantity: number }) => {
+      const { error } = await supabase
+        .from('cart_items')
+        .update({ quantity })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cart'] });
+    },
+  });
+
+  const removeItem = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('cart_items')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cart'] });
+      toast({ title: "Item removed from cart" });
+    },
+  });
+
+  const handleGuestQuantityUpdate = (item: GuestCartItem, quantity: number) => {
+    updateGuestCartQuantity(item.product_id, quantity, item.variation_id, item.color_id);
+    setGuestCart(getGuestCart());
+  };
+
+  const handleGuestRemove = (item: GuestCartItem) => {
+    removeFromGuestCart(item.product_id, item.variation_id, item.color_id);
+    setGuestCart(getGuestCart());
+    toast({ title: "Item removed from cart" });
+  };
 
   const placeOrder = useMutation({
     mutationFn: async () => {
@@ -452,7 +492,7 @@ const Checkout = () => {
                 <CardContent className="p-4 md:p-6">
                   <h2 className="font-display text-xl md:text-2xl font-bold mb-4">Order Summary</h2>
                   
-                  <div className="space-y-3 md:space-y-4 mb-4 md:mb-6 max-h-60 overflow-y-auto">
+                  <div className="space-y-3 mb-4 md:mb-6 max-h-[400px] overflow-y-auto">
                     {items?.map((item: any, idx: number) => {
                       const isGuest = !user;
                       const originalPrice = isGuest 
@@ -472,24 +512,92 @@ const Checkout = () => {
                         price: finalPrice,
                         variationName: item.variation_name,
                         colorName: item.color_name,
+                        image: isGuest ? item.product_image : item.products?.images?.[0],
                       };
 
                       return (
-                        <div key={idx} className="flex justify-between text-sm">
-                          <span className="truncate pr-2">
-                            {productData.name}
-                            {productData.variationName && (
-                              <span className="text-xs text-muted-foreground"> ({productData.variationName})</span>
+                        <Card key={idx} className="p-3">
+                          <div className="flex gap-3">
+                            {productData.image && (
+                              <div className="w-16 h-16 bg-muted rounded overflow-hidden flex-shrink-0">
+                                <img
+                                  src={productData.image}
+                                  alt={productData.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
                             )}
-                            {productData.colorName && (
-                              <span className="text-xs text-muted-foreground"> - {productData.colorName}</span>
-                            )}
-                            {' × '}{item.quantity}
-                          </span>
-                          <span className="font-semibold whitespace-nowrap">
-                            {formatPrice(productData.price * item.quantity)}
-                          </span>
-                        </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-semibold text-sm truncate mb-1">
+                                {productData.name}
+                              </h4>
+                              {productData.variationName && (
+                                <p className="text-xs text-muted-foreground">
+                                  {productData.variationName}
+                                </p>
+                              )}
+                              {productData.colorName && (
+                                <p className="text-xs text-muted-foreground">
+                                  Color: {productData.colorName}
+                                </p>
+                              )}
+                              <div className="flex items-center gap-2 mt-2">
+                                <div className="flex items-center border rounded">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6"
+                                    onClick={() => {
+                                      if (isGuest) {
+                                        handleGuestQuantityUpdate(item, Math.max(1, item.quantity - 1));
+                                      } else {
+                                        updateQuantity.mutate({ id: item.id, quantity: Math.max(1, item.quantity - 1) });
+                                      }
+                                    }}
+                                  >
+                                    <Minus className="h-3 w-3" />
+                                  </Button>
+                                  <span className="w-8 text-center text-sm font-semibold">
+                                    {item.quantity}
+                                  </span>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6"
+                                    onClick={() => {
+                                      if (isGuest) {
+                                        handleGuestQuantityUpdate(item, item.quantity + 1);
+                                      } else {
+                                        updateQuantity.mutate({ id: item.id, quantity: item.quantity + 1 });
+                                      }
+                                    }}
+                                  >
+                                    <Plus className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6"
+                                  onClick={() => {
+                                    if (isGuest) {
+                                      handleGuestRemove(item);
+                                    } else {
+                                      removeItem.mutate(item.id);
+                                    }
+                                  }}
+                                >
+                                  <Trash2 className="h-3 w-3 text-destructive" />
+                                </Button>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-bold text-sm whitespace-nowrap">
+                                {formatPrice(productData.price * item.quantity)}
+                              </p>
+                            </div>
+                          </div>
+                        </Card>
                       );
                     })}
                   </div>

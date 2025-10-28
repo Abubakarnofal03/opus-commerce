@@ -84,13 +84,13 @@ const Cart = () => {
     },
   });
 
-  const handleGuestQuantityUpdate = (productId: string, quantity: number) => {
-    updateGuestCartQuantity(productId, quantity);
+  const handleGuestQuantityUpdate = (item: GuestCartItem, quantity: number) => {
+    updateGuestCartQuantity(item.product_id, quantity, item.variation_id, item.color_id);
     setGuestCart(getGuestCart());
   };
 
-  const handleGuestRemove = (productId: string) => {
-    removeFromGuestCart(productId);
+  const handleGuestRemove = (item: GuestCartItem) => {
+    removeFromGuestCart(item.product_id, item.variation_id, item.color_id);
     setGuestCart(getGuestCart());
     toast({ title: "Item removed from cart" });
   };
@@ -214,7 +214,7 @@ const Cart = () => {
                                 className="h-8 w-8"
                                 onClick={() => {
                                   if (isGuest) {
-                                    handleGuestQuantityUpdate(item.product_id, Math.max(1, item.quantity - 1));
+                                    handleGuestQuantityUpdate(item, Math.max(1, item.quantity - 1));
                                   } else {
                                     updateQuantity.mutate({ id: item.id, quantity: Math.max(1, item.quantity - 1) });
                                   }
@@ -231,7 +231,7 @@ const Cart = () => {
                                 className="h-8 w-8"
                                 onClick={() => {
                                   if (isGuest) {
-                                    handleGuestQuantityUpdate(item.product_id, item.quantity + 1);
+                                    handleGuestQuantityUpdate(item, item.quantity + 1);
                                   } else {
                                     updateQuantity.mutate({ id: item.id, quantity: item.quantity + 1 });
                                   }
@@ -248,7 +248,7 @@ const Cart = () => {
                               className="h-8 w-8"
                               onClick={() => {
                                 if (isGuest) {
-                                  handleGuestRemove(item.product_id);
+                                  handleGuestRemove(item);
                                 } else {
                                   removeItem.mutate(item.id);
                                 }

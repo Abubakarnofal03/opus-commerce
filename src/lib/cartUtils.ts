@@ -53,9 +53,18 @@ export const addToGuestCart = (item: GuestCartItem): void => {
   setGuestCart(cart);
 };
 
-export const updateGuestCartQuantity = (productId: string, quantity: number): void => {
+export const updateGuestCartQuantity = (
+  productId: string, 
+  quantity: number, 
+  variationId?: string, 
+  colorId?: string
+): void => {
   const cart = getGuestCart();
-  const index = cart.findIndex(i => i.product_id === productId);
+  const index = cart.findIndex(i => 
+    i.product_id === productId && 
+    i.variation_id === variationId &&
+    i.color_id === colorId
+  );
   
   if (index >= 0) {
     if (quantity <= 0) {
@@ -67,9 +76,17 @@ export const updateGuestCartQuantity = (productId: string, quantity: number): vo
   }
 };
 
-export const removeFromGuestCart = (productId: string): void => {
+export const removeFromGuestCart = (
+  productId: string, 
+  variationId?: string, 
+  colorId?: string
+): void => {
   const cart = getGuestCart();
-  const filtered = cart.filter(i => i.product_id !== productId);
+  const filtered = cart.filter(i => !(
+    i.product_id === productId && 
+    i.variation_id === variationId &&
+    i.color_id === colorId
+  ));
   setGuestCart(filtered);
 };
 
