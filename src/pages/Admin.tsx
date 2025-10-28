@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { Package, ShoppingBag, DollarSign, Plus, Pencil, Trash2, Image as ImageIcon, Download, ChevronDown, ChevronUp, CalendarIcon, BarChart3, Filter, Search, Save, X } from "lucide-react";
+import { Package, ShoppingBag, DollarSign, Plus, Pencil, Trash2, Image as ImageIcon, Download, ChevronDown, ChevronUp, CalendarIcon, BarChart3, Filter, Search, Save, X, CheckSquare, Square } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { ProductDialog } from "@/components/admin/ProductDialog";
 import { CategoryDialog } from "@/components/admin/CategoryDialog";
@@ -28,6 +28,7 @@ import { LoadingScreen } from "@/components/LoadingScreen";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { Checkbox } from "@/components/ui/checkbox";
 import * as XLSX from 'xlsx';
 
 const Admin = () => {
@@ -74,6 +75,7 @@ const Admin = () => {
     variationId: string | null;
     colorId: string | null;
   } | null>(null);
+  const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -210,6 +212,21 @@ const Admin = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
       toast({ title: "Order status updated" });
+    },
+  });
+
+  const bulkUpdateOrderStatus = useMutation({
+    mutationFn: async ({ orderIds, status }: { orderIds: string[]; status: string }) => {
+      const { error } = await supabase
+        .from('orders')
+        .update({ status })
+        .in('id', orderIds);
+      if (error) throw error;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+      toast({ title: `${variables.orderIds.length} orders updated to ${variables.status}` });
+      setSelectedOrders(new Set());
     },
   });
 
@@ -420,6 +437,38 @@ const Admin = () => {
       }
       return newSet;
     });
+  };
+
+  const toggleOrderSelection = (orderId: string) => {
+    setSelectedOrders(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(orderId)) {
+        newSet.delete(orderId);
+      } else {
+        newSet.add(orderId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedOrders.size === filteredOrders.length) {
+      setSelectedOrders(new Set());
+    } else {
+      setSelectedOrders(new Set(filteredOrders.map(o => o.id)));
+    }
+  };
+
+  const handleBulkStatusChange = (status: string) => {
+    if (selectedOrders.size === 0) {
+      toast({
+        title: "No orders selected",
+        description: "Please select at least one order to update.",
+        variant: "destructive",
+      });
+      return;
+    }
+    bulkUpdateOrderStatus.mutate({ orderIds: Array.from(selectedOrders), status });
   };
 
   const exportOrdersToInstaWorld = (filterByDate: boolean = false) => {
@@ -957,6 +1006,49 @@ const Admin = () => {
                 </CardContent>
               </Card>
               
+              {filteredOrders.length > 0 && (
+                <Card className="mb-4">
+                  <CardContent className="pt-6">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 justify-between">
+                      <div className="flex items-center gap-3">
+                        <Checkbox
+                          checked={selectedOrders.size === filteredOrders.length && filteredOrders.length > 0}
+                          onCheckedChange={toggleSelectAll}
+                          id="select-all"
+                        />
+                        <label htmlFor="select-all" className="text-sm font-medium cursor-pointer">
+                          {selectedOrders.size > 0 ? (
+                            <span>
+                              {selectedOrders.size} order{selectedOrders.size !== 1 ? 's' : ''} selected
+                            </span>
+                          ) : (
+                            <span>Select all ({filteredOrders.length})</span>
+                          )}
+                        </label>
+                      </div>
+                      
+                      {selectedOrders.size > 0 && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground">Bulk actions:</span>
+                          <Select onValueChange={handleBulkStatusChange}>
+                            <SelectTrigger className="w-[180px]">
+                              <SelectValue placeholder="Change status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="pending">Set to Pending</SelectItem>
+                              <SelectItem value="processing">Set to Processing</SelectItem>
+                              <SelectItem value="shipped">Set to Shipped</SelectItem>
+                              <SelectItem value="delivered">Set to Delivered</SelectItem>
+                              <SelectItem value="cancelled">Set to Cancelled</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               <div className="flex items-center justify-between px-4 py-2 bg-muted/30 rounded-lg mb-4">
                 <p className="text-sm text-muted-foreground">
                   Showing <span className="font-semibold text-foreground">{filteredOrders.length}</span> order{filteredOrders.length !== 1 ? 's' : ''}
@@ -978,37 +1070,45 @@ const Admin = () => {
                 >
                   <Card>
                     <CardHeader>
-                      <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
-                        <CollapsibleTrigger asChild>
-                          <Button variant="ghost" className="flex items-center gap-2 p-0 h-auto hover:bg-transparent w-full sm:w-auto justify-start">
-                            <div className="text-left">
-                              <CardTitle className="text-base sm:text-lg">Order #{order.order_number}</CardTitle>
-                              <p className="text-xs sm:text-sm text-muted-foreground">
-                                {format(new Date(order.created_at), 'PPP')}
-                              </p>
-                            </div>
-                            {expandedOrders.has(order.id) ? (
-                              <ChevronUp className="h-5 w-5" />
-                            ) : (
-                              <ChevronDown className="h-5 w-5" />
-                            )}
-                          </Button>
-                        </CollapsibleTrigger>
-                        <Select
-                          value={order.status}
-                          onValueChange={(status) => updateOrderStatus.mutate({ orderId: order.id, status })}
-                        >
-                          <SelectTrigger className="w-full sm:w-[150px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="pending">Pending</SelectItem>
-                            <SelectItem value="processing">Processing</SelectItem>
-                            <SelectItem value="shipped">Shipped</SelectItem>
-                            <SelectItem value="delivered">Delivered</SelectItem>
-                            <SelectItem value="cancelled">Cancelled</SelectItem>
-                          </SelectContent>
-                        </Select>
+                      <div className="flex items-start gap-3">
+                        <Checkbox
+                          checked={selectedOrders.has(order.id)}
+                          onCheckedChange={() => toggleOrderSelection(order.id)}
+                          className="mt-1"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <div className="flex flex-col sm:flex-row justify-between items-start gap-4 flex-1">
+                          <CollapsibleTrigger asChild>
+                            <Button variant="ghost" className="flex items-center gap-2 p-0 h-auto hover:bg-transparent w-full sm:w-auto justify-start">
+                              <div className="text-left">
+                                <CardTitle className="text-base sm:text-lg">Order #{order.order_number}</CardTitle>
+                                <p className="text-xs sm:text-sm text-muted-foreground">
+                                  {format(new Date(order.created_at), 'PPP')}
+                                </p>
+                              </div>
+                              {expandedOrders.has(order.id) ? (
+                                <ChevronUp className="h-5 w-5" />
+                              ) : (
+                                <ChevronDown className="h-5 w-5" />
+                              )}
+                            </Button>
+                          </CollapsibleTrigger>
+                          <Select
+                            value={order.status}
+                            onValueChange={(status) => updateOrderStatus.mutate({ orderId: order.id, status })}
+                          >
+                            <SelectTrigger className="w-full sm:w-[150px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="pending">Pending</SelectItem>
+                              <SelectItem value="processing">Processing</SelectItem>
+                              <SelectItem value="shipped">Shipped</SelectItem>
+                              <SelectItem value="delivered">Delivered</SelectItem>
+                              <SelectItem value="cancelled">Cancelled</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
                     </CardHeader>
                     <CardContent>
