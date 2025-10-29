@@ -579,6 +579,51 @@ export type Database = {
         }
         Relationships: []
       }
+      promotional_bars: {
+        Row: {
+          background_color: string
+          created_at: string
+          end_date: string | null
+          icon: string | null
+          id: string
+          is_active: boolean
+          link_url: string | null
+          show_countdown: boolean
+          sort_order: number
+          text_color: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          background_color?: string
+          created_at?: string
+          end_date?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          link_url?: string | null
+          show_countdown?: boolean
+          sort_order?: number
+          text_color?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          background_color?: string
+          created_at?: string
+          end_date?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          link_url?: string | null
+          show_countdown?: boolean
+          sort_order?: number
+          text_color?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       reviews: {
         Row: {
           created_at: string

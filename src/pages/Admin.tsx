@@ -18,6 +18,7 @@ import { CategoryDialog } from "@/components/admin/CategoryDialog";
 import { BannerDialog } from "@/components/admin/BannerDialog";
 import { BlogDialog } from "@/components/admin/BlogDialog";
 import { SaleDialog } from "@/components/admin/SaleDialog";
+import { PromotionalBarDialog } from "@/components/admin/PromotionalBarDialog";
 import { MetaCatalogSync } from "@/components/admin/MetaCatalogSync";
 import ReviewDialog from "@/components/admin/ReviewDialog";
 import { OrderAnalytics } from "@/components/admin/OrderAnalytics";
@@ -41,6 +42,7 @@ const Admin = () => {
   const [productDialog, setProductDialog] = useState({ open: false, product: null });
   const [categoryDialog, setCategoryDialog] = useState({ open: false, category: null });
   const [bannerDialog, setBannerDialog] = useState({ open: false, banner: null });
+  const [promotionalBarDialog, setPromotionalBarDialog] = useState(false);
   const [blogDialog, setBlogDialog] = useState({ open: false, blog: null });
   const [reviewDialog, setReviewDialog] = useState({ open: false, review: null });
   const [deleteDialog, setDeleteDialog] = useState({ open: false, type: "", id: "", name: "" });
@@ -1777,6 +1779,23 @@ const Admin = () => {
                   </Table>
                 </CardContent>
               </Card>
+
+              <Card className="mt-6">
+                <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <CardTitle>Top Promotional Bar</CardTitle>
+                  <Button onClick={() => setPromotionalBarDialog(true)} className="w-full sm:w-auto">
+                    <Plus className="h-4 w-4 mr-2" />
+                    <span className="hidden sm:inline">Manage Promotional Bars</span>
+                    <span className="sm:hidden">Manage</span>
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    Create rotating promotional messages that appear at the top of your site. 
+                    Add sale announcements, countdown timers, and special offers that automatically rotate.
+                  </p>
+                </CardContent>
+              </Card>
             </TabsContent>
 
             <TabsContent value="blogs">
@@ -1877,6 +1896,11 @@ const Admin = () => {
           queryClient.invalidateQueries({ queryKey: ['admin-banners'] });
           queryClient.invalidateQueries({ queryKey: ['banners'] });
         }}
+      />
+
+      <PromotionalBarDialog
+        open={promotionalBarDialog}
+        onOpenChange={setPromotionalBarDialog}
       />
 
       <BlogDialog
