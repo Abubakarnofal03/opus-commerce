@@ -116,7 +116,7 @@ const Index = () => {
       
       <main className="flex-1">
         {/* Dynamic Hero Banner */}
-        <section className="relative h-[600px] flex items-center justify-center overflow-hidden">
+        <section className="relative w-full aspect-[16/9] sm:aspect-[16/8] md:aspect-[16/7] flex items-center justify-center overflow-hidden">
           {banners && banners.map((banner, index) => (
             <div
               key={banner.id}
@@ -134,18 +134,18 @@ const Index = () => {
           {activeBanner && activeBanner.show_text_overlay && (
             <div 
               key={currentBannerIndex}
-              className="relative z-10 text-center text-primary-foreground px-4 transition-all duration-700 ease-in-out"
+              className="relative z-10 text-center text-primary-foreground px-4 sm:px-6 md:px-8 max-w-5xl mx-auto transition-all duration-700 ease-in-out"
             >
-              <h1 className="font-display text-4xl md:text-6xl lg:text-7xl font-bold mb-6 gold-accent pb-8 animate-fade-in">
+              <h1 className="font-display text-2xl sm:text-3xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-3 sm:mb-4 md:mb-6 gold-accent pb-4 md:pb-8 animate-fade-in leading-tight">
                 {activeBanner.title}
               </h1>
-              <p className="text-xl md:text-2xl mb-8 max-w-2xl mx-auto animate-fade-in">
+              <p className="hidden sm:block text-base md:text-xl lg:text-2xl mb-4 sm:mb-6 md:mb-8 max-w-2xl mx-auto animate-fade-in">
                 {activeBanner.subtitle}
               </p>
               <div className="animate-fade-in">
-                <Button asChild size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground">
+                <Button asChild size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground text-sm sm:text-base h-9 sm:h-10 md:h-11 px-4 sm:px-6 md:px-8">
                   <Link to={activeBanner.link_url || '/shop'}>
-                    Explore Collection <ArrowRight className="ml-2 h-5 w-5" />
+                    Explore Collection <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
                   </Link>
                 </Button>
               </div>
@@ -154,15 +154,15 @@ const Index = () => {
           
           {/* Navigation Dots */}
           {banners && banners.length > 1 && (
-            <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-2 z-20">
+            <div className="absolute bottom-4 sm:bottom-6 md:bottom-8 left-1/2 transform -translate-x-1/2 flex gap-2 z-20">
               {banners.map((_, index) => (
                 <button
                   key={index}
                   onClick={() => setCurrentBannerIndex(index)}
-                  className={`h-3 rounded-full transition-all duration-300 ${
+                  className={`h-2 sm:h-3 rounded-full transition-all duration-300 ${
                     index === currentBannerIndex
-                      ? 'bg-accent w-8'
-                      : 'bg-white/50 hover:bg-white/75 w-3'
+                      ? 'bg-accent w-6 sm:w-8'
+                      : 'bg-white/50 hover:bg-white/75 w-2 sm:w-3'
                   }`}
                   aria-label={`Go to banner ${index + 1}`}
                 />
