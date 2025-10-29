@@ -26,6 +26,17 @@ import {
 } from "@/components/ui/select";
 import { calculateSalePrice } from "@/lib/saleUtils";
 import { trackAddToCart } from "@/lib/metaPixel";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis,
+} from "@/components/ui/pagination";
+
+const ITEMS_PER_PAGE = 10;
 
 const Shop = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -36,6 +47,7 @@ const Shop = () => {
   const [debouncedMaxPrice, setDebouncedMaxPrice] = useState("50000");
   const [user, setUser] = useState<any>(null);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -80,8 +92,8 @@ const Shop = () => {
     },
   });
 
-  const { data: products, isLoading } = useQuery({
-    queryKey: ['products', selectedCategory, debouncedMinPrice, debouncedMaxPrice],
+  const { data: productsData, isLoading } = useQuery({
+    queryKey: ['products', selectedCategory, debouncedMinPrice, debouncedMaxPrice, currentPage],
     queryFn: async () => {
       let query = supabase
         .from('products')
@@ -96,14 +108,31 @@ const Shop = () => {
         }
       }
 
-      const { data, error } = await query
+      const from = (currentPage - 1) * ITEMS_PER_PAGE;
+      const to = from + ITEMS_PER_PAGE - 1;
+
+      const { data, error, count } = await query
         .order('created_at', { ascending: false })
-        .limit(1000);
+        .range(from, to);
       if (error) throw error;
-      return data;
+      return { products: data, count };
     },
     enabled: !!categories,
   });
+
+  const products = productsData?.products;
+  const totalCount = productsData?.count || 0;
+  const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedCategory, debouncedMinPrice, debouncedMaxPrice]);
+
+  // Scroll to top when page changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentPage]);
 
   const addToCart = useMutation({
     mutationFn: async (product: any) => {
@@ -516,7 +545,75 @@ const Shop = () => {
                           </Card>
                         </Link>
                       );
-                    })}
+                     })}
+                  </div>
+                )}
+
+                {/* Pagination */}
+                {!isLoading && products && products.length > 0 && totalPages > 1 && (
+                  <div className="mt-8 flex justify-center">
+                    <Pagination>
+                      <PaginationContent>
+                        <PaginationItem>
+                          <PaginationPrevious
+                            href="#"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              if (currentPage > 1) setCurrentPage(currentPage - 1);
+                            }}
+                            className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                          />
+                        </PaginationItem>
+
+                        {[...Array(totalPages)].map((_, index) => {
+                          const pageNumber = index + 1;
+                          
+                          // Show first page, last page, current page, and pages around current
+                          if (
+                            pageNumber === 1 ||
+                            pageNumber === totalPages ||
+                            (pageNumber >= currentPage - 1 && pageNumber <= currentPage + 1)
+                          ) {
+                            return (
+                              <PaginationItem key={pageNumber}>
+                                <PaginationLink
+                                  href="#"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    setCurrentPage(pageNumber);
+                                  }}
+                                  isActive={currentPage === pageNumber}
+                                  className="cursor-pointer"
+                                >
+                                  {pageNumber}
+                                </PaginationLink>
+                              </PaginationItem>
+                            );
+                          } else if (
+                            pageNumber === currentPage - 2 ||
+                            pageNumber === currentPage + 2
+                          ) {
+                            return (
+                              <PaginationItem key={pageNumber}>
+                                <PaginationEllipsis />
+                              </PaginationItem>
+                            );
+                          }
+                          return null;
+                        })}
+
+                        <PaginationItem>
+                          <PaginationNext
+                            href="#"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+                            }}
+                            className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                          />
+                        </PaginationItem>
+                      </PaginationContent>
+                    </Pagination>
                   </div>
                 )}
               </div>
