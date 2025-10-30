@@ -110,6 +110,71 @@ const Admin = () => {
     }
   };
 
+  // Request notification permission when admin logs in
+  useEffect(() => {
+    if (isAdmin && 'Notification' in window) {
+      if (Notification.permission === 'default') {
+        Notification.requestPermission().then(permission => {
+          if (permission === 'granted') {
+            toast({
+              title: "Notifications enabled",
+              description: "You'll receive alerts for new orders.",
+            });
+          }
+        });
+      }
+    }
+  }, [isAdmin, toast]);
+
+  // Set up realtime listener for new orders
+  useEffect(() => {
+    if (!isAdmin) return;
+
+    const channel = supabase
+      .channel('order-notifications')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'orders'
+        },
+        (payload) => {
+          const newOrder = payload.new as any;
+          
+          // Show browser notification
+          if ('Notification' in window && Notification.permission === 'granted') {
+            const notification = new Notification('New Order Arrived! 🎉', {
+              body: `Order #${newOrder.order_number}`,
+              icon: '/logo.jpg',
+              badge: '/logo.jpg',
+              tag: 'new-order',
+              requireInteraction: false
+            });
+
+            notification.onclick = () => {
+              window.focus();
+              notification.close();
+            };
+          }
+
+          // Also show toast notification
+          toast({
+            title: "New Order Arrived! 🎉",
+            description: `Order #${newOrder.order_number}`,
+          });
+
+          // Refresh orders list
+          queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isAdmin, queryClient, toast]);
+
   const { data: categories } = useQuery({
     queryKey: ['categories'],
     queryFn: async () => {
