@@ -120,128 +120,125 @@ export const Navbar = () => {
   return (
     <>
       <SaleTimer />
-      <nav className="sticky top-4 z-50 px-4 md:px-6">
-        <div className="glass-card rounded-full border border-white/20 shadow-2xl backdrop-blur-2xl">
-          <div className="container mx-auto px-4 md:px-6">
-            <div className="flex h-16 md:h-20 items-center justify-between">
-            {/* Logo - Always Visible */}
-            <Link to="/" className="flex items-center space-x-3 flex-shrink-0">
-              <div className="h-10 w-10 md:h-12 md:w-12 rounded-full overflow-hidden ring-2 ring-accent/30 shadow-lg">
-                <img src={logo} alt="The Shopping Cart" className="h-full w-full object-cover" />
-              </div>
-              <h1 className="text-base md:text-xl font-display font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent hidden sm:block">
-                The Shopping Cart
-              </h1>
-            </Link>
+      <nav className="sticky top-0 z-50 glass-card border-b backdrop-blur-xl">
+        <div className="container mx-auto px-4">
+          <div className="flex h-16 items-center justify-between">
+          {/* Logo - Always Visible */}
+          <Link to="/" className="flex items-center space-x-3 flex-shrink-0">
+            <div className="h-10 w-10 rounded-full overflow-hidden ring-2 ring-accent/20">
+              <img src={logo} alt="The Shopping Cart" className="h-full w-full object-cover" />
+            </div>
+            <h1 className="text-lg md:text-2xl font-display font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              The Shopping Cart
+            </h1>
+          </Link>
 
-            {/* Desktop Navigation - Centered */}
-            <div className="hidden lg:flex items-center space-x-8 absolute left-1/2 transform -translate-x-1/2">
-              <Link to="/" className="text-sm font-medium hover:text-accent transition-colors">
-                Home
-              </Link>
-              <NavigationMenu>
-                <NavigationMenuList>
-                  <NavigationMenuItem>
-                    <NavigationMenuTrigger className="text-sm font-medium bg-transparent hover:bg-transparent data-[state=open]:bg-transparent hover:text-accent transition-colors h-auto p-0">
-                      Catalog
-                    </NavigationMenuTrigger>
-                    <NavigationMenuContent>
-                      <div className="w-48 p-2 glass-card rounded-2xl border border-white/20">
-                        <NavigationMenuLink asChild>
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center space-x-8">
+            <Link to="/" className="text-sm font-medium hover:text-accent transition-colors">
+              Home
+            </Link>
+            <NavigationMenu>
+              <NavigationMenuList>
+                <NavigationMenuItem>
+                  <NavigationMenuTrigger className="text-sm font-medium bg-transparent hover:bg-transparent data-[state=open]:bg-transparent hover:text-accent transition-colors h-auto p-0">
+                    Catalog
+                  </NavigationMenuTrigger>
+                  <NavigationMenuContent>
+                    <div className="w-48 p-2">
+                      <NavigationMenuLink asChild>
+                        <Link
+                          to="/shop"
+                          className="block px-3 py-2 text-sm hover:bg-accent/10 rounded-md transition-colors"
+                        >
+                          All Products
+                        </Link>
+                      </NavigationMenuLink>
+                      {categories.map((category) => (
+                        <NavigationMenuLink key={category.id} asChild>
                           <Link
-                            to="/shop"
-                            className="block px-3 py-2 text-sm hover:bg-accent/10 rounded-xl transition-colors"
+                            to={`/shop?category=${category.slug}`}
+                            className="block px-3 py-2 text-sm hover:bg-accent/10 rounded-md transition-colors"
                           >
-                            All Products
+                            {category.name}
                           </Link>
                         </NavigationMenuLink>
-                        {categories.map((category) => (
-                          <NavigationMenuLink key={category.id} asChild>
-                            <Link
-                              to={`/shop?category=${category.slug}`}
-                              className="block px-3 py-2 text-sm hover:bg-accent/10 rounded-xl transition-colors"
-                            >
-                              {category.name}
-                            </Link>
-                          </NavigationMenuLink>
-                        ))}
-                      </div>
-                    </NavigationMenuContent>
-                  </NavigationMenuItem>
-                </NavigationMenuList>
-              </NavigationMenu>
-              <Link to="/about" className="text-sm font-medium hover:text-accent transition-colors">
-                About
-              </Link>
-              <Link to="/contact" className="text-sm font-medium hover:text-accent transition-colors">
-                Contact
-              </Link>
-            </div>
-
-            {/* Actions */}
-            <div className="hidden lg:flex items-center space-x-2">
-              <ThemeToggle />
-              <Link to="/cart" className="relative">
-                <Button variant="ghost" size="icon" className="hover:bg-accent/10 rounded-full">
-                  <ShoppingCart className="h-5 w-5" />
-                  {cartCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-accent text-accent-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center shadow-lg">
-                      {cartCount}
-                    </span>
-                  )}
-                </Button>
-              </Link>
-              {user ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="hover:bg-accent/10 rounded-full">
-                      <User className="h-5 w-5" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="glass-card border-white/20 rounded-2xl z-[100]">
-                    <DropdownMenuItem onClick={() => navigate('/orders')} className="rounded-xl">
-                      My Orders
-                    </DropdownMenuItem>
-                    {isAdmin && (
-                      <DropdownMenuItem onClick={() => navigate('/admin')} className="rounded-xl">
-                        Admin Dashboard
-                      </DropdownMenuItem>
-                    )}
-                    <DropdownMenuItem onClick={handleLogout} className="rounded-xl">
-                      <LogOut className="mr-2 h-4 w-4" />
-                      Logout
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              ) : (
-                <Button onClick={() => navigate('/auth')} className="rounded-full">
-                  Sign In
-                </Button>
-              )}
-            </div>
-
-            {/* Mobile Actions - Only Hamburger Menu */}
-            <div className="flex lg:hidden items-center">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="hover:bg-accent/10 rounded-full"
-              >
-                {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-              </Button>
-            </div>
+                      ))}
+                    </div>
+                  </NavigationMenuContent>
+                </NavigationMenuItem>
+              </NavigationMenuList>
+            </NavigationMenu>
+            <Link to="/about" className="text-sm font-medium hover:text-accent transition-colors">
+              About
+            </Link>
+            <Link to="/contact" className="text-sm font-medium hover:text-accent transition-colors">
+              Contact
+            </Link>
           </div>
-        </div>
+
+          {/* Actions */}
+          <div className="hidden md:flex items-center space-x-4">
+            <ThemeToggle />
+            <Link to="/cart" className="relative">
+              <Button variant="ghost" size="icon">
+                <ShoppingCart className="h-5 w-5" />
+                {cartCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-accent text-accent-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {cartCount}
+                  </span>
+                )}
+              </Button>
+            </Link>
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <User className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => navigate('/orders')}>
+                    My Orders
+                  </DropdownMenuItem>
+                  {isAdmin && (
+                    <DropdownMenuItem onClick={() => navigate('/admin')}>
+                      Admin Dashboard
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button onClick={() => navigate('/auth')} variant="default">
+                Sign In
+              </Button>
+            )}
+          </div>
+
+          {/* Mobile Actions - Only Hamburger Menu */}
+          <div className="flex md:hidden items-center">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="glass-button rounded-full"
+            >
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </Button>
+          </div>
         </div>
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="glass-card rounded-3xl border border-white/20 shadow-2xl backdrop-blur-2xl py-6 space-y-4 mt-4 mx-4 animate-fade-in">
+          <div className="md:hidden py-4 space-y-4 animate-fade-in glass-card mx-4 rounded-2xl mt-2 mb-4">
             {/* Cart Item at Top */}
             <Link
               to="/cart"
-              className="flex items-center justify-between px-6 py-3 hover:bg-accent/10 transition-colors rounded-2xl mx-4"
+              className="flex items-center justify-between px-4 py-3 hover:bg-accent/10 transition-colors rounded-xl mx-2"
               onClick={() => setMobileMenuOpen(false)}
             >
               <span className="text-sm font-medium flex items-center gap-2">
@@ -249,107 +246,105 @@ export const Navbar = () => {
                 Cart
               </span>
               {cartCount > 0 && (
-                <span className="bg-accent text-accent-foreground text-xs rounded-full h-6 w-6 flex items-center justify-center shadow-lg">
+                <span className="bg-accent text-accent-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
                   {cartCount}
                 </span>
               )}
             </Link>
-            <div className="h-px bg-border/30 mx-4" />
-            <div className="flex items-center justify-between px-6">
+            <div className="h-px bg-border mx-4" />
+            <div className="flex items-center justify-between px-4">
               <span className="text-sm font-medium">Theme</span>
               <ThemeToggle />
             </div>
-              <Link
-                to="/"
-                className="block px-6 py-3 text-sm font-medium hover:bg-accent/10 transition-colors rounded-2xl mx-4"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Home
-              </Link>
-              <Collapsible open={shopOpen} onOpenChange={setShopOpen}>
-                <CollapsibleTrigger className="flex items-center justify-between w-full px-6 py-3 text-sm font-medium hover:bg-accent/10 transition-colors rounded-2xl mx-4">
-                  Catalog
-                  <ChevronDown className={`h-4 w-4 transition-transform ${shopOpen ? 'rotate-180' : ''}`} />
-                </CollapsibleTrigger>
-                <CollapsibleContent className="pl-8 space-y-2 pt-2">
+            <Link
+              to="/"
+              className="block px-4 text-sm font-medium hover:text-accent transition-colors"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Home
+            </Link>
+            <Collapsible open={shopOpen} onOpenChange={setShopOpen}>
+              <CollapsibleTrigger className="block px-4 text-left w-full text-sm font-medium hover:text-accent transition-colors">
+                Catalog
+              </CollapsibleTrigger>
+              <CollapsibleContent className="pl-8 space-y-2 pt-2">
+                <Link
+                  to="/shop"
+                  className="block px-4 text-sm hover:text-accent transition-colors py-1"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  All Products
+                </Link>
+                {categories.map((category) => (
                   <Link
-                    to="/shop"
-                    className="block px-6 py-2 text-sm hover:bg-accent/10 transition-colors rounded-xl mx-4"
+                    key={category.id}
+                    to={`/shop?category=${category.slug}`}
+                    className="block px-4 text-sm hover:text-accent transition-colors py-1"
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    All Products
+                    {category.name}
                   </Link>
-                  {categories.map((category) => (
-                    <Link
-                      key={category.id}
-                      to={`/shop?category=${category.slug}`}
-                      className="block px-6 py-2 text-sm hover:bg-accent/10 transition-colors rounded-xl mx-4"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      {category.name}
-                    </Link>
-                  ))}
-                </CollapsibleContent>
-              </Collapsible>
-              <Link
-                to="/about"
-                className="block px-6 py-3 text-sm font-medium hover:bg-accent/10 transition-colors rounded-2xl mx-4"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                About
-              </Link>
-              <Link
-                to="/contact"
-                className="block px-6 py-3 text-sm font-medium hover:bg-accent/10 transition-colors rounded-2xl mx-4"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Contact
-              </Link>
-              <div className="h-px bg-border/30 mx-4 my-2" />
-              {user ? (
-                <>
+                ))}
+              </CollapsibleContent>
+            </Collapsible>
+            <Link
+              to="/about"
+              className="block px-4 text-sm font-medium hover:text-accent transition-colors"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              About
+            </Link>
+            <Link
+              to="/contact"
+              className="block px-4 text-sm font-medium hover:text-accent transition-colors"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Contact
+            </Link>
+            {user ? (
+              <>
+                <Link
+                  to="/orders"
+                  className="block px-4 text-sm font-medium hover:text-accent transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  My Orders
+                </Link>
+                {isAdmin && (
                   <Link
-                    to="/orders"
-                    className="block px-6 py-3 text-sm font-medium hover:bg-accent/10 transition-colors rounded-2xl mx-4"
+                    to="/admin"
+                    className="block px-4 text-sm font-medium hover:text-accent transition-colors"
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    My Orders
+                    Admin Dashboard
                   </Link>
-                  {isAdmin && (
-                    <Link
-                      to="/admin"
-                      className="block px-6 py-3 text-sm font-medium hover:bg-accent/10 transition-colors rounded-2xl mx-4"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      Admin Dashboard
-                    </Link>
-                  )}
-                  <button
-                    onClick={() => {
-                      handleLogout();
-                      setMobileMenuOpen(false);
-                    }}
-                    className="block px-6 py-3 text-left w-full text-sm font-medium hover:bg-accent/10 transition-colors rounded-2xl mx-4"
-                  >
-                    Logout
-                  </button>
-                </>
-              ) : (
-                <div className="px-4">
-                  <Button
-                    onClick={() => {
-                      navigate('/auth');
-                      setMobileMenuOpen(false);
-                    }}
-                    className="w-full rounded-full"
-                  >
-                    Sign In
-                  </Button>
-                </div>
-              )}
+                )}
+                <button
+                  onClick={() => {
+                    handleLogout();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="block px-4 text-left w-full text-sm font-medium hover:text-accent transition-colors"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <Button
+                onClick={() => {
+                  navigate('/auth');
+                  setMobileMenuOpen(false);
+                }}
+                variant="default"
+                className="w-full"
+              >
+                Sign In
+              </Button>
+            )}
           </div>
         )}
-      </nav>
+      </div>
+    </nav>
     </>
   );
 };
