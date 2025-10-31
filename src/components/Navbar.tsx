@@ -125,7 +125,7 @@ export const Navbar = () => {
           <div className="flex h-16 items-center justify-between">
           {/* Logo - Always Visible */}
           <Link to="/" className="flex items-center space-x-3 flex-shrink-0">
-            <div className="h-10 w-10 overflow-hidden">
+            <div className="h-12 w-12 overflow-hidden">
               <img src={logo} alt="The Shopping Cart" className="h-full w-full object-cover" />
             </div>
             <h1 className="text-lg md:text-2xl font-display font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
