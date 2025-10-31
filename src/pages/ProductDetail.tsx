@@ -424,13 +424,15 @@ const ProductDetail = ({ key }: { key?: string }) => {
                 )}
 
                 {/* Social Proof Badge */}
-                <div className="flex items-center justify-center">
-                  <div className="inline-flex items-center gap-1.5 bg-orange-500/10 border border-orange-500/20 px-3 py-1.5 rounded-full">
-                    <span className="text-xs font-semibold text-orange-600 dark:text-orange-400">
-                      🔥 {recentPurchases} sold in last 24 hours
-                    </span>
+                {product.stock_quantity > 0 && (
+                  <div className="flex items-center justify-center">
+                    <div className="inline-flex items-center gap-1.5 bg-orange-500/10 border border-orange-500/20 px-3 py-1.5 rounded-full">
+                      <span className="text-xs font-semibold text-orange-600 dark:text-orange-400">
+                        🔥 {recentPurchases} sold in last 24 hours
+                      </span>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
               <div className="space-y-4 md:space-y-6">
