@@ -10,12 +10,14 @@ import { formatPrice } from "@/lib/currency";
 import { calculateSalePrice } from "@/lib/saleUtils";
 import { Badge } from "@/components/ui/badge";
 import { Star } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { SEOHead } from "@/components/SEOHead";
 import { organizationSchema, websiteSchema, breadcrumbSchema } from "@/lib/structuredData";
 
 const Index = () => {
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
+  const [visibleSections, setVisibleSections] = useState<Set<string>>(new Set());
+  const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
 
   const { data: banners } = useQuery({
     queryKey: ['banners'],
@@ -40,6 +42,26 @@ const Index = () => {
 
     return () => clearInterval(interval);
   }, [banners]);
+
+  // Intersection Observer for scroll animations
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setVisibleSections((prev) => new Set(prev).add(entry.target.id));
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+
+    Object.values(sectionRefs.current).forEach((ref) => {
+      if (ref) observer.observe(ref);
+    });
+
+    return () => observer.disconnect();
+  }, []);
 
   const { data: featuredProducts } = useQuery({
     queryKey: ['featured-products'],
@@ -184,9 +206,20 @@ const Index = () => {
         </section> */}
 
         {/* Shop by Category - Dynamic */}
-        <section className="py-20">
-          <div className="container mx-auto px-4">
-            <div className="text-center mb-12">
+        <section 
+          id="categories-section"
+          ref={(el) => (sectionRefs.current['categories-section'] = el)}
+          className="py-20 relative overflow-hidden"
+        >
+          {/* Animated gradient background */}
+          <div className="absolute inset-0 bg-gradient-to-br from-accent/5 via-transparent to-primary/5 animate-pulse opacity-50" />
+          
+          <div className="container mx-auto px-4 relative z-10">
+            <div className={`text-center mb-12 transition-all duration-700 ${
+              visibleSections.has('categories-section') 
+                ? 'opacity-100 translate-y-0' 
+                : 'opacity-0 translate-y-10'
+            }`}>
               <h2 className="font-display text-3xl md:text-4xl font-bold mb-4 gold-accent pb-8">
                 Shop Home Decor, Wallets, Accessories & More
               </h2>
@@ -196,24 +229,32 @@ const Index = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {categories?.map((category) => (
+              {categories?.map((category, index) => (
                 <Link 
                   key={category.id} 
                   to={`/shop?category=${category.slug}`} 
-                  className="group"
+                  className={`group transition-all duration-500 ${
+                    visibleSections.has('categories-section')
+                      ? 'opacity-100 translate-y-0'
+                      : 'opacity-0 translate-y-10'
+                  }`}
+                  style={{ transitionDelay: `${index * 150}ms` }}
                 >
-                  <Card className="glass-card glass-hover overflow-hidden rounded-xl">
+                  <Card className="glass-card glass-hover overflow-hidden rounded-xl relative">
+                    {/* Shimmer effect on hover */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 group-hover:animate-shimmer" style={{ backgroundSize: '200% 100%' }} />
+                    
                     <div className="aspect-square bg-muted relative overflow-hidden">
                       {category.image_url && (
                         <img 
                           src={category.image_url} 
                           alt={category.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          className="w-full h-full object-cover group-hover:scale-110 group-hover:rotate-2 transition-all duration-500"
                         />
                       )}
-                      <div className="absolute inset-0 bg-primary/40 group-hover:bg-primary/60 transition-colors" />
+                      <div className="absolute inset-0 bg-primary/40 group-hover:bg-primary/60 transition-colors duration-300" />
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <h3 className="font-display text-3xl md:text-4xl font-bold text-white text-center px-4">
+                        <h3 className="font-display text-3xl md:text-4xl font-bold text-white text-center px-4 group-hover:scale-110 transition-transform duration-300">
                           {category.name}
                         </h3>
                       </div>
@@ -226,53 +267,61 @@ const Index = () => {
         </section>
 
         {/* Trust Badges with Shadow Cards */}
-        <section className="py-16 bg-muted/30">
-          <div className="container mx-auto px-4">
+        <section 
+          id="trust-section"
+          ref={(el) => (sectionRefs.current['trust-section'] = el)}
+          className="py-16 bg-muted/30 relative overflow-hidden"
+        >
+          {/* Floating decorative elements */}
+          <div className="absolute top-10 left-10 w-32 h-32 bg-accent/10 rounded-full blur-3xl animate-float" />
+          <div className="absolute bottom-10 right-10 w-40 h-40 bg-primary/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }} />
+          
+          <div className="container mx-auto px-4 relative z-10">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <Card className="glass-card glass-hover rounded-xl">
-                <CardContent className="p-6 flex items-center space-x-4">
-                  <ShieldCheck className="h-12 w-12 text-accent flex-shrink-0" />
-                  <div>
-                    <h3 className="font-semibold text-lg">Secure Checkout</h3>
-                    <p className="text-sm text-muted-foreground">100% secure payments</p>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="glass-card glass-hover rounded-xl">
-                <CardContent className="p-6 flex items-center space-x-4">
-                  <CreditCard className="h-12 w-12 text-accent flex-shrink-0" />
-                  <div>
-                    <h3 className="font-semibold text-lg">Cash on Delivery</h3>
-                    <p className="text-sm text-muted-foreground">Pay when you receive</p>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="glass-card glass-hover rounded-xl">
-                <CardContent className="p-6 flex items-center space-x-4">
-                  <Truck className="h-12 w-12 text-accent flex-shrink-0" />
-                  <div>
-                    <h3 className="font-semibold text-lg">Fast Delivery</h3>
-                    <p className="text-sm text-muted-foreground">Quick shipping nationwide</p>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="glass-card glass-hover rounded-xl">
-                <CardContent className="p-6 flex items-center space-x-4">
-                  <Award className="h-12 w-12 text-accent flex-shrink-0" />
-                  <div>
-                    <h3 className="font-semibold text-lg">Premium Quality</h3>
-                    <p className="text-sm text-muted-foreground">Handcrafted excellence</p>
-                  </div>
-                </CardContent>
-              </Card>
+              {[
+                { icon: ShieldCheck, title: "Secure Checkout", desc: "100% secure payments" },
+                { icon: CreditCard, title: "Cash on Delivery", desc: "Pay when you receive" },
+                { icon: Truck, title: "Fast Delivery", desc: "Quick shipping nationwide" },
+                { icon: Award, title: "Premium Quality", desc: "Handcrafted excellence" }
+              ].map((badge, index) => (
+                <Card 
+                  key={index}
+                  className={`glass-card glass-hover rounded-xl transition-all duration-500 ${
+                    visibleSections.has('trust-section')
+                      ? 'opacity-100 translate-y-0'
+                      : 'opacity-0 translate-y-10'
+                  }`}
+                  style={{ transitionDelay: `${index * 100}ms` }}
+                >
+                  <CardContent className="p-6 flex items-center space-x-4">
+                    <badge.icon className="h-12 w-12 text-accent flex-shrink-0 group-hover:scale-110 transition-transform duration-300" />
+                    <div>
+                      <h3 className="font-semibold text-lg">{badge.title}</h3>
+                      <p className="text-sm text-muted-foreground">{badge.desc}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           </div>
         </section>
 
         {/* Featured Collection - Dynamic */}
-        <section className="py-20 bg-muted/30">
-          <div className="container mx-auto px-4">
-            <div className="text-center mb-12">
+        <section 
+          id="products-section"
+          ref={(el) => (sectionRefs.current['products-section'] = el)}
+          className="py-20 bg-muted/30 relative overflow-hidden"
+        >
+          {/* Animated gradient orbs */}
+          <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-accent/20 to-transparent rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-primary/20 to-transparent rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1.5s' }} />
+          
+          <div className="container mx-auto px-4 relative z-10">
+            <div className={`text-center mb-12 transition-all duration-700 ${
+              visibleSections.has('products-section') 
+                ? 'opacity-100 translate-y-0' 
+                : 'opacity-0 translate-y-10'
+            }`}>
               <h2 className="font-display text-3xl md:text-4xl font-bold mb-4 gold-accent pb-8">
                 Featured Products - Best Sellers
               </h2>
@@ -282,22 +331,31 @@ const Index = () => {
             </div>
 
             <div className="flex flex-wrap justify-center gap-6">
-              {featuredProducts?.map((product) => {
+              {featuredProducts?.map((product, index) => {
                 const productSale = sales?.find(s => s.product_id === product.id);
                 const globalSale = sales?.find(s => s.is_global);
                 const { finalPrice, discount } = calculateSalePrice(product.price, productSale, globalSale);
                 
                 return (
-                  <Link key={product.id} to={`/product/${product.slug}`} className="w-full sm:w-[calc(50%-0.75rem)] lg:w-[calc(25%-1.125rem)] min-w-[280px] max-w-[400px]">
-                    <Card className="glass-card glass-hover overflow-hidden rounded-xl group relative h-full cursor-pointer">
+                  <Link 
+                    key={product.id} 
+                    to={`/product/${product.slug}`} 
+                    className={`w-full sm:w-[calc(50%-0.75rem)] lg:w-[calc(25%-1.125rem)] min-w-[280px] max-w-[400px] transition-all duration-500 ${
+                      visibleSections.has('products-section')
+                        ? 'opacity-100 translate-y-0'
+                        : 'opacity-0 translate-y-10'
+                    }`}
+                    style={{ transitionDelay: `${index * 100}ms` }}
+                  >
+                    <Card className="glass-card glass-hover overflow-hidden rounded-xl group relative h-full cursor-pointer transform hover:scale-105 transition-all duration-300">
                       {discount && (
-                        <Badge className="absolute top-2 left-2 z-10 bg-destructive text-destructive-foreground">
+                        <Badge className="absolute top-2 left-2 z-10 bg-destructive text-destructive-foreground animate-pulse">
                           {discount}% OFF
                         </Badge>
                       )}
                       {product.is_featured && !discount && (
                         <Badge className="absolute top-2 left-2 z-10 bg-accent text-accent-foreground">
-                          <Star className="h-3 w-3 mr-1" fill="currentColor" />
+                          <Star className="h-3 w-3 mr-1 animate-pulse" fill="currentColor" />
                           Featured
                         </Badge>
                       )}
@@ -306,9 +364,11 @@ const Index = () => {
                           <img
                             src={product.images[0]}
                             alt={product.name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            className="w-full h-full object-cover group-hover:scale-110 group-hover:rotate-1 transition-all duration-500"
                           />
                         )}
+                        {/* Shimmer overlay on hover */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-0 group-hover:opacity-100 group-hover:animate-shimmer" style={{ backgroundSize: '200% 100%' }} />
                       </div>
                       <CardContent className="p-6">
                         <p className="text-xs text-muted-foreground mb-2">
@@ -333,7 +393,7 @@ const Index = () => {
                             </p>
                           )}
                         </div>
-                        <Button className="w-full" size="sm">
+                        <Button className="w-full group-hover:bg-accent group-hover:text-accent-foreground transition-colors" size="sm">
                           View Details
                         </Button>
                       </CardContent>
@@ -343,8 +403,12 @@ const Index = () => {
               })}
             </div>
 
-            <div className="text-center mt-12">
-              <Button asChild variant="outline" size="lg">
+            <div className={`text-center mt-12 transition-all duration-700 ${
+              visibleSections.has('products-section') 
+                ? 'opacity-100 translate-y-0' 
+                : 'opacity-0 translate-y-10'
+            }`} style={{ transitionDelay: '600ms' }}>
+              <Button asChild variant="outline" size="lg" className="hover:scale-105 transition-transform">
                 <Link to="/shop">
                   View All Products <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
