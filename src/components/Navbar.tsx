@@ -264,8 +264,9 @@ export const Navbar = () => {
               Home
             </Link>
             <Collapsible open={shopOpen} onOpenChange={setShopOpen}>
-              <CollapsibleTrigger className="block px-4 text-left w-full text-sm font-medium hover:text-accent transition-colors">
-                Catalog
+              <CollapsibleTrigger className="flex items-center justify-between px-4 text-left w-full text-sm font-medium hover:text-accent transition-colors">
+                <span>Catalog</span>
+                <ChevronDown className={`h-4 w-4 transition-transform ${shopOpen ? 'rotate-180' : ''}`} />
               </CollapsibleTrigger>
               <CollapsibleContent className="pl-8 space-y-2 pt-2">
                 <Link
