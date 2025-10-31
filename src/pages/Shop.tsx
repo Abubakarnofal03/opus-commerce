@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/select";
 import { calculateSalePrice } from "@/lib/saleUtils";
 import { trackAddToCart } from "@/lib/metaPixel";
+import { trackEvent } from "@/hooks/useAnalytics";
 import {
   Pagination,
   PaginationContent,
@@ -178,6 +179,13 @@ const Shop = () => {
       
       // Track Meta Pixel AddToCart event
       trackAddToCart(product.id, product.name, product.price);
+      
+      // Track analytics event
+      trackEvent('add_to_cart', {
+        product_id: product.id,
+        product_name: product.name,
+        price: product.price,
+      });
       
       toast({
         title: "Added to cart",

@@ -22,6 +22,7 @@ import { PromotionalBarDialog } from "@/components/admin/PromotionalBarDialog";
 import { MetaCatalogSync } from "@/components/admin/MetaCatalogSync";
 import ReviewDialog from "@/components/admin/ReviewDialog";
 import { OrderAnalytics } from "@/components/admin/OrderAnalytics";
+import { SiteAnalytics } from "@/components/admin/SiteAnalytics";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatPrice } from "@/lib/currency";
@@ -1577,14 +1578,20 @@ const Admin = () => {
             </TabsContent>
 
             <TabsContent value="analytics">
-              <OrderAnalytics
-                orders={orders || []}
-                products={products || []}
-                selectedCity={selectedCity}
-                setSelectedCity={setSelectedCity}
-                selectedProduct={selectedProduct}
-                setSelectedProduct={setSelectedProduct}
-              />
+              <div className="space-y-8">
+                <SiteAnalytics />
+                <div className="border-t pt-8">
+                  <h3 className="text-xl font-bold mb-4">Order Analytics</h3>
+                  <OrderAnalytics
+                    orders={orders || []}
+                    products={products || []}
+                    selectedCity={selectedCity}
+                    setSelectedCity={setSelectedCity}
+                    selectedProduct={selectedProduct}
+                    setSelectedProduct={setSelectedProduct}
+                  />
+                </div>
+              </div>
             </TabsContent>
 
             <TabsContent value="products">

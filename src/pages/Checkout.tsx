@@ -13,6 +13,7 @@ import { getGuestCart, clearGuestCart, GuestCartItem, updateGuestCartQuantity, r
 import { formatPrice } from "@/lib/currency";
 import { trackInitiateCheckout as trackMetaInitiateCheckout } from "@/lib/metaPixel";
 import { trackInitiateCheckout as trackTikTokInitiateCheckout } from "@/lib/tiktokPixel";
+import { trackEvent } from "@/hooks/useAnalytics";
 import { calculateSalePrice, Sale } from "@/lib/saleUtils";
 import { Trash2, Plus, Minus } from "lucide-react";
 
@@ -66,6 +67,9 @@ const Checkout = () => {
     
     // Track Meta Pixel InitiateCheckout event when user lands on checkout page
     trackMetaInitiateCheckout();
+    
+    // Track analytics checkout start event
+    trackEvent('checkout_start');
   }, []);
 
   const { data: cartItems, isLoading: isLoadingCart } = useQuery({
@@ -292,6 +296,13 @@ const Checkout = () => {
     },
     onSuccess: (orderId) => {
       queryClient.invalidateQueries({ queryKey: ['cart'] });
+      
+      // Track purchase event
+      trackEvent('purchase', {
+        order_id: orderId,
+        total_amount: total,
+      });
+      
       toast({
         title: "Order placed successfully!",
         description: "Thank you for your order. We'll process it shortly.",

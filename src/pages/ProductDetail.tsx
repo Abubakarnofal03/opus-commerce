@@ -15,6 +15,7 @@ import { calculateSalePrice } from "@/lib/saleUtils";
 import { Badge } from "@/components/ui/badge";
 import { trackAddToCart as trackMetaAddToCart } from "@/lib/metaPixel";
 import { trackViewContent, trackAddToCart as trackTikTokAddToCart } from "@/lib/tiktokPixel";
+import { trackEvent } from "@/hooks/useAnalytics";
 import { SEOHead } from "@/components/SEOHead";
 import { organizationSchema, productSchema, breadcrumbSchema } from "@/lib/structuredData";
 import ProductReviews from "@/components/ProductReviews";
@@ -234,6 +235,18 @@ const ProductDetail = ({ key }: { key?: string }) => {
 
       // Track TikTok Pixel AddToCart event
       trackTikTokAddToCart(product.id, product.name, finalPrice);
+
+      // Track analytics event
+      trackEvent('add_to_cart', {
+        product_id: product.id,
+        product_name: product.name,
+        price: finalPrice,
+        quantity,
+        variation_id: selectedVariation?.id,
+        variation_name: selectedVariation?.name,
+        color_id: selectedColor?.id,
+        color_name: selectedColor?.name,
+      });
 
       toast({
         title: "Added to cart",

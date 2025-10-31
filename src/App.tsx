@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { FloatingCartButton } from "@/components/FloatingCartButton";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { ScrollToTop } from "@/components/ScrollToTop";
+import { usePageViewTracking } from "@/hooks/useAnalytics";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Shop from "./pages/Shop";
@@ -32,14 +33,11 @@ const queryClient = new QueryClient({
   },
 });
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <ScrollToTop />
-        <Routes>
+const AppContent = () => {
+  usePageViewTracking();
+  return (
+    <>
+      <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/shop" element={<Shop />} />
@@ -58,6 +56,18 @@ const App = () => (
         </Routes>
         <WhatsAppButton />
         <FloatingCartButton />
+      </>
+  );
+};
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <ScrollToTop />
+        <AppContent />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
