@@ -120,14 +120,17 @@ export const Navbar = () => {
   return (
     <>
       <SaleTimer />
-      <nav className="sticky top-0 z-50 glass border-b">
+      <nav className="sticky top-0 z-50 glass-card border-b backdrop-blur-xl">
         <div className="container mx-auto px-4">
           <div className="flex h-16 items-center justify-between">
-          <Link to="/" className="flex items-center space-x-2">
-            <div className="hidden md:block h-16 overflow-hidden flex items-center">
-              <img src={logo} alt="The Shopping Cart" className="h-20 w-auto object-cover object-center -translate-y-1" />
+          {/* Logo - Always Visible */}
+          <Link to="/" className="flex items-center space-x-3 flex-shrink-0">
+            <div className="h-10 w-10 rounded-full overflow-hidden ring-2 ring-accent/20">
+              <img src={logo} alt="The Shopping Cart" className="h-full w-full object-cover" />
             </div>
-            <h1 className="text-2xl font-display font-bold">The Shopping Cart</h1>
+            <h1 className="text-lg md:text-2xl font-display font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              The Shopping Cart
+            </h1>
           </Link>
 
           {/* Desktop Navigation */}
@@ -216,31 +219,39 @@ export const Navbar = () => {
             )}
           </div>
 
-          {/* Mobile Actions */}
-          <div className="flex md:hidden items-center space-x-2">
-            <Link to="/cart" className="relative">
-              <Button variant="ghost" size="icon">
-                <ShoppingCart className="h-5 w-5" />
-                {cartCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-accent text-accent-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                    {cartCount}
-                  </span>
-                )}
-              </Button>
-            </Link>
+          {/* Mobile Actions - Only Hamburger Menu */}
+          <div className="flex md:hidden items-center">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="glass-button rounded-full"
             >
-              {mobileMenuOpen ? <X /> : <Menu />}
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </Button>
           </div>
         </div>
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden py-4 space-y-4 animate-fade-in">
+          <div className="md:hidden py-4 space-y-4 animate-fade-in glass-card mx-4 rounded-2xl mt-2 mb-4">
+            {/* Cart Item at Top */}
+            <Link
+              to="/cart"
+              className="flex items-center justify-between px-4 py-3 hover:bg-accent/10 transition-colors rounded-xl mx-2"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <span className="text-sm font-medium flex items-center gap-2">
+                <ShoppingCart className="h-4 w-4" />
+                Cart
+              </span>
+              {cartCount > 0 && (
+                <span className="bg-accent text-accent-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                  {cartCount}
+                </span>
+              )}
+            </Link>
+            <div className="h-px bg-border mx-4" />
             <div className="flex items-center justify-between px-4">
               <span className="text-sm font-medium">Theme</span>
               <ThemeToggle />
