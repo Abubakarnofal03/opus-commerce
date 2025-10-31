@@ -67,7 +67,7 @@ const Shop = () => {
     });
   }, []);
 
-  const { data: categories } = useQuery({
+  const { data: categories, isLoading: categoriesLoading } = useQuery({
     queryKey: ['categories'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -92,7 +92,7 @@ const Shop = () => {
     },
   });
 
-  const { data: productsData, isLoading } = useQuery({
+  const { data: productsData, isLoading: productsLoading } = useQuery({
     queryKey: ['products', selectedCategory, debouncedMinPrice, debouncedMaxPrice, currentPage],
     queryFn: async () => {
       let query = supabase
@@ -244,6 +244,8 @@ const Shop = () => {
       </div>
     </section>
   );
+
+  const isLoading = categoriesLoading || productsLoading;
 
   if (isLoading) {
     return (
@@ -449,11 +451,7 @@ const Shop = () => {
 
               {/* Products Grid */}
               <div className="col-span-1 lg:col-span-3">
-                {isLoading ? (
-                  <div className="text-center py-12">
-                    <p className="text-muted-foreground">Loading products...</p>
-                  </div>
-                ) : products?.length === 0 ? (
+                {products?.length === 0 ? (
                   <div className="text-center py-12">
                     <p className="text-muted-foreground">No products found with the selected filters.</p>
                   </div>
