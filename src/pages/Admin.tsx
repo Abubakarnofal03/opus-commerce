@@ -768,7 +768,7 @@ const Admin = () => {
     // Convert to CSV format
     const headers = [
       "Order Reference Number", "Order Amount", "Order Detail", "Customer Name",
-      "Customer Phone", "Order Address", "City", "Items (quantity)",
+      "Customer Phone", "Order Address", "City", "Items",
       "Airway Bill Copies", "Notes", "Address Code", "Return Address Code",
       "Order Type", "Booking Weight"
     ];
