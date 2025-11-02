@@ -60,17 +60,17 @@ const generateWhatsAppMessage = (order: any): string => {
     return `• ${item.products?.name}${variationInfo}${colorInfo}\n  Qty: ${item.quantity} × ${formatPrice(item.price)} = ${formatPrice(item.price * item.quantity)}`;
   }).join('\n\n') || 'No items';
 
-  return `🛍️ *Order Confirmation Request*
+  return `*Order Confirmation Request*
 
 Order #: ${order.order_number}
 Customer: ${order.first_name} ${order.last_name}
 
-📦 *Order Items:*
+*Order Items:*
 ${items}
 
-💰 *Order Total: ${formatPrice(order.total_amount)}*
+*Order Total: ${formatPrice(order.total_amount)}*
 
-📍 *Delivery Address:*
+*Delivery Address:*
 ${order.shipping_address}
 ${order.shipping_city}, ${order.shipping_state || ''} ${order.shipping_zip || ''}
 
