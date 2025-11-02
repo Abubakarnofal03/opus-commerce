@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { Package, ShoppingBag, DollarSign, Plus, Pencil, Trash2, Image as ImageIcon, Download, ChevronDown, ChevronUp, CalendarIcon, BarChart3, Filter, Search, Save, X, CheckSquare, Square } from "lucide-react";
+import { Package, ShoppingBag, DollarSign, Plus, Pencil, Trash2, Image as ImageIcon, Download, ChevronDown, ChevronUp, CalendarIcon, BarChart3, Filter, Search, Save, X, CheckSquare, Square, MessageCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { ProductDialog } from "@/components/admin/ProductDialog";
 import { CategoryDialog } from "@/components/admin/CategoryDialog";
@@ -32,6 +32,61 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
 import * as XLSX from 'xlsx';
+
+// Format phone number for WhatsApp
+const formatPhoneForWhatsApp = (phone: string): string => {
+  // Remove all non-numeric characters
+  const cleaned = phone.replace(/\D/g, '');
+  
+  // If starts with 0, replace with 92 (Pakistan country code)
+  if (cleaned.startsWith('0')) {
+    return '92' + cleaned.slice(1);
+  }
+  
+  // If already has country code
+  if (cleaned.startsWith('92')) {
+    return cleaned;
+  }
+  
+  // Add country code
+  return '92' + cleaned;
+};
+
+// Generate WhatsApp message
+const generateWhatsAppMessage = (order: any): string => {
+  const items = order.order_items?.map((item: any) => {
+    const variationInfo = item.variation_name ? `\n  Variation: ${item.variation_name}` : '';
+    const colorInfo = item.color_name ? `\n  Color: ${item.color_name}` : '';
+    return `• ${item.products?.name}${variationInfo}${colorInfo}\n  Qty: ${item.quantity} × ${formatPrice(item.price)} = ${formatPrice(item.price * item.quantity)}`;
+  }).join('\n\n') || 'No items';
+
+  return `🛍️ *Order Confirmation Request*
+
+Order #: ${order.order_number}
+Customer: ${order.first_name} ${order.last_name}
+
+📦 *Order Items:*
+${items}
+
+💰 *Order Total: ${formatPrice(order.total_amount)}*
+
+📍 *Delivery Address:*
+${order.shipping_address}
+${order.shipping_city}, ${order.shipping_state || ''} ${order.shipping_zip || ''}
+
+Do you confirm this order?
+Please reply YES to confirm or NO to cancel.`;
+};
+
+// Open WhatsApp with pre-filled message
+const sendWhatsAppConfirmation = (order: any) => {
+  const formattedPhone = formatPhoneForWhatsApp(order.phone);
+  const message = generateWhatsAppMessage(order);
+  const encodedMessage = encodeURIComponent(message);
+  const whatsappUrl = `https://wa.me/${formattedPhone}?text=${encodedMessage}`;
+  
+  window.open(whatsappUrl, '_blank');
+};
 
 const Admin = () => {
   const [user, setUser] = useState<any>(null);
@@ -1563,6 +1618,17 @@ const Admin = () => {
                                 </Button>
                               </div>
                             )}
+                          </div>
+
+                          <div className="pt-4 border-t">
+                            <Button
+                              onClick={() => sendWhatsAppConfirmation(order)}
+                              className="w-full bg-[#25D366] hover:bg-[#20BA5A] text-white"
+                              size="lg"
+                            >
+                              <MessageCircle className="h-5 w-5 mr-2 fill-white" />
+                              Send WhatsApp Confirmation
+                            </Button>
                           </div>
 
                           <div className="text-sm">
