@@ -83,7 +83,7 @@ const sendWhatsAppConfirmation = (order: any) => {
   const formattedPhone = formatPhoneForWhatsApp(order.phone);
   const message = generateWhatsAppMessage(order);
   const encodedMessage = encodeURIComponent(message);
-  const whatsappUrl = `https://wa.me/${formattedPhone}?text=${encodedMessage}`;
+  const whatsappUrl = `https://web.whatsapp.com/send?phone=${formattedPhone}&text=${encodedMessage}`;
   
   window.open(whatsappUrl, '_blank');
 };
