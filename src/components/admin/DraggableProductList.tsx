@@ -138,6 +138,28 @@ export function DraggableProductList({
         if (error) throw error;
       }
     },
+    onMutate: async (updates) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['products'] });
+
+      // Snapshot the previous value
+      const previousProducts = queryClient.getQueryData(['products']);
+
+      // Optimistically update the cache
+      queryClient.setQueryData(['products'], (old: any) => {
+        if (!old) return old;
+        return old.map((product: any) => {
+          const update = updates.find(u => u.id === product.id);
+          if (update) {
+            return { ...product, sort_order: update.sort_order };
+          }
+          return product;
+        });
+      });
+
+      // Return context with the snapshot
+      return { previousProducts };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       toast({
@@ -145,7 +167,11 @@ export function DraggableProductList({
         description: "Product display order has been updated successfully.",
       });
     },
-    onError: (error) => {
+    onError: (error, variables, context) => {
+      // Rollback to previous state on error
+      if (context?.previousProducts) {
+        queryClient.setQueryData(['products'], context.previousProducts);
+      }
       console.error('Error updating sort order:', error);
       toast({
         title: "Error",
