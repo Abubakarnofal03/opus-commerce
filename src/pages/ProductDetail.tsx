@@ -150,6 +150,14 @@ const ProductDetail = ({ key }: { key?: string }) => {
 
   const addToCart = useMutation({
     mutationFn: async () => {
+      // Check stock availability
+      if (selectedColor && selectedColor.quantity < quantity) {
+        throw new Error(`Only ${selectedColor.quantity} items available in stock`);
+      }
+      if (selectedVariation && !selectedColor && selectedVariation.quantity < quantity) {
+        throw new Error(`Only ${selectedVariation.quantity} items available in stock`);
+      }
+
       // Determine the price to use (color > variation > product)
       const priceToUse = selectedColor 
         ? selectedColor.price 
@@ -655,8 +663,19 @@ const ProductDetail = ({ key }: { key?: string }) => {
                       variant="outline"
                       size="icon"
                       className="h-9 w-9 md:h-10 md:w-10"
-                      onClick={() => setQuantity(Math.min(product.stock_quantity || 99, quantity + 1))}
-                      disabled={product.stock_quantity === 0}
+                      onClick={() => {
+                        const maxQty = selectedColor 
+                          ? selectedColor.quantity 
+                          : selectedVariation 
+                          ? selectedVariation.quantity 
+                          : (product.stock_quantity || 99);
+                        setQuantity(Math.min(maxQty, quantity + 1));
+                      }}
+                      disabled={
+                        (selectedColor ? selectedColor.quantity === 0 : 
+                         selectedVariation ? selectedVariation.quantity === 0 : 
+                         product.stock_quantity === 0)
+                      }
                     >
                       <Plus className="h-3 w-3 md:h-4 md:w-4" />
                     </Button>
@@ -668,16 +687,28 @@ const ProductDetail = ({ key }: { key?: string }) => {
                     className="w-full text-sm md:text-base h-12 md:h-14 btn-liquid-secondary btn-leather-texture font-semibold"
                     size="lg"
                     onClick={() => addToCart.mutate()}
-                    disabled={addToCart.isPending || product.stock_quantity === 0}
+                    disabled={
+                      addToCart.isPending || 
+                      (selectedColor ? selectedColor.quantity === 0 : 
+                       selectedVariation ? selectedVariation.quantity === 0 : 
+                       product.stock_quantity === 0)
+                    }
                   >
                     <ShoppingCart className="mr-2 h-5 w-5 md:h-6 md:w-6 icon-cart" />
-                    Add to Cart
+                    {selectedColor && selectedColor.quantity === 0 ? 'Out of Stock' :
+                     selectedVariation && !selectedColor && selectedVariation.quantity === 0 ? 'Out of Stock' :
+                     'Add to Cart'}
                   </Button>
                   <Button
                     className="w-full text-sm md:text-base h-12 md:h-14 btn-liquid-primary btn-leather-texture font-bold text-white"
                     size="lg"
                     onClick={handleBuyNow}
-                    disabled={addToCart.isPending || product.stock_quantity === 0}
+                    disabled={
+                      addToCart.isPending || 
+                      (selectedColor ? selectedColor.quantity === 0 : 
+                       selectedVariation ? selectedVariation.quantity === 0 : 
+                       product.stock_quantity === 0)
+                    }
                   >
                     Buy Now
                   </Button>
@@ -960,7 +991,14 @@ const ProductDetail = ({ key }: { key?: string }) => {
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7"
-                      onClick={() => setQuantity(Math.min(product.stock_quantity || 99, quantity + 1))}
+                      onClick={() => {
+                        const maxQty = selectedColor 
+                          ? selectedColor.quantity 
+                          : selectedVariation 
+                          ? selectedVariation.quantity 
+                          : (product.stock_quantity || 99);
+                        setQuantity(Math.min(maxQty, quantity + 1));
+                      }}
                     >
                       <Plus className="h-3 w-3" />
                     </Button>
@@ -968,10 +1006,17 @@ const ProductDetail = ({ key }: { key?: string }) => {
                   <Button
                     className="btn-liquid-primary font-bold text-white"
                     onClick={() => addToCart.mutate()}
-                    disabled={addToCart.isPending || product.stock_quantity === 0}
+                    disabled={
+                      addToCart.isPending || 
+                      (selectedColor ? selectedColor.quantity === 0 : 
+                       selectedVariation ? selectedVariation.quantity === 0 : 
+                       product.stock_quantity === 0)
+                    }
                   >
                     <ShoppingCart className="mr-2 h-4 w-4" />
-                    Add to Cart
+                    {selectedColor && selectedColor.quantity === 0 ? 'Out of Stock' :
+                     selectedVariation && !selectedColor && selectedVariation.quantity === 0 ? 'Out of Stock' :
+                     'Add to Cart'}
                   </Button>
                 </div>
               </div>
