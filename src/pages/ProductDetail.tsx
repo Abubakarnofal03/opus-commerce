@@ -1003,21 +1003,35 @@ const ProductDetail = ({ key }: { key?: string }) => {
                       <Plus className="h-3 w-3" />
                     </Button>
                   </div>
-                  <Button
-                    className="btn-liquid-primary font-bold text-white"
-                    onClick={() => addToCart.mutate()}
-                    disabled={
-                      addToCart.isPending || 
-                      (selectedColor ? selectedColor.quantity === 0 : 
-                       selectedVariation ? selectedVariation.quantity === 0 : 
-                       product.stock_quantity === 0)
-                    }
-                  >
-                    <ShoppingCart className="mr-2 h-4 w-4" />
-                    {selectedColor && selectedColor.quantity === 0 ? 'Out of Stock' :
-                     selectedVariation && !selectedColor && selectedVariation.quantity === 0 ? 'Out of Stock' :
-                     'Add to Cart'}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      className="btn-liquid-secondary font-semibold hidden sm:inline-flex"
+                      onClick={() => addToCart.mutate()}
+                      disabled={
+                        addToCart.isPending || 
+                        (selectedColor ? selectedColor.quantity === 0 : 
+                         selectedVariation ? selectedVariation.quantity === 0 : 
+                         product.stock_quantity === 0)
+                      }
+                    >
+                      <ShoppingCart className="mr-2 h-4 w-4" />
+                      {selectedColor && selectedColor.quantity === 0 ? 'Out of Stock' :
+                       selectedVariation && !selectedColor && selectedVariation.quantity === 0 ? 'Out of Stock' :
+                       'Add to Cart'}
+                    </Button>
+                    <Button
+                      className="btn-liquid-primary font-bold text-white flex-1 sm:flex-initial"
+                      onClick={handleBuyNow}
+                      disabled={
+                        addToCart.isPending || 
+                        (selectedColor ? selectedColor.quantity === 0 : 
+                         selectedVariation ? selectedVariation.quantity === 0 : 
+                         product.stock_quantity === 0)
+                      }
+                    >
+                      Buy Now
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
