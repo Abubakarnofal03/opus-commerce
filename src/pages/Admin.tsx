@@ -20,6 +20,7 @@ import { BlogDialog } from "@/components/admin/BlogDialog";
 import { SaleDialog } from "@/components/admin/SaleDialog";
 import { PromotionalBarDialog } from "@/components/admin/PromotionalBarDialog";
 import { MetaCatalogSync } from "@/components/admin/MetaCatalogSync";
+import { TikTokFeedGenerator } from "@/components/admin/TikTokFeedGenerator";
 import ReviewDialog from "@/components/admin/ReviewDialog";
 import { OrderAnalytics } from "@/components/admin/OrderAnalytics";
 import { SiteAnalytics } from "@/components/admin/SiteAnalytics";
@@ -1999,6 +2000,7 @@ const Admin = () => {
 
             <TabsContent value="meta-catalog" className="space-y-4">
               <MetaCatalogSync />
+              <TikTokFeedGenerator />
             </TabsContent>
           </Tabs>
         </div>
