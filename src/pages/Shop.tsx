@@ -113,6 +113,7 @@ const Shop = () => {
       const to = from + ITEMS_PER_PAGE - 1;
 
       const { data, error, count } = await query
+        .order('sort_order', { ascending: true })
         .order('created_at', { ascending: false })
         .range(from, to);
       if (error) throw error;

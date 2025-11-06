@@ -515,6 +515,7 @@ export type Database = {
           shipping_cost: number
           sku: string | null
           slug: string
+          sort_order: number
           stock_quantity: number | null
           updated_at: string | null
           video_url: string | null
@@ -535,6 +536,7 @@ export type Database = {
           shipping_cost?: number
           sku?: string | null
           slug: string
+          sort_order?: number
           stock_quantity?: number | null
           updated_at?: string | null
           video_url?: string | null
@@ -555,6 +557,7 @@ export type Database = {
           shipping_cost?: number
           sku?: string | null
           slug?: string
+          sort_order?: number
           stock_quantity?: number | null
           updated_at?: string | null
           video_url?: string | null

@@ -24,6 +24,7 @@ import { TikTokFeedGenerator } from "@/components/admin/TikTokFeedGenerator";
 import ReviewDialog from "@/components/admin/ReviewDialog";
 import { OrderAnalytics } from "@/components/admin/OrderAnalytics";
 import { SiteAnalytics } from "@/components/admin/SiteAnalytics";
+import { DraggableProductList } from "@/components/admin/DraggableProductList";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatPrice } from "@/lib/currency";
@@ -1715,7 +1716,7 @@ const Admin = () => {
               </div>
             </TabsContent>
 
-            <TabsContent value="products">
+            <TabsContent value="products" className="space-y-6">
               <Card>
                 <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <CardTitle>Products</CardTitle>
@@ -1779,6 +1780,18 @@ const Admin = () => {
                   </Table>
                 </CardContent>
               </Card>
+
+              <DraggableProductList
+                products={products || []}
+                categories={categories || []}
+                onEdit={(product) => setProductDialog({ open: true, product })}
+                onDelete={(product) => setDeleteDialog({ 
+                  open: true, 
+                  type: "products", 
+                  id: product.id, 
+                  name: product.name 
+                })}
+              />
             </TabsContent>
 
             <TabsContent value="categories">
