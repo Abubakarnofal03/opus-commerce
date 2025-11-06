@@ -282,6 +282,41 @@ const Checkout = () => {
 
       if (itemsError) throw itemsError;
 
+      // Update quantities for variations and colors
+      for (const item of orderItems) {
+        if (item.variation_id) {
+          // Decrement variation quantity
+          const { data: variation } = await supabase
+            .from('product_variations')
+            .select('quantity')
+            .eq('id', item.variation_id)
+            .single();
+          
+          if (variation) {
+            await supabase
+              .from('product_variations')
+              .update({ quantity: Math.max(0, variation.quantity - item.quantity) })
+              .eq('id', item.variation_id);
+          }
+        }
+        
+        if (item.color_id) {
+          // Decrement color quantity
+          const { data: color } = await supabase
+            .from('product_colors')
+            .select('quantity')
+            .eq('id', item.color_id)
+            .single();
+          
+          if (color) {
+            await supabase
+              .from('product_colors')
+              .update({ quantity: Math.max(0, color.quantity - item.quantity) })
+              .eq('id', item.color_id);
+          }
+        }
+      }
+
       if (user) {
         const { error: clearError } = await supabase
           .from('cart_items')
