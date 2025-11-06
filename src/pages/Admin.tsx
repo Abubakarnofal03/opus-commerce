@@ -119,6 +119,7 @@ const Admin = () => {
   const [editingCustomerConfirmation, setEditingCustomerConfirmation] = useState<{ orderId: string; confirmation: string } | null>(null);
   const [editingCourierCompany, setEditingCourierCompany] = useState<{ orderId: string; courier: string } | null>(null);
   const [editingAddress, setEditingAddress] = useState<{ orderId: string; address: string } | null>(null);
+  const [editingPhone, setEditingPhone] = useState<{ orderId: string; phone: string } | null>(null);
   const [exportStatusFilter, setExportStatusFilter] = useState<string>("all");
   const [instaStatusFilter, setInstaStatusFilter] = useState<string>("all");
   const [instaProductFilter, setInstaProductFilter] = useState<string>("all");
@@ -411,6 +412,21 @@ const Admin = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
       toast({ title: "Shipping address updated" });
       setEditingAddress(null);
+    },
+  });
+
+  const updatePhone = useMutation({
+    mutationFn: async ({ orderId, phone }: { orderId: string; phone: string }) => {
+      const { error } = await supabase
+        .from('orders')
+        .update({ phone })
+        .eq('id', orderId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+      toast({ title: "Phone number updated" });
+      setEditingPhone(null);
     },
   });
 
@@ -1433,7 +1449,45 @@ const Admin = () => {
                             </div>
                             <div>
                               <span className="text-muted-foreground">Phone:</span>
-                              <p className="font-medium">{order.phone}</p>
+                              {editingPhone?.orderId === order.id ? (
+                                <div className="space-y-2 mt-1">
+                                  <Input
+                                    value={editingPhone.phone}
+                                    onChange={(e) => setEditingPhone({ orderId: order.id, phone: e.target.value })}
+                                    className="h-8"
+                                    placeholder="Enter phone number..."
+                                  />
+                                  <div className="flex gap-2">
+                                    <Button
+                                      size="sm"
+                                      onClick={() => updatePhone.mutate({ orderId: order.id, phone: editingPhone.phone })}
+                                    >
+                                      <Save className="h-3 w-3 mr-1" />
+                                      Save
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => setEditingPhone(null)}
+                                    >
+                                      <X className="h-3 w-3 mr-1" />
+                                      Cancel
+                                    </Button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-2">
+                                  <p className="font-medium">{order.phone}</p>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => setEditingPhone({ orderId: order.id, phone: order.phone || '' })}
+                                    className="h-6 w-6 p-0"
+                                  >
+                                    <Pencil className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              )}
                             </div>
                           </div>
 
