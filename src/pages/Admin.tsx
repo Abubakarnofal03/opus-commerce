@@ -1849,71 +1849,134 @@ const Admin = () => {
               </Card>
             </TabsContent>
 
-            <TabsContent value="reviews">
+            <TabsContent value="reviews" className="space-y-6">
               <Card>
                 <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                  <CardTitle>Customer Reviews</CardTitle>
+                  <div>
+                    <CardTitle>Review Management</CardTitle>
+                    <p className="text-sm text-muted-foreground mt-1">Approve or reject customer reviews</p>
+                  </div>
                   <Button onClick={() => setReviewDialog({ open: true, review: null })} className="w-full sm:w-auto">
                     <Plus className="h-4 w-4 mr-2" />
                     <span className="hidden sm:inline">Add Review</span>
                     <span className="sm:hidden">Add</span>
                   </Button>
                 </CardHeader>
-                <CardContent className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="min-w-[150px]">Product</TableHead>
-                        <TableHead className="min-w-[120px]">Reviewer</TableHead>
-                        <TableHead className="min-w-[80px]">Rating</TableHead>
-                        <TableHead className="min-w-[150px]">Title</TableHead>
-                        <TableHead className="min-w-[80px]">Verified</TableHead>
-                        <TableHead className="min-w-[100px]">Date</TableHead>
-                        <TableHead className="text-right min-w-[100px]">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {reviews?.map((review: any) => (
-                        <TableRow key={review.id}>
-                          <TableCell className="font-medium">{review.products?.name || 'N/A'}</TableCell>
-                          <TableCell>{review.reviewer_name}</TableCell>
-                          <TableCell>
-                            <div className="flex gap-0.5">
-                              {"⭐".repeat(review.rating)}
+                <CardContent>
+                  <div className="space-y-4">
+                    {reviews?.map((review: any) => (
+                      <Card key={review.id} className={review.is_verified ? "border-green-200" : "border-amber-200"}>
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1 space-y-3">
+                              <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-1">
+                                  {[1, 2, 3, 4, 5].map((star) => (
+                                    <span key={star} className={star <= review.rating ? "text-yellow-400" : "text-gray-300"}>
+                                      ⭐
+                                    </span>
+                                  ))}
+                                </div>
+                                <Badge variant={review.is_verified ? "default" : "secondary"}>
+                                  {review.is_verified ? "Approved ✓" : "Pending Approval"}
+                                </Badge>
+                              </div>
+                              <div>
+                                <h4 className="font-semibold">{review.review_title}</h4>
+                                <p className="text-sm text-muted-foreground mt-1">{review.review_text}</p>
+                              </div>
+                              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                <span>Product: {review.products?.name || 'N/A'}</span>
+                                <span>•</span>
+                                <span>By: {review.reviewer_name}</span>
+                                <span>•</span>
+                                <span>{format(new Date(review.review_date), 'PPP')}</span>
+                              </div>
+                              {review.review_images && review.review_images.length > 0 && (
+                                <div className="flex gap-2">
+                                  {review.review_images.map((image: string, index: number) => (
+                                    <img
+                                      key={index}
+                                      src={image}
+                                      alt={`Review ${index + 1}`}
+                                      className="w-16 h-16 object-cover rounded"
+                                    />
+                                  ))}
+                                </div>
+                              )}
                             </div>
-                          </TableCell>
-                          <TableCell>{review.review_title}</TableCell>
-                          <TableCell>
-                            <Badge variant={review.is_verified ? "default" : "secondary"}>
-                              {review.is_verified ? "Verified" : "Unverified"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{format(new Date(review.review_date), 'PP')}</TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setReviewDialog({ open: true, review })}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setDeleteDialog({ 
-                                open: true, 
-                                type: "reviews", 
-                                id: review.id, 
-                                name: review.review_title 
-                              })}
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                            <div className="flex gap-2">
+                              {!review.is_verified ? (
+                                <Button
+                                  size="sm"
+                                  onClick={() => {
+                                    supabase
+                                      .from("reviews")
+                                      .update({ is_verified: true })
+                                      .eq("id", review.id)
+                                      .then(() => {
+                                        toast({ title: "Review approved" });
+                                        queryClient.invalidateQueries({ queryKey: ["admin-reviews"] });
+                                      });
+                                  }}
+                                >
+                                  Approve
+                                </Button>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    supabase
+                                      .from("reviews")
+                                      .update({ is_verified: false })
+                                      .eq("id", review.id)
+                                      .then(() => {
+                                        toast({ title: "Review unapproved" });
+                                        queryClient.invalidateQueries({ queryKey: ["admin-reviews"] });
+                                      });
+                                  }}
+                                >
+                                  Unapprove
+                                </Button>
+                              )}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setReviewDialog({ open: true, review })}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => {
+                                  if (confirm("Delete this review?")) {
+                                    supabase
+                                      .from("reviews")
+                                      .delete()
+                                      .eq("id", review.id)
+                                      .then(() => {
+                                        toast({ title: "Review deleted" });
+                                        queryClient.invalidateQueries({ queryKey: ["admin-reviews"] });
+                                      });
+                                  }
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+
+                    {(!reviews || reviews.length === 0) && (
+                      <div className="text-center py-12 text-muted-foreground">
+                        No reviews yet
+                      </div>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>

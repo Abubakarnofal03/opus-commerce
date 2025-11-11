@@ -1,11 +1,18 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Star } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Star, Plus } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
+import { ImageUpload } from "@/components/admin/ImageUpload";
 
 interface ProductReviewsProps {
   productId: string;
@@ -14,6 +21,15 @@ interface ProductReviewsProps {
 export default function ProductReviews({ productId }: ProductReviewsProps) {
   const [sortBy, setSortBy] = useState("newest");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [showReviewDialog, setShowReviewDialog] = useState(false);
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [reviewTitle, setReviewTitle] = useState("");
+  const [reviewText, setReviewText] = useState("");
+  const [reviewImages, setReviewImages] = useState<string[]>([]);
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const { data: reviews = [], isLoading } = useQuery({
     queryKey: ["reviews", productId],
@@ -22,12 +38,84 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
         .from("reviews")
         .select("*")
         .eq("product_id", productId)
+        .eq("is_verified", true)
         .order("review_date", { ascending: false });
 
       if (error) throw error;
       return data;
     },
   });
+
+  const submitReviewMutation = useMutation({
+    mutationFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name, email")
+        .eq("id", user.id)
+        .single();
+
+      const { error } = await supabase.from("reviews").insert({
+        product_id: productId,
+        user_id: user.id,
+        reviewer_name: profile?.full_name || profile?.email || "Anonymous",
+        reviewer_avatar: null,
+        rating,
+        review_title: reviewTitle,
+        review_text: reviewText,
+        review_images: reviewImages,
+        is_verified: false,
+      });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Your review is submitted, thanks for your response",
+        description: "Your review will appear after admin approval.",
+      });
+      setShowReviewDialog(false);
+      setRating(0);
+      setReviewTitle("");
+      setReviewText("");
+      setReviewImages([]);
+      queryClient.invalidateQueries({ queryKey: ["reviews", productId] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to submit review",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleWriteReview = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      navigate(`/auth?redirect=/product/${productId}`);
+      return;
+    }
+    setShowReviewDialog(true);
+  };
+
+  const handleSubmitReview = () => {
+    if (rating === 0) {
+      toast({ title: "Please select a rating", variant: "destructive" });
+      return;
+    }
+    if (!reviewTitle.trim()) {
+      toast({ title: "Please enter a review title", variant: "destructive" });
+      return;
+    }
+    if (!reviewText.trim()) {
+      toast({ title: "Please write your review", variant: "destructive" });
+      return;
+    }
+    submitReviewMutation.mutate();
+  };
 
   if (isLoading) {
     return <div className="text-center py-8">Loading reviews...</div>;
@@ -92,6 +180,15 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
 
   return (
     <div className="space-y-8 py-8">
+      {/* Write Review Button */}
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">Customer Reviews</h2>
+        <Button onClick={handleWriteReview} className="gap-2">
+          <Plus className="w-4 h-4" />
+          Write a Review
+        </Button>
+      </div>
+
       {/* Reviews Summary */}
       <Card className="p-6">
         <div className="grid md:grid-cols-2 gap-8">
@@ -215,6 +312,93 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
           {selectedImage && (
             <img src={selectedImage} alt="Review" className="w-full h-auto rounded" />
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Write Review Dialog */}
+      <Dialog open={showReviewDialog} onOpenChange={setShowReviewDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Write a Review</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* Star Rating */}
+            <div className="space-y-2">
+              <Label>Rating *</Label>
+              <div className="flex gap-1">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Star
+                    key={star}
+                    className={`w-8 h-8 cursor-pointer transition-colors ${
+                      star <= (hoverRating || rating)
+                        ? "fill-yellow-400 text-yellow-400"
+                        : "text-gray-300"
+                    }`}
+                    onClick={() => setRating(star)}
+                    onMouseEnter={() => setHoverRating(star)}
+                    onMouseLeave={() => setHoverRating(0)}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Review Title */}
+            <div className="space-y-2">
+              <Label htmlFor="title">Review Title *</Label>
+              <Input
+                id="title"
+                placeholder="Sum up your experience"
+                value={reviewTitle}
+                onChange={(e) => setReviewTitle(e.target.value)}
+                maxLength={100}
+              />
+              <p className="text-xs text-muted-foreground">
+                {reviewTitle.length}/100 characters
+              </p>
+            </div>
+
+            {/* Review Text */}
+            <div className="space-y-2">
+              <Label htmlFor="text">Your Review *</Label>
+              <Textarea
+                id="text"
+                placeholder="Share your experience with this product..."
+                value={reviewText}
+                onChange={(e) => setReviewText(e.target.value)}
+                maxLength={1000}
+                rows={6}
+              />
+              <p className="text-xs text-muted-foreground">
+                {reviewText.length}/1000 characters
+              </p>
+            </div>
+
+            {/* Review Images */}
+            <ImageUpload
+              label="Add Photos (Optional)"
+              value={reviewImages}
+              onChange={(value) => setReviewImages(Array.isArray(value) ? value : [value])}
+              multiple
+              folder="reviews"
+            />
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowReviewDialog(false)}
+              disabled={submitReviewMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmitReview}
+              disabled={submitReviewMutation.isPending}
+            >
+              {submitReviewMutation.isPending ? "Submitting..." : "Submit Review"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
