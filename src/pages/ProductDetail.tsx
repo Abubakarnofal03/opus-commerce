@@ -739,7 +739,7 @@ const ProductDetail = ({ key }: { key?: string }) => {
                     </div>
                     <div>
                       <p className="text-xs font-bold leading-tight text-foreground">Free Delivery</p>
-                      <p className="text-xs text-leather-cognac leading-tight">All Pakistan</p>
+                      <p className="text-xs text-leather-cognac leading-tight">3-5 days nationwide</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
