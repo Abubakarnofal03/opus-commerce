@@ -511,6 +511,7 @@ export type Database = {
           meta_description: string | null
           meta_title: string | null
           name: string
+          premium_layout: boolean | null
           price: number
           shipping_cost: number
           sku: string | null
@@ -532,6 +533,7 @@ export type Database = {
           meta_description?: string | null
           meta_title?: string | null
           name: string
+          premium_layout?: boolean | null
           price: number
           shipping_cost?: number
           sku?: string | null
@@ -553,6 +555,7 @@ export type Database = {
           meta_description?: string | null
           meta_title?: string | null
           name?: string
+          premium_layout?: boolean | null
           price?: number
           shipping_cost?: number
           sku?: string | null

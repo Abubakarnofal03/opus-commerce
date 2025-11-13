@@ -21,6 +21,7 @@ import { organizationSchema, productSchema, breadcrumbSchema } from "@/lib/struc
 import ProductReviews from "@/components/ProductReviews";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { PremiumProductLayout } from "@/components/PremiumProductLayout";
 
 const ProductDetail = ({ key }: { key?: string }) => {
   const { slug } = useParams();
@@ -371,6 +372,61 @@ const ProductDetail = ({ key }: { key?: string }) => {
 
         <main className="flex-1 py-8 md:py-12 bg-gradient-to-b from-leather-smoked/10 via-background to-background">
           <div className="container mx-auto px-4">
+            {/* Premium Layout or Standard Layout */}
+            {product.premium_layout ? (
+              <>
+                <PremiumProductLayout
+                  product={product}
+                  productImages={productImages}
+                  finalPrice={finalPrice}
+                  displayPrice={displayPrice}
+                  discount={discount}
+                  quantity={quantity}
+                  setQuantity={setQuantity}
+                  selectedVariation={selectedVariation}
+                  setSelectedVariation={(v) => {
+                    setSelectedVariation(v);
+                    setQuantity(1);
+                  }}
+                  selectedColor={selectedColor}
+                  setSelectedColor={(c) => {
+                    setSelectedColor(c);
+                    setQuantity(1);
+                  }}
+                  variations={variations || []}
+                  colors={colors || []}
+                  onAddToCart={() => addToCart.mutate()}
+                  onBuyNow={handleBuyNow}
+                  addToCartMutation={addToCart}
+                  recentPurchases={recentPurchases}
+                  getAvailableStock={() => {
+                    return selectedColor 
+                      ? selectedColor.quantity 
+                      : selectedVariation 
+                      ? selectedVariation.quantity 
+                      : (product.stock_quantity || 0);
+                  }}
+                />
+                
+                {/* Product Details Section for Premium Layout */}
+                <div className="mt-12 space-y-8">
+                  {product.description && (
+                    <div className="bg-card p-6 md:p-8 rounded-2xl border border-border/40">
+                      <div className="flex items-center gap-2 mb-4">
+                        <div className="text-2xl">🌿</div>
+                        <h2 className="text-2xl md:text-3xl font-bold text-foreground">
+                          {product.name.toUpperCase()} - FLAWLESS SKIN STARTS
+                        </h2>
+                      </div>
+                      <div className="prose prose-sm md:prose-base max-w-none">
+                        <p className="text-muted-foreground whitespace-pre-wrap">{product.description}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              // Standard Layout (existing code)
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
               {/* Media Gallery */}
               <div className="space-y-3 md:space-y-4">
@@ -842,8 +898,10 @@ const ProductDetail = ({ key }: { key?: string }) => {
                 </div>
               </div>
             </div>
+            )}
+            {/* End of Premium/Standard Layout conditional */}
 
-            {/* Customer Reviews */}
+            {/* Customer Reviews - Always shown for both layouts */}
             <div className="mt-12 md:mt-20">
               <ProductReviews productId={product.id} />
             </div>

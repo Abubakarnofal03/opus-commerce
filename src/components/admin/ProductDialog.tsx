@@ -34,6 +34,7 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
     images: [] as string[],
     video_url: "",
     is_featured: false,
+    premium_layout: false,
     shipping_cost: "",
     weight_kg: "",
   });
@@ -53,6 +54,7 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
         images: product.images || [],
         video_url: product.video_url || "",
         is_featured: product.is_featured || false,
+        premium_layout: product.premium_layout || false,
         shipping_cost: product.shipping_cost?.toString() || "",
         weight_kg: product.weight_kg?.toString() || "",
       });
@@ -109,6 +111,7 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
         images: [],
         video_url: "",
         is_featured: false,
+        premium_layout: false,
         shipping_cost: "",
         weight_kg: "",
       });
@@ -366,15 +369,28 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
             onChange={setColors}
           />
 
-          <div className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              id="featured"
-              checked={formData.is_featured}
-              onChange={(e) => setFormData({ ...formData, is_featured: e.target.checked })}
-              className="rounded border-input"
-            />
-            <Label htmlFor="featured">Featured Product</Label>
+          <div className="space-y-3">
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="featured"
+                checked={formData.is_featured}
+                onChange={(e) => setFormData({ ...formData, is_featured: e.target.checked })}
+                className="rounded border-input"
+              />
+              <Label htmlFor="featured">Featured Product</Label>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="premium_layout"
+                checked={formData.premium_layout}
+                onChange={(e) => setFormData({ ...formData, premium_layout: e.target.checked })}
+                className="rounded border-input"
+              />
+              <Label htmlFor="premium_layout">Premium Layout (High Conversion Design)</Label>
+            </div>
           </div>
 
           <DialogFooter>
