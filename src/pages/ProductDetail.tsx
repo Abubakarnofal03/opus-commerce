@@ -447,6 +447,28 @@ const ProductDetail = ({ key }: { key?: string }) => {
                   </>
                 )}
 
+                {/* Image Thumbnails Gallery */}
+                {productImages.length > 1 && (
+                  <div className="flex gap-2 overflow-x-auto pb-2">
+                    {productImages.map((image, index) => (
+                      <button
+                        key={index}
+                        onClick={() => {
+                          setSelectedImageIndex(index);
+                          setZoomDialogOpen(true);
+                        }}
+                        className="flex-shrink-0 w-16 h-16 md:w-20 md:h-20 rounded-lg overflow-hidden border-2 hover:border-primary transition-all duration-200"
+                      >
+                        <img
+                          src={image}
+                          alt={`${product.name} thumbnail ${index + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                )}
+
                 {/* Social Proof Badge */}
                 {product.stock_quantity > 0 && (
                   <div className="flex items-center justify-center">
@@ -475,6 +497,9 @@ const ProductDetail = ({ key }: { key?: string }) => {
                           {formatPrice(displayPrice * quantity)}
                         </p>
                       </div>
+                      <p className="text-sm md:text-base font-semibold text-green-600 dark:text-green-400">
+                        You Save: {formatPrice((displayPrice - finalPrice) * quantity)}
+                      </p>
                       {quantity > 1 && (
                         <p className="text-sm text-muted-foreground">
                           {formatPrice(finalPrice)} × {quantity}
