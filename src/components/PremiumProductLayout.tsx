@@ -70,7 +70,7 @@ export const PremiumProductLayout = ({
             onClick={() => setZoomDialogOpen(true)}
           >
             <img
-              src={productImages[selectedImageIndex] || "/placeholder.svg"}
+              src={product.banner_image || productImages[selectedImageIndex] || "/placeholder.svg"}
               alt={product.name}
               className="w-full h-full object-cover"
             />

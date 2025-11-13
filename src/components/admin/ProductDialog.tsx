@@ -37,6 +37,7 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
     premium_layout: false,
     shipping_cost: "",
     weight_kg: "",
+    banner_image: "",
   });
   const [variations, setVariations] = useState<Variation[]>([]);
   const [colors, setColors] = useState<Color[]>([]);
@@ -57,6 +58,7 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
         premium_layout: product.premium_layout || false,
         shipping_cost: product.shipping_cost?.toString() || "",
         weight_kg: product.weight_kg?.toString() || "",
+        banner_image: product.banner_image || "",
       });
       
       // Fetch variations if editing
@@ -114,6 +116,7 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
         premium_layout: false,
         shipping_cost: "",
         weight_kg: "",
+        banner_image: "",
       });
       setVariations([]);
       setColors([]);
@@ -136,8 +139,10 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
         images: formData.images,
         video_url: formData.video_url || null,
         is_featured: formData.is_featured,
+        premium_layout: formData.premium_layout,
         shipping_cost: parseFloat(formData.shipping_cost) || 0,
         weight_kg: formData.weight_kg ? parseFloat(formData.weight_kg) : null,
+        banner_image: formData.banner_image || null,
       };
 
       let productId: string;
@@ -359,16 +364,6 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
             folder="products"
           />
 
-          <VariationManager
-            variations={variations}
-            onChange={setVariations}
-          />
-
-          <ColorManager
-            colors={colors}
-            onChange={setColors}
-          />
-
           <div className="space-y-3">
             <div className="flex items-center space-x-2">
               <input
@@ -392,6 +387,26 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
               <Label htmlFor="premium_layout">Premium Layout (High Conversion Design)</Label>
             </div>
           </div>
+
+          {formData.premium_layout && (
+            <ImageUpload
+              label="Banner Image (For Premium Layout)"
+              value={formData.banner_image}
+              onChange={(value) => setFormData({ ...formData, banner_image: value as string })}
+              multiple={false}
+              folder="products"
+            />
+          )}
+
+          <VariationManager
+            variations={variations}
+            onChange={setVariations}
+          />
+
+          <ColorManager
+            colors={colors}
+            onChange={setColors}
+          />
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

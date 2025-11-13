@@ -501,6 +501,7 @@ export type Database = {
       }
       products: {
         Row: {
+          banner_image: string | null
           category_id: string | null
           created_at: string | null
           description: string | null
@@ -523,6 +524,7 @@ export type Database = {
           weight_kg: number | null
         }
         Insert: {
+          banner_image?: string | null
           category_id?: string | null
           created_at?: string | null
           description?: string | null
@@ -545,6 +547,7 @@ export type Database = {
           weight_kg?: number | null
         }
         Update: {
+          banner_image?: string | null
           category_id?: string | null
           created_at?: string | null
           description?: string | null
