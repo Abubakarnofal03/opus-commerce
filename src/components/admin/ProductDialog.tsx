@@ -394,7 +394,7 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
               value={formData.banner_image}
               onChange={(value) => setFormData({ ...formData, banner_image: value as string[] })}
               multiple={true}
-              folder="products"
+              folder="banners"
             />
           )}
 
