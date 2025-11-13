@@ -37,7 +37,7 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
     premium_layout: false,
     shipping_cost: "",
     weight_kg: "",
-    banner_image: "",
+    banner_image: [] as string[],
   });
   const [variations, setVariations] = useState<Variation[]>([]);
   const [colors, setColors] = useState<Color[]>([]);
@@ -58,7 +58,7 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
         premium_layout: product.premium_layout || false,
         shipping_cost: product.shipping_cost?.toString() || "",
         weight_kg: product.weight_kg?.toString() || "",
-        banner_image: product.banner_image || "",
+        banner_image: product.banner_image || [],
       });
       
       // Fetch variations if editing
@@ -116,7 +116,7 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
         premium_layout: false,
         shipping_cost: "",
         weight_kg: "",
-        banner_image: "",
+        banner_image: [],
       });
       setVariations([]);
       setColors([]);
@@ -390,10 +390,10 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
 
           {formData.premium_layout && (
             <ImageUpload
-              label="Banner Image (For Premium Layout)"
+              label="Banner Images (For Premium Layout)"
               value={formData.banner_image}
-              onChange={(value) => setFormData({ ...formData, banner_image: value as string })}
-              multiple={false}
+              onChange={(value) => setFormData({ ...formData, banner_image: value as string[] })}
+              multiple={true}
               folder="products"
             />
           )}

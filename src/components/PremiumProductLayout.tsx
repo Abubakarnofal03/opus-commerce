@@ -46,6 +46,12 @@ export const PremiumProductLayout = ({
   recentPurchases,
   getAvailableStock,
 }: PremiumProductLayoutProps) => {
+  // Merge banner images with product images
+  const allImages = [
+    ...(product.banner_image && product.banner_image.length > 0 ? product.banner_image : []),
+    ...productImages
+  ];
+
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [zoomDialogOpen, setZoomDialogOpen] = useState(false);
   const [viewersCount] = useState(() => Math.floor(Math.random() * 40) + 20); // 20-59 viewers
@@ -70,7 +76,7 @@ export const PremiumProductLayout = ({
             onClick={() => setZoomDialogOpen(true)}
           >
             <img
-              src={product.banner_image || productImages[selectedImageIndex] || "/placeholder.svg"}
+              src={allImages[selectedImageIndex] || "/placeholder.svg"}
               alt={product.name}
               className="w-full h-full object-cover"
             />
@@ -91,9 +97,9 @@ export const PremiumProductLayout = ({
         </div>
 
         {/* Thumbnail Gallery */}
-        {productImages.length > 1 && (
+        {allImages.length > 1 && (
           <div className="grid grid-cols-5 gap-2">
-            {productImages.map((image, index) => (
+            {allImages.map((image, index) => (
               <button
                 key={index}
                 onClick={() => setSelectedImageIndex(index)}
@@ -112,7 +118,7 @@ export const PremiumProductLayout = ({
         {/* Video if available */}
         {product.video_url && (
           <div className="aspect-video bg-muted/20 rounded-xl overflow-hidden border border-border/40">
-            <video src={product.video_url} controls className="w-full h-full" poster={productImages[0]}>
+            <video src={product.video_url} controls className="w-full h-full" poster={allImages[0]}>
               Your browser does not support the video tag.
             </video>
           </div>
@@ -316,7 +322,7 @@ export const PremiumProductLayout = ({
       <Dialog open={zoomDialogOpen} onOpenChange={setZoomDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] p-0">
           <img
-            src={productImages[selectedImageIndex] || "/placeholder.svg"}
+            src={allImages[selectedImageIndex] || "/placeholder.svg"}
             alt={product.name}
             className="w-full h-full object-contain"
           />
