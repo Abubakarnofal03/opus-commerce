@@ -326,11 +326,8 @@ const ProductDetail = ({ key }: { key?: string }) => {
     );
   }
 
-  // Merge banner images with product images
-  const productImages = [
-    ...(product.banner_image && product.banner_image.length > 0 ? product.banner_image : []),
-    ...(product.images || [])
-  ];
+  // Keep product images separate from banner images
+  const productImages = product.images || [];
 
   const structuredData = {
     "@context": "https://schema.org",
@@ -848,6 +845,21 @@ const ProductDetail = ({ key }: { key?: string }) => {
                 </div>
               </div>
             </div>
+
+            {/* Banner Images Section - Displayed below product info */}
+            {product.banner_image && product.banner_image.length > 0 && (
+              <div className="mt-8 md:mt-12 space-y-4">
+                {product.banner_image.map((banner, index) => (
+                  <div key={index} className="w-full rounded-xl overflow-hidden shadow-lg">
+                    <img
+                      src={banner}
+                      alt={`${product.name} banner ${index + 1}`}
+                      className="w-full h-auto object-cover"
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* Customer Reviews - Always shown for both layouts */}
             <div className="mt-12 md:mt-20">
