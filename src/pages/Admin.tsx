@@ -33,6 +33,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import * as XLSX from 'xlsx';
 
 // Format phone number for WhatsApp
@@ -137,6 +138,10 @@ const Admin = () => {
     colorId: string | null;
   } | null>(null);
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
+  const [activeTab, setActiveTab] = useState("orders");
+  const [ordersPage, setOrdersPage] = useState(1);
+  const [ordersPageSize, setOrdersPageSize] = useState(50);
+  const [showPageSizeDialog, setShowPageSizeDialog] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -241,6 +246,7 @@ const Admin = () => {
       if (error) throw error;
       return data;
     },
+    enabled: activeTab === 'categories',
   });
 
   const { data: products } = useQuery({
@@ -253,19 +259,29 @@ const Admin = () => {
       if (error) throw error;
       return data;
     },
+    enabled: activeTab === 'products' || activeTab === 'analytics',
   });
 
-  const { data: orders } = useQuery({
-    queryKey: ['admin-orders'],
+  const { data: ordersData } = useQuery({
+    queryKey: ['admin-orders', ordersPage, ordersPageSize],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const from = (ordersPage - 1) * ordersPageSize;
+      const to = from + ordersPageSize - 1;
+      
+      const { data, error, count } = await supabase
         .from('orders')
-        .select('*, order_items(*, products(*, product_variations(*)))')
-        .order('created_at', { ascending: false });
+        .select('*, order_items(*, products(*, product_variations(*)))', { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(from, to);
       if (error) throw error;
-      return data;
+      return { orders: data, totalCount: count || 0 };
     },
+    enabled: activeTab === 'orders' || activeTab === 'analytics',
   });
+
+  const orders = ordersData?.orders;
+  const totalOrders = ordersData?.totalCount || 0;
+  const totalPages = Math.ceil(totalOrders / ordersPageSize);
 
   const { data: banners } = useQuery({
     queryKey: ['admin-banners'],
@@ -277,6 +293,7 @@ const Admin = () => {
       if (error) throw error;
       return data;
     },
+    enabled: activeTab === 'banners',
   });
 
   const { data: blogs } = useQuery({
@@ -289,6 +306,7 @@ const Admin = () => {
       if (error) throw error;
       return data;
     },
+    enabled: activeTab === 'blogs',
   });
 
   const { data: reviews } = useQuery({
@@ -301,6 +319,7 @@ const Admin = () => {
       if (error) throw error;
       return data;
     },
+    enabled: activeTab === 'reviews',
   });
 
   const { data: productVariations } = useQuery({
@@ -313,6 +332,7 @@ const Admin = () => {
       if (error) throw error;
       return data;
     },
+    enabled: activeTab === 'products',
   });
 
   const { data: productColors } = useQuery({
@@ -325,6 +345,7 @@ const Admin = () => {
       if (error) throw error;
       return data;
     },
+    enabled: activeTab === 'products',
   });
 
   const updateOrderStatus = useMutation({
@@ -1073,7 +1094,7 @@ const Admin = () => {
             </Card>
           </div>
 
-          <Tabs defaultValue="orders">
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="w-full flex flex-wrap gap-1 h-auto p-1">
               <TabsTrigger value="orders" className="text-xs md:text-sm flex-1 min-w-[80px]">Orders</TabsTrigger>
               <TabsTrigger value="analytics" className="text-xs md:text-sm flex-1 min-w-[80px]">Analytics</TabsTrigger>
@@ -1130,6 +1151,10 @@ const Admin = () => {
                       </Select>
                     </div>
                     <div className="flex items-end gap-2 flex-wrap">
+                      <Button onClick={() => setShowPageSizeDialog(true)} variant="outline" size="sm" className="min-w-[100px]">
+                        <Filter className="h-4 w-4 mr-2" />
+                        {ordersPageSize} per page
+                      </Button>
                       <Button onClick={() => setExportDialog(true)} variant="outline" className="flex-1 min-w-[140px]">
                         <Download className="h-4 w-4 mr-2" />
                         Excel
@@ -2531,6 +2556,39 @@ const Admin = () => {
             >
               Export Filtered Orders
             </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Page Size Dialog */}
+      <AlertDialog open={showPageSizeDialog} onOpenChange={setShowPageSizeDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Orders Per Page</AlertDialogTitle>
+            <AlertDialogDescription>
+              Select how many orders to display per page. Default is 50.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2 py-4">
+            <label className="text-sm font-medium">Orders per page</label>
+            <Select value={ordersPageSize.toString()} onValueChange={(v) => {
+              setOrdersPageSize(Number(v));
+              setOrdersPage(1);
+            }}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="25">25</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+                <SelectItem value="200">200</SelectItem>
+                <SelectItem value="500">500</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Close</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
