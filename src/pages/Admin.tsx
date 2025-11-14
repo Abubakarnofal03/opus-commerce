@@ -1051,7 +1051,7 @@ const Admin = () => {
   }) || [];
 
   const stats = {
-    totalOrders: orders?.length || 0,
+    totalOrders: totalOrdersCount ?? 0,
     totalProducts: products?.length || 0,
     totalRevenue: orders?.filter(order => order.status === 'delivered').reduce((sum, order) => sum + Number(order.total_amount), 0) || 0,
   };
