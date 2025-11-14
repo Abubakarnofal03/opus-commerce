@@ -140,7 +140,7 @@ const Admin = () => {
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState("orders");
   const [ordersPage, setOrdersPage] = useState(1);
-  const [ordersPageSize, setOrdersPageSize] = useState(50);
+  const [ordersPageSize, setOrdersPageSize] = useState<number | 'all'>(50);
   const [showPageSizeDialog, setShowPageSizeDialog] = useState(false);
 
   useEffect(() => {
@@ -262,17 +262,35 @@ const Admin = () => {
     enabled: activeTab === 'products' || activeTab === 'analytics',
   });
 
+  // Separate query for just the count
+  const { data: totalOrdersCount } = useQuery({
+    queryKey: ['admin-orders-count'],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('orders')
+        .select('*', { count: 'exact', head: true });
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: activeTab === 'orders' || activeTab === 'analytics',
+  });
+
   const { data: ordersData } = useQuery({
     queryKey: ['admin-orders', ordersPage, ordersPageSize],
     queryFn: async () => {
-      const from = (ordersPage - 1) * ordersPageSize;
-      const to = from + ordersPageSize - 1;
-      
-      const { data, error, count } = await supabase
+      let query = supabase
         .from('orders')
         .select('*, order_items(*, products(*, product_variations(*)))', { count: 'exact' })
-        .order('created_at', { ascending: false })
-        .range(from, to);
+        .order('created_at', { ascending: false });
+      
+      // Only apply pagination if not "all"
+      if (ordersPageSize !== 'all') {
+        const from = (ordersPage - 1) * ordersPageSize;
+        const to = from + ordersPageSize - 1;
+        query = query.range(from, to);
+      }
+      
+      const { data, error, count } = await query;
       if (error) throw error;
       return { orders: data, totalCount: count || 0 };
     },
@@ -281,7 +299,7 @@ const Admin = () => {
 
   const orders = ordersData?.orders;
   const totalOrders = ordersData?.totalCount || 0;
-  const totalPages = Math.ceil(totalOrders / ordersPageSize);
+  const totalPages = ordersPageSize === 'all' ? 1 : Math.ceil(totalOrders / ordersPageSize);
 
   const { data: banners } = useQuery({
     queryKey: ['admin-banners'],
@@ -1107,6 +1125,19 @@ const Admin = () => {
             </TabsList>
 
             <TabsContent value="orders" className="space-y-4">
+              <div className="flex items-center justify-between mb-4">
+                <div className="text-sm text-muted-foreground">
+                  Total Orders: <span className="font-semibold text-foreground">{totalOrdersCount || 0}</span>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowPageSizeDialog(true)}
+                >
+                  Settings ({ordersPageSize === 'all' ? 'All' : ordersPageSize} per page)
+                </Button>
+              </div>
+
               <Card className="mb-4">
                 <CardContent className="pt-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1722,6 +1753,54 @@ const Admin = () => {
                   </Card>
                 </Collapsible>
               ))}
+
+              {/* Pagination */}
+              {ordersPageSize !== 'all' && totalPages > 1 && (
+                <div className="mt-6">
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious 
+                          onClick={() => setOrdersPage(p => Math.max(1, p - 1))}
+                          className={ordersPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                        />
+                      </PaginationItem>
+                      
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        let pageNum;
+                        if (totalPages <= 5) {
+                          pageNum = i + 1;
+                        } else if (ordersPage <= 3) {
+                          pageNum = i + 1;
+                        } else if (ordersPage >= totalPages - 2) {
+                          pageNum = totalPages - 4 + i;
+                        } else {
+                          pageNum = ordersPage - 2 + i;
+                        }
+                        
+                        return (
+                          <PaginationItem key={pageNum}>
+                            <PaginationLink
+                              onClick={() => setOrdersPage(pageNum)}
+                              isActive={ordersPage === pageNum}
+                              className="cursor-pointer"
+                            >
+                              {pageNum}
+                            </PaginationLink>
+                          </PaginationItem>
+                        );
+                      })}
+                      
+                      <PaginationItem>
+                        <PaginationNext 
+                          onClick={() => setOrdersPage(p => Math.min(totalPages, p + 1))}
+                          className={ordersPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              )}
             </TabsContent>
 
             <TabsContent value="analytics">
@@ -2572,7 +2651,7 @@ const Admin = () => {
           <div className="space-y-2 py-4">
             <label className="text-sm font-medium">Orders per page</label>
             <Select value={ordersPageSize.toString()} onValueChange={(v) => {
-              setOrdersPageSize(Number(v));
+              setOrdersPageSize(v === 'all' ? 'all' : Number(v));
               setOrdersPage(1);
             }}>
               <SelectTrigger>
@@ -2584,6 +2663,7 @@ const Admin = () => {
                 <SelectItem value="100">100</SelectItem>
                 <SelectItem value="200">200</SelectItem>
                 <SelectItem value="500">500</SelectItem>
+                <SelectItem value="all">All</SelectItem>
               </SelectContent>
             </Select>
           </div>
