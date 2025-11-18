@@ -128,7 +128,7 @@ export const Navbar = () => {
             <div className="h-14 w-14 overflow-hidden flex items-center justify-center">
               <img src={logo} alt="The Shopping Cart" className="h-full w-full object-contain" />
             </div>
-            <h1 className="text-lg md:text-2xl font-display font-bold text-logo-green">
+            <h1 className="text-lg md:text-2xl font-display font-bold text-[#5D4037]">
               The Shopping Cart
             </h1>
           </Link>

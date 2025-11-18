@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, useIsFetching } from "@tanstack/react-query";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
@@ -122,6 +122,7 @@ const Admin = () => {
   const [editingCourierCompany, setEditingCourierCompany] = useState<{ orderId: string; courier: string } | null>(null);
   const [editingAddress, setEditingAddress] = useState<{ orderId: string; address: string } | null>(null);
   const [editingPhone, setEditingPhone] = useState<{ orderId: string; phone: string } | null>(null);
+  const [editingCity, setEditingCity] = useState<{ orderId: string; city: string } | null>(null);
   const [exportStatusFilter, setExportStatusFilter] = useState<string>("all");
   const [instaStatusFilter, setInstaStatusFilter] = useState<string>("all");
   const [instaProductFilter, setInstaProductFilter] = useState<string>("all");
@@ -142,6 +143,18 @@ const Admin = () => {
   const [ordersPage, setOrdersPage] = useState(1);
   const [ordersPageSize, setOrdersPageSize] = useState<number | 'all'>(50);
   const [showPageSizeDialog, setShowPageSizeDialog] = useState(false);
+
+  // Global loading indicator using react-query fetch count
+  const activeFetches = useIsFetching();
+
+  // If a filter/search is active, switch to "all" to ensure client-side filtering
+  // Do NOT automatically revert back; let the user control page size selection.
+  useEffect(() => {
+    const anyFilterActive = statusFilter !== 'all' || productFilter !== 'all' || searchQuery.trim() !== '';
+    if (anyFilterActive && ordersPageSize !== 'all') {
+      setOrdersPageSize('all');
+    }
+  }, [statusFilter, productFilter, searchQuery, ordersPageSize]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -259,7 +272,7 @@ const Admin = () => {
       if (error) throw error;
       return data;
     },
-    enabled: activeTab === 'products' || activeTab === 'analytics',
+    enabled: ['products', 'analytics', 'orders'].includes(activeTab),
   });
 
   // Separate query for just the count
@@ -452,6 +465,21 @@ const Admin = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
       toast({ title: "Shipping address updated" });
       setEditingAddress(null);
+    },
+  });
+
+  const updateShippingCity = useMutation({
+    mutationFn: async ({ orderId, city }: { orderId: string; city: string }) => {
+      const { error } = await supabase
+        .from('orders')
+        .update({ shipping_city: city })
+        .eq('id', orderId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+      toast({ title: 'City updated' });
+      setEditingCity(null);
     },
   });
 
@@ -651,13 +679,18 @@ const Admin = () => {
     bulkUpdateOrderStatus.mutate({ orderIds: Array.from(selectedOrders), status });
   };
 
-  const exportOrdersToInstaWorld = (filterByDate: boolean = false) => {
-    if (!orders || orders.length === 0) {
-      toast({
-        title: "No orders to export",
-        description: "There are no orders available to download.",
-        variant: "destructive",
-      });
+  const exportOrdersToInstaWorld = async (filterByDate: boolean = false) => {
+    const { data: allOrders, error } = await supabase
+      .from('orders')
+      .select('*, order_items(*)')
+      .order('created_at', { ascending: false });
+    if (error) {
+      toast({ title: 'Export failed', description: error.message, variant: 'destructive' });
+      return;
+    }
+    const orders = allOrders || [];
+    if (orders.length === 0) {
+      toast({ title: 'No orders to export', description: 'There are no orders available to download.', variant: 'destructive' });
       return;
     }
 
@@ -782,13 +815,18 @@ const Admin = () => {
     });
   };
 
-  const exportOrdersToCustomFormat = (filterByDate: boolean = false) => {
-    if (!orders || orders.length === 0) {
-      toast({
-        title: "No orders to export",
-        description: "There are no orders available to download.",
-        variant: "destructive",
-      });
+  const exportOrdersToCustomFormat = async (filterByDate: boolean = false) => {
+    const { data: allOrders, error } = await supabase
+      .from('orders')
+      .select('*, order_items(*)')
+      .order('created_at', { ascending: false });
+    if (error) {
+      toast({ title: 'Export failed', description: error.message, variant: 'destructive' });
+      return;
+    }
+    const orders = allOrders || [];
+    if (orders.length === 0) {
+      toast({ title: 'No orders to export', description: 'There are no orders available to download.', variant: 'destructive' });
       return;
     }
 
@@ -947,17 +985,27 @@ const Admin = () => {
     });
   };
 
-  const exportOrdersToExcel = (filterByDate: boolean = false) => {
-    if (!orders || orders.length === 0) {
+  const exportOrdersToExcel = async (filterByDate: boolean = false) => {
+    // Always fetch the complete list of orders so that exports include all records
+    const { data: allOrders, error } = await supabase
+      .from('orders')
+      .select('*, order_items(*, products(*))')
+      .order('created_at', { ascending: false });
+    if (error) {
+      toast({ title: 'Export failed', description: error.message, variant: 'destructive' });
+      return;
+    }
+    const ordersToProcess = allOrders || [];
+    if (ordersToProcess.length === 0) {
       toast({
-        title: "No orders to export",
-        description: "There are no orders available to download.",
-        variant: "destructive",
+        title: 'No orders to export',
+        description: 'There are no orders available to download.',
+        variant: 'destructive',
       });
       return;
     }
 
-    let filteredOrders = orders;
+    let filteredOrders = ordersToProcess;
     
     // Apply status filter
     if (exportStatusFilter !== "all") {
@@ -1055,6 +1103,17 @@ const Admin = () => {
     totalProducts: products?.length || 0,
     totalRevenue: orders?.filter(order => order.status === 'delivered').reduce((sum, order) => sum + Number(order.total_amount), 0) || 0,
   };
+
+  // Show loading screen while admin data is fetching
+  if (isAdmin && activeFetches > 0) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <LoadingScreen message="Loading dashboard data..." />
+        <Footer />
+      </div>
+    );
+  }
 
   if (!isAdmin) {
     return (
@@ -1588,6 +1647,49 @@ const Admin = () => {
                                 >
                                   <Pencil className="h-3 w-3 mr-1" />
                                   Edit Address
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Editable City */}
+                          <div className="pt-2">
+                            <h4 className="font-semibold text-sm mb-2">City</h4>
+                            {editingCity?.orderId === order.id ? (
+                              <div className="space-y-2">
+                                <input
+                                  type="text"
+                                  value={editingCity.city}
+                                  onChange={(e) => setEditingCity({ orderId: order.id, city: e.target.value })}
+                                  className="w-full px-3 py-2 border rounded-md text-sm"
+                                  placeholder="Enter city..."
+                                />
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    onClick={() => updateShippingCity.mutate({ orderId: order.id, city: editingCity.city })}
+                                  >
+                                    Save
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setEditingCity(null)}
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm text-muted-foreground">{order.shipping_city || 'N/A'}</p>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setEditingCity({ orderId: order.id, city: order.shipping_city || '' })}
+                                >
+                                  <Pencil className="h-3 w-3 mr-1" />
+                                  Edit City
                                 </Button>
                               </div>
                             )}
