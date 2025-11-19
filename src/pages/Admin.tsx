@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery, useMutation, useQueryClient, useIsFetching } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
@@ -143,9 +143,6 @@ const Admin = () => {
   const [ordersPage, setOrdersPage] = useState(1);
   const [ordersPageSize, setOrdersPageSize] = useState<number | 'all'>(50);
   const [showPageSizeDialog, setShowPageSizeDialog] = useState(false);
-
-  // Global loading indicator using react-query fetch count
-  const activeFetches = useIsFetching();
 
   // If a filter/search is active, switch to "all" to ensure client-side filtering
   // Do NOT automatically revert back; let the user control page size selection.
@@ -1103,17 +1100,6 @@ const Admin = () => {
     totalProducts: products?.length || 0,
     totalRevenue: orders?.filter(order => order.status === 'delivered').reduce((sum, order) => sum + Number(order.total_amount), 0) || 0,
   };
-
-  // Show loading screen while admin data is fetching
-  if (isAdmin && activeFetches > 0) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <Navbar />
-        <LoadingScreen message="Loading dashboard data..." />
-        <Footer />
-      </div>
-    );
-  }
 
   if (!isAdmin) {
     return (
