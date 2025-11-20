@@ -4,4 +4,4 @@ project_id = "lpxrcdfygxmrsxauknbo"
 verify_jwt = true
 
 [functions.generate-tiktok-feed]
-verify_jwt = true
+verify_jwt = false
