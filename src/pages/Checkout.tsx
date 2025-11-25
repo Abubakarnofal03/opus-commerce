@@ -103,8 +103,8 @@ const Checkout = () => {
 
   const items = user ? cartItems : guestCart;
   
-  // Calculate total with sales applied
-  const total = user 
+  // Calculate subtotal with sales applied
+  const subtotal = user 
     ? cartItems?.reduce((sum, item) => {
         const price = item.color_price || item.variation_price || item.products?.price || 0;
         const productSale = activeSales?.find(
@@ -124,6 +124,18 @@ const Checkout = () => {
         return sum + finalPrice * item.quantity;
       }, 0);
 
+  // Calculate total shipping cost from all products
+  const shippingCost = user
+    ? cartItems?.reduce((sum, item) => {
+        return sum + (item.products?.shipping_cost || 0);
+      }, 0) || 0
+    : guestCart.reduce((sum, item) => {
+        return sum + (item.shipping_cost || 0);
+      }, 0);
+
+  // Calculate total including shipping
+  const total = subtotal + shippingCost;
+
   // Track TikTok Pixel InitiateCheckout when cart data is loaded
   useEffect(() => {
     if (items && items.length > 0 && total > 0) {
@@ -134,7 +146,7 @@ const Checkout = () => {
       }));
       trackTikTokInitiateCheckout(total, tiktokItems);
     }
-  }, [items, total, user]);
+  }, [items, total, user, subtotal, shippingCost]);
 
   const validatePhoneNumber = (phone: string): { isValid: boolean; formatted: string; error: string } => {
     // Remove all spaces and dashes for validation
@@ -241,6 +253,7 @@ const Checkout = () => {
           shipping_state: null,
           shipping_zip: null,
           total_amount: total,
+          shipping_cost: shippingCost,
           status: 'pending',
         })
         .select()
@@ -651,11 +664,11 @@ const Checkout = () => {
                   <div className="space-y-2 mb-4 md:mb-6 text-sm">
                     <div className="flex justify-between">
                       <span>Subtotal</span>
-                      <span>{formatPrice(total)}</span>
+                      <span>{formatPrice(subtotal)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Shipping</span>
-                      <span>FREE</span>
+                      <span>{shippingCost > 0 ? formatPrice(shippingCost) : 'FREE'}</span>
                     </div>
                     <div className="border-t pt-2 mt-2">
                       <div className="flex justify-between font-bold text-base md:text-lg">

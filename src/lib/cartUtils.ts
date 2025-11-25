@@ -6,6 +6,7 @@ export interface GuestCartItem {
   product_name: string;
   product_price: number;
   product_image?: string;
+  shipping_cost?: number;
   variation_id?: string;
   variation_name?: string;
   variation_price?: number;
