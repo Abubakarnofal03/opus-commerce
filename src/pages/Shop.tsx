@@ -145,6 +145,7 @@ const Shop = () => {
           product_name: product.name,
           product_price: product.price,
           product_image: product.images?.[0],
+          shipping_cost: product.shipping_cost || 0,
         });
         return product;
       }

@@ -214,6 +214,7 @@ const ProductDetail = ({ key }: { key?: string }) => {
           product_name: product.name,
           product_price: product.price,
           product_image: product.images?.[0],
+          shipping_cost: product.shipping_cost || 0,
           variation_id: selectedVariation?.id || null,
           variation_name: selectedVariation?.name || null,
           variation_price: selectedVariation?.price || null,
