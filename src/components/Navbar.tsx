@@ -8,6 +8,7 @@ import { getGuestCart } from "@/lib/cartUtils";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { SaleTimer } from "./SaleTimer";
 import logo from "@/assets/logo.jpg";
+import { useQuery } from "@tanstack/react-query";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,10 +34,22 @@ export const Navbar = () => {
   const [user, setUser] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [cartCount, setCartCount] = useState(0);
-  const [categories, setCategories] = useState<any[]>([]);
   const [shopOpen, setShopOpen] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Fetch categories using React Query with shared cache
+  const { data: categories = [] } = useQuery({
+    queryKey: ['categories'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .order('name');
+      if (error) throw error;
+      return data || [];
+    },
+  });
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -58,18 +71,8 @@ export const Navbar = () => {
       }
     });
 
-    fetchCategories();
-
     return () => subscription.unsubscribe();
   }, []);
-
-  const fetchCategories = async () => {
-    const { data } = await supabase
-      .from('categories')
-      .select('*')
-      .order('name');
-    setCategories(data || []);
-  };
 
   const checkAdminStatus = async (userId: string) => {
     const { data } = await supabase
