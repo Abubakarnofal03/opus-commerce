@@ -17,6 +17,10 @@ export const trackEvent = async (
   eventType: 'page_view' | 'add_to_cart' | 'purchase' | 'checkout_start',
   metadata: Record<string, any> = {}
 ) => {
+  // Analytics disabled to save egress
+  return;
+  
+  /* 
   try {
     const { data: { user } } = await supabase.auth.getUser();
     const sessionId = getSessionId();
@@ -31,6 +35,7 @@ export const trackEvent = async (
   } catch (error) {
     console.error('Analytics tracking error:', error);
   }
+  */
 };
 
 // Hook to track page views automatically
