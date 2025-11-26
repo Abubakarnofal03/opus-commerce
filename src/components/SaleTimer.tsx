@@ -23,7 +23,7 @@ export const SaleTimer = () => {
       if (error) throw error;
       return data || [];
     },
-    refetchInterval: 60000,
+    refetchInterval: 300000, // 5 minutes
   });
 
   // Auto-rotate promotional bars
