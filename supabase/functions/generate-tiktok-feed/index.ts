@@ -78,7 +78,8 @@ serve(async (req) => {
     // Generate product rows (Row 18+)
     const productRows = products?.map((product: any, index: number) => {
       const categoryName = product.categories?.name || '';
-      const availability = (product.stock_quantity || 0) > 0 ? 'in stock' : 'out of stock';
+      // TikTok requires exact lowercase format for availability
+      const availability = (product.stock_quantity || 0) > 0 ? 'In stock' : 'Out of stock';
       const productUrl = `https://${storeDomain}/product/${product.slug}`;
       const mainImage = product.images?.[0] || '';
       const additionalImages = product.images?.slice(1, 10).join(',') || '';
