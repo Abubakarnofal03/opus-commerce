@@ -42,9 +42,9 @@ export const TikTokFeedGenerator = () => {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
-      // Count products (approximate from CSV lines - subtract 4 header rows)
+      // Count products (subtract 1 header row)
       const lines = data.split('\n').filter((line: string) => line.trim());
-      const productCount = Math.max(0, lines.length - 4); // Subtract guidance + context + columns rows
+      const productCount = Math.max(0, lines.length - 1); // Subtract header row
 
       setLastGenerated({
         timestamp: new Date(),
