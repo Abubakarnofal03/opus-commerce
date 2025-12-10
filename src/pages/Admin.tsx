@@ -30,6 +30,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { formatPrice } from "@/lib/currency";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { OrderListItem } from "@/components/admin/OrderListItem";
+import { OrderDetailCard } from "@/components/admin/OrderDetailCard";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -143,6 +145,7 @@ const Admin = () => {
   const [ordersPage, setOrdersPage] = useState(1);
   const [ordersPageSize, setOrdersPageSize] = useState<number | 'all'>(50);
   const [showPageSizeDialog, setShowPageSizeDialog] = useState(false);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
 
   // If a filter/search is active, switch to "all" to ensure client-side filtering
   // Do NOT automatically revert back; let the user control page size selection.
@@ -286,12 +289,22 @@ const Admin = () => {
   });
 
   const { data: ordersData } = useQuery({
-    queryKey: ['admin-orders', ordersPage, ordersPageSize],
+    queryKey: ['admin-orders', ordersPage, ordersPageSize, statusFilter, productFilter, searchQuery],
     queryFn: async () => {
+      // Build lightweight query - only fetch essential fields for list view
+      // Include order_items.product_id for product filtering
       let query = supabase
         .from('orders')
-        .select('*, order_items(*, products(*, product_variations(*)))', { count: 'exact' })
+        .select('id, order_number, status, created_at, first_name, last_name, phone, shipping_city, total_amount, order_items(product_id)', { count: 'exact' })
         .order('created_at', { ascending: false });
+      
+      // Server-side filtering by status
+      if (statusFilter !== 'all') {
+        query = query.eq('status', statusFilter);
+      }
+      
+      // Note: Product filtering will be done client-side for now
+      // Server-side product filtering requires a more complex query structure
       
       // Only apply pagination if not "all"
       if (ordersPageSize !== 'all') {
@@ -302,7 +315,32 @@ const Admin = () => {
       
       const { data, error, count } = await query;
       if (error) throw error;
-      return { orders: data, totalCount: count || 0 };
+      
+      // Client-side filtering for search and product (lightweight since we only have minimal data)
+      let filteredData = data || [];
+      
+      // Product filter (client-side - we have order_items.product_id in the data)
+      if (productFilter !== 'all') {
+        filteredData = filteredData.filter(order => {
+          const orderItems = order.order_items as any[];
+          return orderItems?.some((item: any) => item.product_id === productFilter);
+        });
+      }
+      
+      // Search filter
+      if (searchQuery.trim()) {
+        filteredData = filteredData.filter(order => {
+          const searchLower = searchQuery.toLowerCase();
+          return (
+            order.order_number.toString().includes(searchQuery) ||
+            order.first_name?.toLowerCase().includes(searchLower) ||
+            order.last_name?.toLowerCase().includes(searchLower) ||
+            order.phone?.includes(searchQuery)
+          );
+        });
+      }
+      
+      return { orders: filteredData, totalCount: count || 0 };
     },
     enabled: activeTab === 'orders' || activeTab === 'analytics',
   });
@@ -386,6 +424,7 @@ const Admin = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['order-detail'] });
       toast({ title: "Order status updated" });
     },
   });
@@ -415,6 +454,7 @@ const Admin = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['order-detail'] });
       toast({ title: "Note updated" });
       setEditingNote(null);
     },
@@ -430,6 +470,7 @@ const Admin = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['order-detail'] });
       toast({ title: "Customer confirmation updated" });
       setEditingCustomerConfirmation(null);
     },
@@ -445,6 +486,7 @@ const Admin = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['order-detail'] });
       toast({ title: "Courier company updated" });
       setEditingCourierCompany(null);
     },
@@ -460,6 +502,7 @@ const Admin = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['order-detail'] });
       toast({ title: "Shipping address updated" });
       setEditingAddress(null);
     },
@@ -475,6 +518,7 @@ const Admin = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['order-detail'] });
       toast({ title: 'City updated' });
       setEditingCity(null);
     },
@@ -490,6 +534,7 @@ const Admin = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['order-detail'] });
       toast({ title: "Phone number updated" });
       setEditingPhone(null);
     },
@@ -576,6 +621,7 @@ const Admin = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['order-detail'] });
       toast({ title: "Order item updated" });
       setEditingOrderItem(null);
     },
@@ -611,6 +657,7 @@ const Admin = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['order-detail'] });
       toast({ title: "Order item deleted" });
     },
   });
@@ -1079,21 +1126,12 @@ const Admin = () => {
     setEndDate(undefined);
   };
 
-  // Filter and search orders
-  const filteredOrders = orders?.filter(order => {
-    const matchesStatus = statusFilter === "all" || order.status === statusFilter;
-    const matchesProduct = productFilter === "all" || order.order_items?.some((item: any) => item.product_id === productFilter);
-    const matchesSearch = !searchQuery || 
-      order.order_number.toString().includes(searchQuery) ||
-      order.first_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.last_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.phone.includes(searchQuery) ||
-      order.order_items?.some((item: any) => 
-        item.products?.name?.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    return matchesStatus && matchesProduct && matchesSearch;
-  }) || [];
+  // Orders are now filtered server-side, but we still need filteredOrders for display
+  // Note: Product filtering with search might need additional client-side filtering
+  const filteredOrders = orders || [];
+  
+  // Get list of order IDs for navigation
+  const orderIds = filteredOrders.map(o => o.id);
 
   const stats = {
     totalOrders: totalOrdersCount ?? 0,
@@ -1115,62 +1153,65 @@ const Admin = () => {
     <div className="min-h-screen flex flex-col">
       <Navbar />
       
-      <main className="flex-1 py-12">
-        <div className="container mx-auto px-4">
-          <h1 className="font-display text-4xl font-bold mb-8 text-center gold-accent pb-8">
+      <main className="flex-1 py-4 sm:py-6 lg:py-12">
+        <div className="container mx-auto px-3 sm:px-4 lg:px-6">
+          <h1 className="font-display text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 sm:mb-6 lg:mb-8 text-center gold-accent pb-4 sm:pb-6 lg:pb-8">
             Admin Dashboard
           </h1>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <Card>
-              <CardContent className="pt-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+            <Card className="hover:shadow-md transition-shadow">
+              <CardContent className="pt-4 sm:pt-6">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Total Orders</p>
-                    <p className="text-3xl font-bold">{stats.totalOrders}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs sm:text-sm text-muted-foreground mb-1">Total Orders</p>
+                    <p className="text-2xl sm:text-3xl font-bold truncate">{stats.totalOrders}</p>
                   </div>
-                  <ShoppingBag className="h-12 w-12 text-accent" />
+                  <ShoppingBag className="h-8 w-8 sm:h-12 sm:w-12 text-accent flex-shrink-0 ml-2" />
                 </div>
               </CardContent>
             </Card>
-            <Card>
-              <CardContent className="pt-6">
+            <Card className="hover:shadow-md transition-shadow">
+              <CardContent className="pt-4 sm:pt-6">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Total Products</p>
-                    <p className="text-3xl font-bold">{stats.totalProducts}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs sm:text-sm text-muted-foreground mb-1">Total Products</p>
+                    <p className="text-2xl sm:text-3xl font-bold truncate">{stats.totalProducts}</p>
                   </div>
-                  <Package className="h-12 w-12 text-accent" />
+                  <Package className="h-8 w-8 sm:h-12 sm:w-12 text-accent flex-shrink-0 ml-2" />
                 </div>
               </CardContent>
             </Card>
-            <Card>
-              <CardContent className="pt-6">
+            <Card className="hover:shadow-md transition-shadow sm:col-span-2 lg:col-span-1">
+              <CardContent className="pt-4 sm:pt-6">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Total Revenue</p>
-                    <p className="text-3xl font-bold">{formatPrice(stats.totalRevenue)}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs sm:text-sm text-muted-foreground mb-1">Total Revenue</p>
+                    <p className="text-2xl sm:text-3xl font-bold truncate">{formatPrice(stats.totalRevenue)}</p>
                   </div>
-                  <DollarSign className="h-12 w-12 text-accent" />
+                  <DollarSign className="h-8 w-8 sm:h-12 sm:w-12 text-accent flex-shrink-0 ml-2" />
                 </div>
               </CardContent>
             </Card>
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="w-full flex flex-wrap gap-1 h-auto p-1">
-              <TabsTrigger value="orders" className="text-xs md:text-sm flex-1 min-w-[80px]">Orders</TabsTrigger>
-              <TabsTrigger value="analytics" className="text-xs md:text-sm flex-1 min-w-[80px]">Analytics</TabsTrigger>
-              <TabsTrigger value="products" className="text-xs md:text-sm flex-1 min-w-[80px]">Products</TabsTrigger>
-              <TabsTrigger value="categories" className="text-xs md:text-sm flex-1 min-w-[80px]">Categories</TabsTrigger>
-              <TabsTrigger value="reviews" className="text-xs md:text-sm flex-1 min-w-[80px]">Reviews</TabsTrigger>
-              <TabsTrigger value="banners" className="text-xs md:text-sm flex-1 min-w-[80px]">Banners</TabsTrigger>
-              <TabsTrigger value="blogs" className="text-xs md:text-sm flex-1 min-w-[80px]">Blogs</TabsTrigger>
-              <TabsTrigger value="meta-catalog" className="text-xs md:text-sm flex-1 min-w-[100px]">Meta Catalog</TabsTrigger>
-            </TabsList>
+            <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+              <TabsList className="w-full inline-flex flex-nowrap gap-1 h-auto p-1 min-w-max sm:min-w-0">
+                <TabsTrigger value="orders" className="text-xs sm:text-sm px-2 sm:px-3 whitespace-nowrap flex-shrink-0">Orders</TabsTrigger>
+                <TabsTrigger value="analytics" className="text-xs sm:text-sm px-2 sm:px-3 whitespace-nowrap flex-shrink-0">Analytics</TabsTrigger>
+                <TabsTrigger value="products" className="text-xs sm:text-sm px-2 sm:px-3 whitespace-nowrap flex-shrink-0">Products</TabsTrigger>
+                <TabsTrigger value="categories" className="text-xs sm:text-sm px-2 sm:px-3 whitespace-nowrap flex-shrink-0">Categories</TabsTrigger>
+                <TabsTrigger value="reviews" className="text-xs sm:text-sm px-2 sm:px-3 whitespace-nowrap flex-shrink-0">Reviews</TabsTrigger>
+                <TabsTrigger value="banners" className="text-xs sm:text-sm px-2 sm:px-3 whitespace-nowrap flex-shrink-0">Banners</TabsTrigger>
+                <TabsTrigger value="blogs" className="text-xs sm:text-sm px-2 sm:px-3 whitespace-nowrap flex-shrink-0">Blogs</TabsTrigger>
+                <TabsTrigger value="meta-catalog" className="text-xs sm:text-sm px-2 sm:px-3 whitespace-nowrap flex-shrink-0">Meta Catalog</TabsTrigger>
+              </TabsList>
+            </div>
 
-            <TabsContent value="orders" className="space-y-4">
-              <div className="flex items-center justify-between mb-4">
+            <TabsContent value="orders" className="space-y-3 sm:space-y-4 mt-4 sm:mt-6">
+              {/* Header with total and settings */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-3 sm:mb-4">
                 <div className="text-sm text-muted-foreground">
                   Total Orders: <span className="font-semibold text-foreground">{totalOrdersCount || 0}</span>
                 </div>
@@ -1178,80 +1219,103 @@ const Admin = () => {
                   variant="outline"
                   size="sm"
                   onClick={() => setShowPageSizeDialog(true)}
+                  className="w-full sm:w-auto"
                 >
+                  <Filter className="h-4 w-4 mr-2" />
                   Settings ({ordersPageSize === 'all' ? 'All' : ordersPageSize} per page)
                 </Button>
               </div>
 
-              <Card className="mb-4">
-                <CardContent className="pt-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Search</label>
-                      <input
-                        type="text"
-                        placeholder="Order ID, name, product..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full px-3 py-2 border rounded-md"
-                      />
+              {/* Filters Card */}
+              <Card className="mb-4 shadow-sm">
+                <CardContent className="pt-4 sm:pt-6">
+                  <div className="space-y-4">
+                    {/* Search and Filters Row */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <div className="sm:col-span-2 lg:col-span-1">
+                        <label className="text-sm font-medium mb-2 block">Search Orders</label>
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <input
+                            type="text"
+                            placeholder="Order #, name, phone..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-9 pr-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium mb-2 block">Status</label>
+                        <Select value={statusFilter} onValueChange={setStatusFilter}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Statuses</SelectItem>
+                            <SelectItem value="pending">Pending</SelectItem>
+                            <SelectItem value="processing">Processing</SelectItem>
+                            <SelectItem value="shipped">Shipped</SelectItem>
+                            <SelectItem value="delivered">Delivered</SelectItem>
+                            <SelectItem value="cancelled">Cancelled</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium mb-2 block">Product</label>
+                        <Select value={productFilter} onValueChange={setProductFilter}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Products</SelectItem>
+                            {products?.map(product => (
+                              <SelectItem key={product.id} value={product.id}>{product.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Filter by Status</label>
-                      <Select value={statusFilter} onValueChange={setStatusFilter}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Statuses</SelectItem>
-                          <SelectItem value="pending">Pending</SelectItem>
-                          <SelectItem value="processing">Processing</SelectItem>
-                          <SelectItem value="shipped">Shipped</SelectItem>
-                          <SelectItem value="delivered">Delivered</SelectItem>
-                          <SelectItem value="cancelled">Cancelled</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Filter by Product</label>
-                      <Select value={productFilter} onValueChange={setProductFilter}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Products</SelectItem>
-                          {products?.map(product => (
-                            <SelectItem key={product.id} value={product.id}>{product.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="flex items-end gap-2 flex-wrap">
-                      <Button onClick={() => setShowPageSizeDialog(true)} variant="outline" size="sm" className="min-w-[100px]">
-                        <Filter className="h-4 w-4 mr-2" />
-                        {ordersPageSize} per page
-                      </Button>
-                      <Button onClick={() => setExportDialog(true)} variant="outline" className="flex-1 min-w-[140px]">
-                        <Download className="h-4 w-4 mr-2" />
-                        Excel
-                      </Button>
-                      <Button onClick={() => setInstaWorldDialog(true)} variant="secondary" className="flex-1 min-w-[140px]">
-                        <Download className="h-4 w-4 mr-2" />
-                        INSTA WORLD
-                      </Button>
-                      <Button onClick={() => setCustomExportDialog(true)} className="flex-1 min-w-[140px]">
-                        <Download className="h-4 w-4 mr-2" />
-                        Custom Export
-                      </Button>
+
+                    {/* Export Buttons */}
+                    <div className="border-t pt-4">
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <Button 
+                          onClick={() => setExportDialog(true)} 
+                          variant="outline" 
+                          size="sm"
+                          className="flex-1 sm:flex-initial"
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          Excel Export
+                        </Button>
+                        <Button 
+                          onClick={() => setInstaWorldDialog(true)} 
+                          variant="secondary" 
+                          size="sm"
+                          className="flex-1 sm:flex-initial"
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          Insta World
+                        </Button>
+                        <Button 
+                          onClick={() => setCustomExportDialog(true)} 
+                          size="sm"
+                          className="flex-1 sm:flex-initial"
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          Custom Export
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </CardContent>
               </Card>
               
               {filteredOrders.length > 0 && (
-                <Card className="mb-4">
-                  <CardContent className="pt-6">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 justify-between">
+                <Card className="mb-4 shadow-sm">
+                  <CardContent className="pt-4 sm:pt-6">
+                    <div className="flex flex-col gap-4">
                       <div className="flex items-center gap-3">
                         <Checkbox
                           checked={selectedOrders.size === filteredOrders.length && filteredOrders.length > 0}
@@ -1270,10 +1334,10 @@ const Admin = () => {
                       </div>
                       
                       {selectedOrders.size > 0 && (
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-muted-foreground">Bulk actions:</span>
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-2 border-t">
+                          <span className="text-sm text-muted-foreground sm:self-center">Bulk actions:</span>
                           <Select onValueChange={handleBulkStatusChange}>
-                            <SelectTrigger className="w-[180px]">
+                            <SelectTrigger className="w-full sm:w-[200px]">
                               <SelectValue placeholder="Change status" />
                             </SelectTrigger>
                             <SelectContent>
@@ -1291,11 +1355,16 @@ const Admin = () => {
                 </Card>
               )}
 
-              <div className="flex items-center justify-between px-4 py-2 bg-muted/30 rounded-lg mb-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 px-3 sm:px-4 py-2 bg-muted/30 rounded-lg mb-4">
                 <p className="text-sm text-muted-foreground">
                   Showing <span className="font-semibold text-foreground">{filteredOrders.length}</span> order{filteredOrders.length !== 1 ? 's' : ''}
                   {statusFilter !== "all" && <span className="ml-1">({statusFilter})</span>}
                 </p>
+                {filteredOrders.length > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Page {ordersPage} of {totalPages}
+                  </p>
+                )}
               </div>
               
               {filteredOrders.length === 0 ? (
@@ -1304,549 +1373,48 @@ const Admin = () => {
                 </div>
               ) : null}
               
-              {filteredOrders.map((order, index) => (
-                <Collapsible 
-                  key={order.id}
-                  open={expandedOrders.has(order.id)}
-                  onOpenChange={() => toggleOrderExpanded(order.id)}
-                >
-                  <Card>
-                    <CardHeader>
-                      <div className="flex items-start gap-3">
-                        <Checkbox
-                          checked={selectedOrders.has(order.id)}
-                          onCheckedChange={() => toggleOrderSelection(order.id)}
-                          className="mt-1"
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                        <div className="flex flex-col sm:flex-row justify-between items-start gap-4 flex-1">
-                          <CollapsibleTrigger asChild>
-                            <Button variant="ghost" className="flex items-center gap-2 p-0 h-auto hover:bg-transparent w-full sm:w-auto justify-start">
-                              <div className="text-left">
-                                <CardTitle className="text-base sm:text-lg">Order #{order.order_number}</CardTitle>
-                                <p className="text-xs sm:text-sm text-muted-foreground">
-                                  {format(new Date(order.created_at), 'PPP')}
-                                </p>
-                              </div>
-                              {expandedOrders.has(order.id) ? (
-                                <ChevronUp className="h-5 w-5" />
-                              ) : (
-                                <ChevronDown className="h-5 w-5" />
-                              )}
-                            </Button>
-                          </CollapsibleTrigger>
-                          <Select
-                            value={order.status}
-                            onValueChange={(status) => updateOrderStatus.mutate({ orderId: order.id, status })}
-                          >
-                            <SelectTrigger className="w-full sm:w-[150px]">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="pending">Pending</SelectItem>
-                              <SelectItem value="processing">Processing</SelectItem>
-                              <SelectItem value="shipped">Shipped</SelectItem>
-                              <SelectItem value="delivered">Delivered</SelectItem>
-                              <SelectItem value="cancelled">Cancelled</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        {order.order_items?.map((item: any) => {
-                          const isEditing = editingOrderItem?.itemId === item.id;
-                          const itemVariations = productVariations?.filter(v => v.product_id === item.product_id) || [];
-                          const itemColors = productColors?.filter(c => c.product_id === item.product_id) || [];
+              <div className="space-y-3">
+                {filteredOrders.map((order) => (
+                  <OrderListItem
+                    key={order.id}
+                    order={order}
+                    isSelected={selectedOrders.has(order.id)}
+                    onSelect={(orderId) => toggleOrderSelection(orderId)}
+                    onStatusChange={(orderId, status) => updateOrderStatus.mutate({ orderId, status })}
+                    onClick={(orderId) => setSelectedOrderId(orderId)}
+                  />
+                ))}
+              </div>
 
-                          return (
-                            <div key={item.id} className="flex flex-col gap-2 text-sm border-b pb-2">
-                              {isEditing ? (
-                                <div className="space-y-3 p-3 bg-muted/50 rounded-lg">
-                                  <div className="font-medium">{item.products?.name}</div>
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    <div>
-                                      <label className="text-xs text-muted-foreground">Quantity</label>
-                                      <Input
-                                        type="number"
-                                        min="1"
-                                        value={editingOrderItem.quantity}
-                                        onChange={(e) => setEditingOrderItem({
-                                          ...editingOrderItem,
-                                          quantity: parseInt(e.target.value) || 1
-                                        })}
-                                        className="h-8"
-                                      />
-                                    </div>
-                                    <div>
-                                      <label className="text-xs text-muted-foreground">Price per item</label>
-                                      <Input
-                                        type="number"
-                                        min="0"
-                                        step="0.01"
-                                        value={editingOrderItem.price}
-                                        onChange={(e) => setEditingOrderItem({
-                                          ...editingOrderItem,
-                                          price: parseFloat(e.target.value) || 0
-                                        })}
-                                        className="h-8"
-                                      />
-                                    </div>
-                                    {itemVariations.length > 0 && (
-                                      <div>
-                                        <label className="text-xs text-muted-foreground">Variation</label>
-                                        <Select
-                                          value={editingOrderItem.variationId || "none"}
-                                          onValueChange={(value) => setEditingOrderItem({
-                                            ...editingOrderItem,
-                                            variationId: value === "none" ? null : value
-                                          })}
-                                        >
-                                          <SelectTrigger className="h-8">
-                                            <SelectValue />
-                                          </SelectTrigger>
-                                          <SelectContent>
-                                            <SelectItem value="none">No variation</SelectItem>
-                                            {itemVariations.map(v => (
-                                              <SelectItem key={v.id} value={v.id}>
-                                                {v.name}
-                                              </SelectItem>
-                                            ))}
-                                          </SelectContent>
-                                        </Select>
-                                      </div>
-                                    )}
-                                    {itemColors.length > 0 && (
-                                      <div>
-                                        <label className="text-xs text-muted-foreground">Color</label>
-                                        <Select
-                                          value={editingOrderItem.colorId || "none"}
-                                          onValueChange={(value) => setEditingOrderItem({
-                                            ...editingOrderItem,
-                                            colorId: value === "none" ? null : value
-                                          })}
-                                        >
-                                          <SelectTrigger className="h-8">
-                                            <SelectValue />
-                                          </SelectTrigger>
-                                          <SelectContent>
-                                            <SelectItem value="none">No color</SelectItem>
-                                            {itemColors.map(c => (
-                                              <SelectItem key={c.id} value={c.id}>
-                                                <div className="flex items-center gap-2">
-                                                  <span 
-                                                    className="inline-block w-3 h-3 rounded-full border" 
-                                                    style={{ backgroundColor: c.color_code }}
-                                                  />
-                                                  {c.name}
-                                                </div>
-                                              </SelectItem>
-                                            ))}
-                                          </SelectContent>
-                                        </Select>
-                                      </div>
-                                    )}
-                                  </div>
-                                  <div className="flex gap-2">
-                                    <Button
-                                      size="sm"
-                                      onClick={() => updateOrderItem.mutate({
-                                        itemId: item.id,
-                                        quantity: editingOrderItem.quantity,
-                                        price: editingOrderItem.price,
-                                        variationId: editingOrderItem.variationId,
-                                        colorId: editingOrderItem.colorId,
-                                        orderId: order.id
-                                      })}
-                                    >
-                                      <Save className="h-3 w-3 mr-1" />
-                                      Save
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => setEditingOrderItem(null)}
-                                    >
-                                      <X className="h-3 w-3 mr-1" />
-                                      Cancel
-                                    </Button>
-                                  </div>
-                                </div>
-                              ) : (
-                                <div className="flex flex-col sm:flex-row justify-between gap-2">
-                                  <div className="flex-1">
-                                    <div className="flex items-center gap-2">
-                                      <span className="font-medium">{item.products?.name}</span>
-                                      {item.variation_name && (
-                                        <Badge variant="outline" className="text-xs">
-                                          {item.variation_name}
-                                        </Badge>
-                                      )}
-                                      {item.color_name && (
-                                        <Badge variant="outline" className="text-xs flex items-center gap-1">
-                                          {item.color_code && (
-                                            <span 
-                                              className="inline-block w-3 h-3 rounded-full border" 
-                                              style={{ backgroundColor: item.color_code }}
-                                            />
-                                          )}
-                                          {item.color_name}
-                                        </Badge>
-                                      )}
-                                    </div>
-                                    <span className="text-muted-foreground">Qty: {item.quantity} × {formatPrice(item.price)}</span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-semibold">{formatPrice(item.price * item.quantity)}</span>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => setEditingOrderItem({
-                                        itemId: item.id,
-                                        quantity: item.quantity,
-                                        price: item.price,
-                                        variationId: item.variation_id,
-                                        colorId: item.color_id
-                                      })}
-                                      className="h-8"
-                                    >
-                                      <Pencil className="h-3 w-3" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => {
-                                        if (confirm('Are you sure you want to delete this item?')) {
-                                          deleteOrderItem.mutate({ itemId: item.id, orderId: order.id });
-                                        }
-                                      }}
-                                      className="h-8 text-destructive hover:text-destructive"
-                                    >
-                                      <Trash2 className="h-3 w-3" />
-                                    </Button>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                        <div className="border-t pt-2 flex justify-between font-bold">
-                          <span>Total</span>
-                          <span className="text-accent">{formatPrice(Number(order.total_amount))}</span>
-                        </div>
-                      </div>
-
-                      <CollapsibleContent className="mt-4 space-y-4">
-                        <div className="border-t pt-4 space-y-3">
-                          <h4 className="font-semibold text-sm">Customer Information</h4>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                            <div>
-                              <span className="text-muted-foreground">Name:</span>
-                              <p className="font-medium">{order.first_name} {order.last_name}</p>
-                            </div>
-                            <div>
-                              <span className="text-muted-foreground">Email:</span>
-                              <p className="font-medium">{order.email || 'N/A'}</p>
-                            </div>
-                            <div>
-                              <span className="text-muted-foreground">Phone:</span>
-                              {editingPhone?.orderId === order.id ? (
-                                <div className="space-y-2 mt-1">
-                                  <Input
-                                    value={editingPhone.phone}
-                                    onChange={(e) => setEditingPhone({ orderId: order.id, phone: e.target.value })}
-                                    className="h-8"
-                                    placeholder="Enter phone number..."
-                                  />
-                                  <div className="flex gap-2">
-                                    <Button
-                                      size="sm"
-                                      onClick={() => updatePhone.mutate({ orderId: order.id, phone: editingPhone.phone })}
-                                    >
-                                      <Save className="h-3 w-3 mr-1" />
-                                      Save
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => setEditingPhone(null)}
-                                    >
-                                      <X className="h-3 w-3 mr-1" />
-                                      Cancel
-                                    </Button>
-                                  </div>
-                                </div>
-                              ) : (
-                                <div className="flex items-center gap-2">
-                                  <p className="font-medium">{order.phone}</p>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => setEditingPhone({ orderId: order.id, phone: order.phone || '' })}
-                                    className="h-6 w-6 p-0"
-                                  >
-                                    <Pencil className="h-3 w-3" />
-                                  </Button>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="pt-2">
-                            <h4 className="font-semibold text-sm mb-2">Shipping Address</h4>
-                            {editingAddress?.orderId === order.id ? (
-                              <div className="space-y-2">
-                                <textarea
-                                  value={editingAddress.address}
-                                  onChange={(e) => setEditingAddress({ orderId: order.id, address: e.target.value })}
-                                  className="w-full px-3 py-2 border rounded-md text-sm"
-                                  rows={3}
-                                  placeholder="Enter shipping address..."
-                                />
-                                <div className="flex gap-2">
-                                  <Button
-                                    size="sm"
-                                    onClick={() => updateShippingAddress.mutate({ orderId: order.id, address: editingAddress.address })}
-                                  >
-                                    Save
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => setEditingAddress(null)}
-                                  >
-                                    Cancel
-                                  </Button>
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="space-y-2">
-                                <div className="text-sm space-y-1">
-                                  <p>{order.shipping_address}</p>
-                                  <p>{order.shipping_city}, {order.shipping_state} {order.shipping_zip}</p>
-                                </div>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => setEditingAddress({ orderId: order.id, address: order.shipping_address || '' })}
-                                >
-                                  <Pencil className="h-3 w-3 mr-1" />
-                                  Edit Address
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Editable City */}
-                          <div className="pt-2">
-                            <h4 className="font-semibold text-sm mb-2">City</h4>
-                            {editingCity?.orderId === order.id ? (
-                              <div className="space-y-2">
-                                <input
-                                  type="text"
-                                  value={editingCity.city}
-                                  onChange={(e) => setEditingCity({ orderId: order.id, city: e.target.value })}
-                                  className="w-full px-3 py-2 border rounded-md text-sm"
-                                  placeholder="Enter city..."
-                                />
-                                <div className="flex gap-2">
-                                  <Button
-                                    size="sm"
-                                    onClick={() => updateShippingCity.mutate({ orderId: order.id, city: editingCity.city })}
-                                  >
-                                    Save
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => setEditingCity(null)}
-                                  >
-                                    Cancel
-                                  </Button>
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-2">
-                                <p className="text-sm text-muted-foreground">{order.shipping_city || 'N/A'}</p>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => setEditingCity({ orderId: order.id, city: order.shipping_city || '' })}
-                                >
-                                  <Pencil className="h-3 w-3 mr-1" />
-                                  Edit City
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-
-                          {order.notes && (
-                            <>
-                              <h4 className="font-semibold text-sm pt-2">Customer Notes</h4>
-                              <p className="text-sm text-muted-foreground">{order.notes}</p>
-                            </>
-                          )}
-
-                          <div className="pt-2">
-                            <h4 className="font-semibold text-sm mb-2">Customer Confirmation</h4>
-                            {editingCustomerConfirmation?.orderId === order.id ? (
-                              <div className="space-y-2">
-                                <input
-                                  type="text"
-                                  value={editingCustomerConfirmation.confirmation}
-                                  onChange={(e) => setEditingCustomerConfirmation({ orderId: order.id, confirmation: e.target.value })}
-                                  className="w-full px-3 py-2 border rounded-md text-sm"
-                                  placeholder="Add customer confirmation..."
-                                />
-                                <div className="flex gap-2">
-                                  <Button
-                                    size="sm"
-                                    onClick={() => updateCustomerConfirmation.mutate({ orderId: order.id, confirmation: editingCustomerConfirmation.confirmation })}
-                                  >
-                                    Save
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => setEditingCustomerConfirmation(null)}
-                                  >
-                                    Cancel
-                                  </Button>
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="space-y-2">
-                                <p className="text-sm text-muted-foreground">
-                                  {order.customer_confirmation || 'No customer confirmation'}
-                                </p>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => setEditingCustomerConfirmation({ orderId: order.id, confirmation: order.customer_confirmation || '' })}
-                                >
-                                  <Pencil className="h-3 w-3 mr-1" />
-                                  Edit
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="pt-2">
-                            <h4 className="font-semibold text-sm mb-2">Courier Company</h4>
-                            {editingCourierCompany?.orderId === order.id ? (
-                              <div className="space-y-2">
-                                <input
-                                  type="text"
-                                  value={editingCourierCompany.courier}
-                                  onChange={(e) => setEditingCourierCompany({ orderId: order.id, courier: e.target.value })}
-                                  className="w-full px-3 py-2 border rounded-md text-sm"
-                                  placeholder="Add courier company..."
-                                />
-                                <div className="flex gap-2">
-                                  <Button
-                                    size="sm"
-                                    onClick={() => updateCourierCompany.mutate({ orderId: order.id, courier: editingCourierCompany.courier })}
-                                  >
-                                    Save
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => setEditingCourierCompany(null)}
-                                  >
-                                    Cancel
-                                  </Button>
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="space-y-2">
-                                <p className="text-sm text-muted-foreground">
-                                  {order.courier_company || 'No courier company'}
-                                </p>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => setEditingCourierCompany({ orderId: order.id, courier: order.courier_company || '' })}
-                                >
-                                  <Pencil className="h-3 w-3 mr-1" />
-                                  Edit
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="pt-2">
-                            <h4 className="font-semibold text-sm mb-2">Admin Notes</h4>
-                            {editingNote?.orderId === order.id ? (
-                              <div className="space-y-2">
-                                <textarea
-                                  value={editingNote.note}
-                                  onChange={(e) => setEditingNote({ orderId: order.id, note: e.target.value })}
-                                  className="w-full px-3 py-2 border rounded-md text-sm"
-                                  rows={3}
-                                  placeholder="Add admin notes..."
-                                />
-                                <div className="flex gap-2">
-                                  <Button
-                                    size="sm"
-                                    onClick={() => updateAdminNote.mutate({ orderId: order.id, note: editingNote.note })}
-                                  >
-                                    Save
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => setEditingNote(null)}
-                                  >
-                                    Cancel
-                                  </Button>
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="space-y-2">
-                                <p className="text-sm text-muted-foreground">
-                                  {order.admin_notes || 'No admin notes'}
-                                </p>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => setEditingNote({ orderId: order.id, note: order.admin_notes || '' })}
-                                >
-                                  <Pencil className="h-3 w-3 mr-1" />
-                                  Edit Note
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="pt-4 border-t">
-                            <Button
-                              onClick={() => sendWhatsAppConfirmation(order)}
-                              className="w-full bg-[#25D366] hover:bg-[#20BA5A] text-white"
-                              size="lg"
-                            >
-                              <MessageCircle className="h-5 w-5 mr-2 fill-white" />
-                              Send WhatsApp Confirmation
-                            </Button>
-                          </div>
-
-                          <div className="text-sm">
-                            <span className="text-muted-foreground">Order ID:</span>
-                            <p className="font-mono text-xs break-all">{order.id}</p>
-                          </div>
-                        </div>
-                      </CollapsibleContent>
-                    </CardContent>
-                  </Card>
-                </Collapsible>
-              ))}
+              {/* Order Detail Card */}
+              <OrderDetailCard
+                orderId={selectedOrderId}
+                orderIds={orderIds}
+                onClose={() => setSelectedOrderId(null)}
+                onNavigate={(orderId) => setSelectedOrderId(orderId)}
+                onStatusChange={(orderId, status) => updateOrderStatus.mutate({ orderId, status })}
+                onItemUpdate={(params) => updateOrderItem.mutate(params)}
+                onItemDelete={(params) => {
+                  if (confirm('Are you sure you want to delete this item?')) {
+                    deleteOrderItem.mutate(params);
+                  }
+                }}
+                onPhoneUpdate={(params) => updatePhone.mutate(params)}
+                onAddressUpdate={(params) => updateShippingAddress.mutate(params)}
+                onCityUpdate={(params) => updateShippingCity.mutate(params)}
+                onCourierUpdate={(params) => updateCourierCompany.mutate(params)}
+                onAdminNoteUpdate={(params) => updateAdminNote.mutate(params)}
+                onCustomerConfirmationUpdate={(params) => updateCustomerConfirmation.mutate(params)}
+                onWhatsAppClick={sendWhatsAppConfirmation}
+                productVariations={productVariations}
+                productColors={productColors}
+              />
 
               {/* Pagination */}
               {ordersPageSize !== 'all' && totalPages > 1 && (
-                <div className="mt-6">
+                <div className="mt-4 sm:mt-6">
                   <Pagination>
-                    <PaginationContent>
+                    <PaginationContent className="flex-wrap gap-1 sm:gap-2">
                       <PaginationItem>
                         <PaginationPrevious 
                           onClick={() => setOrdersPage(p => Math.max(1, p - 1))}
@@ -1854,6 +1422,7 @@ const Admin = () => {
                         />
                       </PaginationItem>
                       
+                      {/* Show page numbers - responsive: fewer on mobile */}
                       {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                         let pageNum;
                         if (totalPages <= 5) {
@@ -1867,17 +1436,27 @@ const Admin = () => {
                         }
                         
                         return (
-                          <PaginationItem key={pageNum}>
+                          <PaginationItem key={pageNum} className="hidden sm:block">
                             <PaginationLink
                               onClick={() => setOrdersPage(pageNum)}
                               isActive={ordersPage === pageNum}
-                              className="cursor-pointer"
+                              className="cursor-pointer min-w-[2.5rem]"
                             >
                               {pageNum}
                             </PaginationLink>
                           </PaginationItem>
                         );
                       })}
+                      
+                      {/* Show current page on mobile */}
+                      <PaginationItem className="sm:hidden">
+                        <PaginationLink
+                          isActive
+                          className="cursor-default min-w-[2.5rem]"
+                        >
+                          {ordersPage} / {totalPages}
+                        </PaginationLink>
+                      </PaginationItem>
                       
                       <PaginationItem>
                         <PaginationNext 
