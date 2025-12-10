@@ -30,6 +30,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { formatPrice } from "@/lib/currency";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Skeleton } from "@/components/ui/skeleton";
 import { OrderListItem } from "@/components/admin/OrderListItem";
 import { OrderDetailCard } from "@/components/admin/OrderDetailCard";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -288,7 +289,7 @@ const Admin = () => {
     enabled: activeTab === 'orders' || activeTab === 'analytics',
   });
 
-  const { data: ordersData } = useQuery({
+  const { data: ordersData, isLoading: ordersLoading, isFetching: ordersFetching } = useQuery({
     queryKey: ['admin-orders', ordersPage, ordersPageSize, statusFilter, productFilter, searchQuery],
     queryFn: async () => {
       // Build lightweight query - only fetch essential fields for list view
@@ -1356,35 +1357,74 @@ const Admin = () => {
               )}
 
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 px-3 sm:px-4 py-2 bg-muted/30 rounded-lg mb-4">
-                <p className="text-sm text-muted-foreground">
-                  Showing <span className="font-semibold text-foreground">{filteredOrders.length}</span> order{filteredOrders.length !== 1 ? 's' : ''}
-                  {statusFilter !== "all" && <span className="ml-1">({statusFilter})</span>}
-                </p>
-                {filteredOrders.length > 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    Page {ordersPage} of {totalPages}
-                  </p>
+                {ordersLoading || ordersFetching ? (
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-5 w-32" />
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-sm text-muted-foreground">
+                      Showing <span className="font-semibold text-foreground">{filteredOrders.length}</span> order{filteredOrders.length !== 1 ? 's' : ''}
+                      {statusFilter !== "all" && <span className="ml-1">({statusFilter})</span>}
+                    </p>
+                    {filteredOrders.length > 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        Page {ordersPage} of {totalPages}
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
               
-              {filteredOrders.length === 0 ? (
+              {/* Loading State */}
+              {(ordersLoading || ordersFetching) ? (
+                <div className="space-y-3">
+                  {Array.from({ length: ordersPageSize === 'all' ? 10 : Math.min(ordersPageSize as number, 10) }).map((_, index) => (
+                    <Card key={`skeleton-${index}`} className="animate-pulse">
+                      <div className="p-3 sm:p-4">
+                        <div className="flex items-start gap-2 sm:gap-3">
+                          <Skeleton className="h-5 w-5 mt-1 flex-shrink-0" />
+                          <div className="flex-1 min-w-0 space-y-3">
+                            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                              <div className="flex-1 space-y-2">
+                                <Skeleton className="h-5 w-32" />
+                                <Skeleton className="h-4 w-40" />
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <Skeleton className="h-3 w-24" />
+                                  <Skeleton className="h-3 w-20" />
+                                  <Skeleton className="h-3 w-16" />
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2 sm:flex-col sm:items-end">
+                                <Skeleton className="h-5 w-20" />
+                                <Skeleton className="h-5 w-16" />
+                              </div>
+                            </div>
+                          </div>
+                          <Skeleton className="h-10 w-[140px] sm:w-[150px] flex-shrink-0" />
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              ) : filteredOrders.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
                   No orders match your filters
                 </div>
-              ) : null}
-              
-              <div className="space-y-3">
-                {filteredOrders.map((order) => (
-                  <OrderListItem
-                    key={order.id}
-                    order={order}
-                    isSelected={selectedOrders.has(order.id)}
-                    onSelect={(orderId) => toggleOrderSelection(orderId)}
-                    onStatusChange={(orderId, status) => updateOrderStatus.mutate({ orderId, status })}
-                    onClick={(orderId) => setSelectedOrderId(orderId)}
-                  />
-                ))}
-              </div>
+              ) : (
+                <div className="space-y-3">
+                  {filteredOrders.map((order) => (
+                    <OrderListItem
+                      key={order.id}
+                      order={order}
+                      isSelected={selectedOrders.has(order.id)}
+                      onSelect={(orderId) => toggleOrderSelection(orderId)}
+                      onStatusChange={(orderId, status) => updateOrderStatus.mutate({ orderId, status })}
+                      onClick={(orderId) => setSelectedOrderId(orderId)}
+                    />
+                  ))}
+                </div>
+              )}
 
               {/* Order Detail Card */}
               <OrderDetailCard

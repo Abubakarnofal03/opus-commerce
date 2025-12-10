@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -78,8 +78,8 @@ export const OrderDetailCard = ({
   const [editingConfirmation, setEditingConfirmation] = useState<{ confirmation: string } | null>(null);
   
   // Swipe gesture state
-  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
-  const [touchEnd, setTouchEnd] = useState<{ x: number; y: number } | null>(null);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const touchEndRef = useRef<{ x: number; y: number } | null>(null);
   const [swipeOffset, setSwipeOffset] = useState(0);
 
   // Minimum swipe distance (in pixels)
@@ -161,56 +161,62 @@ export const OrderDetailCard = ({
       target.closest('select') ||
       target.closest('[role="button"]') ||
       target.closest('[contenteditable]') ||
-      target.closest('[role="dialog"]') ||
-      target.closest('[data-radix-portal]')
+      target.closest('[data-radix-portal]') ||
+      target.closest('[role="dialog"]')
     ) {
       return;
     }
-    setTouchEnd(null);
-    setTouchStart({
-      x: e.targetTouches[0].clientX,
-      y: e.targetTouches[0].clientY,
-    });
+    
+    const touch = e.touches[0];
+    touchEndRef.current = null;
+    touchStartRef.current = {
+      x: touch.clientX,
+      y: touch.clientY,
+    };
   };
 
   const onTouchMove = (e: React.TouchEvent) => {
-    if (touchStart === null) return;
+    if (!touchStartRef.current) return;
     
-    const currentX = e.targetTouches[0].clientX;
-    const currentY = e.targetTouches[0].clientY;
-    const deltaX = currentX - touchStart.x;
-    const deltaY = currentY - touchStart.y;
+    const touch = e.touches[0];
+    const currentX = touch.clientX;
+    const currentY = touch.clientY;
+    const deltaX = currentX - touchStartRef.current.x;
+    const deltaY = Math.abs(currentY - touchStartRef.current.y);
     
-    // Only show visual feedback if swipe is primarily horizontal
-    const isHorizontal = Math.abs(deltaX) > Math.abs(deltaY) * minHorizontalRatio;
+    // Only prevent scroll if swipe is primarily horizontal
+    const isHorizontal = Math.abs(deltaX) > deltaY * minHorizontalRatio;
     
     if (isHorizontal && Math.abs(deltaX) > 10) {
+      // Prevent scrolling when swiping horizontally
+      e.preventDefault();
+      e.stopPropagation();
       // Limit the offset for visual feedback (max 60px)
       setSwipeOffset(Math.max(-60, Math.min(60, deltaX * 0.4)));
     }
     
     // Update touchEnd for swipe detection
-    setTouchEnd({ x: currentX, y: currentY });
+    touchEndRef.current = { x: currentX, y: currentY };
   };
 
-  const onTouchEnd = () => {
-    if (!touchStart || touchEnd === null) {
-      setTouchStart(null);
-      setTouchEnd(null);
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (!touchStartRef.current || !touchEndRef.current) {
+      touchStartRef.current = null;
+      touchEndRef.current = null;
       setSwipeOffset(0);
       return;
     }
 
-    const deltaX = touchStart.x - touchEnd.x;
-    const deltaY = Math.abs(touchStart.y - touchEnd.y);
+    const deltaX = touchStartRef.current.x - touchEndRef.current.x;
+    const deltaY = Math.abs(touchStartRef.current.y - touchEndRef.current.y);
     
     // Only trigger swipe if it's primarily horizontal
     const isHorizontal = Math.abs(deltaX) > deltaY * minHorizontalRatio;
     
     if (!isHorizontal) {
       // Reset if swipe wasn't horizontal enough (likely scrolling)
-      setTouchStart(null);
-      setTouchEnd(null);
+      touchStartRef.current = null;
+      touchEndRef.current = null;
       setSwipeOffset(0);
       return;
     }
@@ -219,17 +225,19 @@ export const OrderDetailCard = ({
     const isRightSwipe = deltaX < -minSwipeDistance;
 
     if (isLeftSwipe && hasNext && onNavigate) {
+      e.preventDefault();
       handleNext();
     }
     if (isRightSwipe && hasPrevious && onNavigate) {
+      e.preventDefault();
       handlePrevious();
     }
 
     // Reset with animation
     setSwipeOffset(0);
     setTimeout(() => {
-      setTouchStart(null);
-      setTouchEnd(null);
+      touchStartRef.current = null;
+      touchEndRef.current = null;
     }, 200);
   };
 
@@ -240,15 +248,17 @@ export const OrderDetailCard = ({
       <SheetContent 
         side="right" 
         className="w-full sm:max-w-2xl overflow-y-auto"
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
       >
         <div
+          className="h-full w-full"
           style={{
             transform: swipeOffset ? `translateX(${swipeOffset}px)` : undefined,
             transition: swipeOffset !== 0 ? 'none' : 'transform 0.2s ease-out',
+            touchAction: 'pan-y pinch-zoom',
           }}
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
         >
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
