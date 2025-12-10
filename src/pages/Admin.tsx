@@ -25,8 +25,6 @@ import ReviewDialog from "@/components/admin/ReviewDialog";
 import { OrderAnalytics } from "@/components/admin/OrderAnalytics";
 import { SiteAnalytics } from "@/components/admin/SiteAnalytics";
 import { DraggableProductList } from "@/components/admin/DraggableProductList";
-import { OrderListItem } from "@/components/admin/OrderListItem";
-import { OrderDetailCard } from "@/components/admin/OrderDetailCard";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatPrice } from "@/lib/currency";
@@ -145,7 +143,6 @@ const Admin = () => {
   const [ordersPage, setOrdersPage] = useState(1);
   const [ordersPageSize, setOrdersPageSize] = useState<number | 'all'>(50);
   const [showPageSizeDialog, setShowPageSizeDialog] = useState(false);
-  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
 
   // If a filter/search is active, switch to "all" to ensure client-side filtering
   // Do NOT automatically revert back; let the user control page size selection.
@@ -288,19 +285,13 @@ const Admin = () => {
     enabled: activeTab === 'orders' || activeTab === 'analytics',
   });
 
-  // Lightweight orders list query - only essential fields for list display
-  const { data: ordersData, isLoading: ordersLoading } = useQuery({
-    queryKey: ['admin-orders-list', ordersPage, ordersPageSize, statusFilter],
+  const { data: ordersData } = useQuery({
+    queryKey: ['admin-orders', ordersPage, ordersPageSize],
     queryFn: async () => {
       let query = supabase
         .from('orders')
-        .select('id, order_number, status, created_at, first_name, last_name, phone, shipping_city, total_amount', { count: 'exact' })
+        .select('*, order_items(*, products(*, product_variations(*)))', { count: 'exact' })
         .order('created_at', { ascending: false });
-      
-      // Apply server-side status filter
-      if (statusFilter !== 'all') {
-        query = query.eq('status', statusFilter);
-      }
       
       // Only apply pagination if not "all"
       if (ordersPageSize !== 'all') {
@@ -1088,15 +1079,20 @@ const Admin = () => {
     setEndDate(undefined);
   };
 
-  // Filter and search orders (client-side for search only, status is server-side now)
+  // Filter and search orders
   const filteredOrders = orders?.filter(order => {
+    const matchesStatus = statusFilter === "all" || order.status === statusFilter;
+    const matchesProduct = productFilter === "all" || order.order_items?.some((item: any) => item.product_id === productFilter);
     const matchesSearch = !searchQuery || 
       order.order_number.toString().includes(searchQuery) ||
       order.first_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       order.last_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      order.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       order.phone.includes(searchQuery) ||
-      order.shipping_city?.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesSearch;
+      order.order_items?.some((item: any) => 
+        item.products?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    return matchesStatus && matchesProduct && matchesSearch;
   }) || [];
 
   const stats = {
@@ -1302,40 +1298,549 @@ const Admin = () => {
                 </p>
               </div>
               
-              {/* Order List - Compact view */}
-              <Card>
-                <CardContent className="p-0">
-                  {ordersLoading ? (
-                    <div className="flex items-center justify-center py-12">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div>
-                    </div>
-                  ) : filteredOrders.length === 0 ? (
-                    <div className="text-center py-12 text-muted-foreground">
-                      No orders match your filters
-                    </div>
-                  ) : (
-                    <div className="divide-y">
-                      {filteredOrders.map((order) => (
-                        <OrderListItem
-                          key={order.id}
-                          order={order}
-                          isSelected={selectedOrders.has(order.id)}
-                          onSelect={toggleOrderSelection}
-                          onClick={setSelectedOrderId}
+              {filteredOrders.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  No orders match your filters
+                </div>
+              ) : null}
+              
+              {filteredOrders.map((order, index) => (
+                <Collapsible 
+                  key={order.id}
+                  open={expandedOrders.has(order.id)}
+                  onOpenChange={() => toggleOrderExpanded(order.id)}
+                >
+                  <Card>
+                    <CardHeader>
+                      <div className="flex items-start gap-3">
+                        <Checkbox
+                          checked={selectedOrders.has(order.id)}
+                          onCheckedChange={() => toggleOrderSelection(order.id)}
+                          className="mt-1"
+                          onClick={(e) => e.stopPropagation()}
                         />
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                        <div className="flex flex-col sm:flex-row justify-between items-start gap-4 flex-1">
+                          <CollapsibleTrigger asChild>
+                            <Button variant="ghost" className="flex items-center gap-2 p-0 h-auto hover:bg-transparent w-full sm:w-auto justify-start">
+                              <div className="text-left">
+                                <CardTitle className="text-base sm:text-lg">Order #{order.order_number}</CardTitle>
+                                <p className="text-xs sm:text-sm text-muted-foreground">
+                                  {format(new Date(order.created_at), 'PPP')}
+                                </p>
+                              </div>
+                              {expandedOrders.has(order.id) ? (
+                                <ChevronUp className="h-5 w-5" />
+                              ) : (
+                                <ChevronDown className="h-5 w-5" />
+                              )}
+                            </Button>
+                          </CollapsibleTrigger>
+                          <Select
+                            value={order.status}
+                            onValueChange={(status) => updateOrderStatus.mutate({ orderId: order.id, status })}
+                          >
+                            <SelectTrigger className="w-full sm:w-[150px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="pending">Pending</SelectItem>
+                              <SelectItem value="processing">Processing</SelectItem>
+                              <SelectItem value="shipped">Shipped</SelectItem>
+                              <SelectItem value="delivered">Delivered</SelectItem>
+                              <SelectItem value="cancelled">Cancelled</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        {order.order_items?.map((item: any) => {
+                          const isEditing = editingOrderItem?.itemId === item.id;
+                          const itemVariations = productVariations?.filter(v => v.product_id === item.product_id) || [];
+                          const itemColors = productColors?.filter(c => c.product_id === item.product_id) || [];
 
-              {/* Order Detail Sheet */}
-              <OrderDetailCard
-                orderId={selectedOrderId}
-                orderIds={filteredOrders.map(o => o.id)}
-                onClose={() => setSelectedOrderId(null)}
-                onNavigate={setSelectedOrderId}
-              />
+                          return (
+                            <div key={item.id} className="flex flex-col gap-2 text-sm border-b pb-2">
+                              {isEditing ? (
+                                <div className="space-y-3 p-3 bg-muted/50 rounded-lg">
+                                  <div className="font-medium">{item.products?.name}</div>
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    <div>
+                                      <label className="text-xs text-muted-foreground">Quantity</label>
+                                      <Input
+                                        type="number"
+                                        min="1"
+                                        value={editingOrderItem.quantity}
+                                        onChange={(e) => setEditingOrderItem({
+                                          ...editingOrderItem,
+                                          quantity: parseInt(e.target.value) || 1
+                                        })}
+                                        className="h-8"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="text-xs text-muted-foreground">Price per item</label>
+                                      <Input
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        value={editingOrderItem.price}
+                                        onChange={(e) => setEditingOrderItem({
+                                          ...editingOrderItem,
+                                          price: parseFloat(e.target.value) || 0
+                                        })}
+                                        className="h-8"
+                                      />
+                                    </div>
+                                    {itemVariations.length > 0 && (
+                                      <div>
+                                        <label className="text-xs text-muted-foreground">Variation</label>
+                                        <Select
+                                          value={editingOrderItem.variationId || "none"}
+                                          onValueChange={(value) => setEditingOrderItem({
+                                            ...editingOrderItem,
+                                            variationId: value === "none" ? null : value
+                                          })}
+                                        >
+                                          <SelectTrigger className="h-8">
+                                            <SelectValue />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="none">No variation</SelectItem>
+                                            {itemVariations.map(v => (
+                                              <SelectItem key={v.id} value={v.id}>
+                                                {v.name}
+                                              </SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                    )}
+                                    {itemColors.length > 0 && (
+                                      <div>
+                                        <label className="text-xs text-muted-foreground">Color</label>
+                                        <Select
+                                          value={editingOrderItem.colorId || "none"}
+                                          onValueChange={(value) => setEditingOrderItem({
+                                            ...editingOrderItem,
+                                            colorId: value === "none" ? null : value
+                                          })}
+                                        >
+                                          <SelectTrigger className="h-8">
+                                            <SelectValue />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="none">No color</SelectItem>
+                                            {itemColors.map(c => (
+                                              <SelectItem key={c.id} value={c.id}>
+                                                <div className="flex items-center gap-2">
+                                                  <span 
+                                                    className="inline-block w-3 h-3 rounded-full border" 
+                                                    style={{ backgroundColor: c.color_code }}
+                                                  />
+                                                  {c.name}
+                                                </div>
+                                              </SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <Button
+                                      size="sm"
+                                      onClick={() => updateOrderItem.mutate({
+                                        itemId: item.id,
+                                        quantity: editingOrderItem.quantity,
+                                        price: editingOrderItem.price,
+                                        variationId: editingOrderItem.variationId,
+                                        colorId: editingOrderItem.colorId,
+                                        orderId: order.id
+                                      })}
+                                    >
+                                      <Save className="h-3 w-3 mr-1" />
+                                      Save
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => setEditingOrderItem(null)}
+                                    >
+                                      <X className="h-3 w-3 mr-1" />
+                                      Cancel
+                                    </Button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex flex-col sm:flex-row justify-between gap-2">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-medium">{item.products?.name}</span>
+                                      {item.variation_name && (
+                                        <Badge variant="outline" className="text-xs">
+                                          {item.variation_name}
+                                        </Badge>
+                                      )}
+                                      {item.color_name && (
+                                        <Badge variant="outline" className="text-xs flex items-center gap-1">
+                                          {item.color_code && (
+                                            <span 
+                                              className="inline-block w-3 h-3 rounded-full border" 
+                                              style={{ backgroundColor: item.color_code }}
+                                            />
+                                          )}
+                                          {item.color_name}
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    <span className="text-muted-foreground">Qty: {item.quantity} × {formatPrice(item.price)}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-semibold">{formatPrice(item.price * item.quantity)}</span>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => setEditingOrderItem({
+                                        itemId: item.id,
+                                        quantity: item.quantity,
+                                        price: item.price,
+                                        variationId: item.variation_id,
+                                        colorId: item.color_id
+                                      })}
+                                      className="h-8"
+                                    >
+                                      <Pencil className="h-3 w-3" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        if (confirm('Are you sure you want to delete this item?')) {
+                                          deleteOrderItem.mutate({ itemId: item.id, orderId: order.id });
+                                        }
+                                      }}
+                                      className="h-8 text-destructive hover:text-destructive"
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                        <div className="border-t pt-2 flex justify-between font-bold">
+                          <span>Total</span>
+                          <span className="text-accent">{formatPrice(Number(order.total_amount))}</span>
+                        </div>
+                      </div>
+
+                      <CollapsibleContent className="mt-4 space-y-4">
+                        <div className="border-t pt-4 space-y-3">
+                          <h4 className="font-semibold text-sm">Customer Information</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                            <div>
+                              <span className="text-muted-foreground">Name:</span>
+                              <p className="font-medium">{order.first_name} {order.last_name}</p>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Email:</span>
+                              <p className="font-medium">{order.email || 'N/A'}</p>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Phone:</span>
+                              {editingPhone?.orderId === order.id ? (
+                                <div className="space-y-2 mt-1">
+                                  <Input
+                                    value={editingPhone.phone}
+                                    onChange={(e) => setEditingPhone({ orderId: order.id, phone: e.target.value })}
+                                    className="h-8"
+                                    placeholder="Enter phone number..."
+                                  />
+                                  <div className="flex gap-2">
+                                    <Button
+                                      size="sm"
+                                      onClick={() => updatePhone.mutate({ orderId: order.id, phone: editingPhone.phone })}
+                                    >
+                                      <Save className="h-3 w-3 mr-1" />
+                                      Save
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => setEditingPhone(null)}
+                                    >
+                                      <X className="h-3 w-3 mr-1" />
+                                      Cancel
+                                    </Button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-2">
+                                  <p className="font-medium">{order.phone}</p>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => setEditingPhone({ orderId: order.id, phone: order.phone || '' })}
+                                    className="h-6 w-6 p-0"
+                                  >
+                                    <Pencil className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="pt-2">
+                            <h4 className="font-semibold text-sm mb-2">Shipping Address</h4>
+                            {editingAddress?.orderId === order.id ? (
+                              <div className="space-y-2">
+                                <textarea
+                                  value={editingAddress.address}
+                                  onChange={(e) => setEditingAddress({ orderId: order.id, address: e.target.value })}
+                                  className="w-full px-3 py-2 border rounded-md text-sm"
+                                  rows={3}
+                                  placeholder="Enter shipping address..."
+                                />
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    onClick={() => updateShippingAddress.mutate({ orderId: order.id, address: editingAddress.address })}
+                                  >
+                                    Save
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setEditingAddress(null)}
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="space-y-2">
+                                <div className="text-sm space-y-1">
+                                  <p>{order.shipping_address}</p>
+                                  <p>{order.shipping_city}, {order.shipping_state} {order.shipping_zip}</p>
+                                </div>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setEditingAddress({ orderId: order.id, address: order.shipping_address || '' })}
+                                >
+                                  <Pencil className="h-3 w-3 mr-1" />
+                                  Edit Address
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Editable City */}
+                          <div className="pt-2">
+                            <h4 className="font-semibold text-sm mb-2">City</h4>
+                            {editingCity?.orderId === order.id ? (
+                              <div className="space-y-2">
+                                <input
+                                  type="text"
+                                  value={editingCity.city}
+                                  onChange={(e) => setEditingCity({ orderId: order.id, city: e.target.value })}
+                                  className="w-full px-3 py-2 border rounded-md text-sm"
+                                  placeholder="Enter city..."
+                                />
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    onClick={() => updateShippingCity.mutate({ orderId: order.id, city: editingCity.city })}
+                                  >
+                                    Save
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setEditingCity(null)}
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm text-muted-foreground">{order.shipping_city || 'N/A'}</p>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setEditingCity({ orderId: order.id, city: order.shipping_city || '' })}
+                                >
+                                  <Pencil className="h-3 w-3 mr-1" />
+                                  Edit City
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+
+                          {order.notes && (
+                            <>
+                              <h4 className="font-semibold text-sm pt-2">Customer Notes</h4>
+                              <p className="text-sm text-muted-foreground">{order.notes}</p>
+                            </>
+                          )}
+
+                          <div className="pt-2">
+                            <h4 className="font-semibold text-sm mb-2">Customer Confirmation</h4>
+                            {editingCustomerConfirmation?.orderId === order.id ? (
+                              <div className="space-y-2">
+                                <input
+                                  type="text"
+                                  value={editingCustomerConfirmation.confirmation}
+                                  onChange={(e) => setEditingCustomerConfirmation({ orderId: order.id, confirmation: e.target.value })}
+                                  className="w-full px-3 py-2 border rounded-md text-sm"
+                                  placeholder="Add customer confirmation..."
+                                />
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    onClick={() => updateCustomerConfirmation.mutate({ orderId: order.id, confirmation: editingCustomerConfirmation.confirmation })}
+                                  >
+                                    Save
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setEditingCustomerConfirmation(null)}
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="space-y-2">
+                                <p className="text-sm text-muted-foreground">
+                                  {order.customer_confirmation || 'No customer confirmation'}
+                                </p>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setEditingCustomerConfirmation({ orderId: order.id, confirmation: order.customer_confirmation || '' })}
+                                >
+                                  <Pencil className="h-3 w-3 mr-1" />
+                                  Edit
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="pt-2">
+                            <h4 className="font-semibold text-sm mb-2">Courier Company</h4>
+                            {editingCourierCompany?.orderId === order.id ? (
+                              <div className="space-y-2">
+                                <input
+                                  type="text"
+                                  value={editingCourierCompany.courier}
+                                  onChange={(e) => setEditingCourierCompany({ orderId: order.id, courier: e.target.value })}
+                                  className="w-full px-3 py-2 border rounded-md text-sm"
+                                  placeholder="Add courier company..."
+                                />
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    onClick={() => updateCourierCompany.mutate({ orderId: order.id, courier: editingCourierCompany.courier })}
+                                  >
+                                    Save
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setEditingCourierCompany(null)}
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="space-y-2">
+                                <p className="text-sm text-muted-foreground">
+                                  {order.courier_company || 'No courier company'}
+                                </p>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setEditingCourierCompany({ orderId: order.id, courier: order.courier_company || '' })}
+                                >
+                                  <Pencil className="h-3 w-3 mr-1" />
+                                  Edit
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="pt-2">
+                            <h4 className="font-semibold text-sm mb-2">Admin Notes</h4>
+                            {editingNote?.orderId === order.id ? (
+                              <div className="space-y-2">
+                                <textarea
+                                  value={editingNote.note}
+                                  onChange={(e) => setEditingNote({ orderId: order.id, note: e.target.value })}
+                                  className="w-full px-3 py-2 border rounded-md text-sm"
+                                  rows={3}
+                                  placeholder="Add admin notes..."
+                                />
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    onClick={() => updateAdminNote.mutate({ orderId: order.id, note: editingNote.note })}
+                                  >
+                                    Save
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setEditingNote(null)}
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="space-y-2">
+                                <p className="text-sm text-muted-foreground">
+                                  {order.admin_notes || 'No admin notes'}
+                                </p>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setEditingNote({ orderId: order.id, note: order.admin_notes || '' })}
+                                >
+                                  <Pencil className="h-3 w-3 mr-1" />
+                                  Edit Note
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="pt-4 border-t">
+                            <Button
+                              onClick={() => sendWhatsAppConfirmation(order)}
+                              className="w-full bg-[#25D366] hover:bg-[#20BA5A] text-white"
+                              size="lg"
+                            >
+                              <MessageCircle className="h-5 w-5 mr-2 fill-white" />
+                              Send WhatsApp Confirmation
+                            </Button>
+                          </div>
+
+                          <div className="text-sm">
+                            <span className="text-muted-foreground">Order ID:</span>
+                            <p className="font-mono text-xs break-all">{order.id}</p>
+                          </div>
+                        </div>
+                      </CollapsibleContent>
+                    </CardContent>
+                  </Card>
+                </Collapsible>
+              ))}
 
               {/* Pagination */}
               {ordersPageSize !== 'all' && totalPages > 1 && (
