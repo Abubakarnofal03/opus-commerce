@@ -423,10 +423,14 @@ const Admin = () => {
         .eq('id', orderId);
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
       queryClient.invalidateQueries({ queryKey: ['order-detail'] });
       toast({ title: "Order status updated" });
+      
+      // Check if the updated order still matches the current filter
+      // If not, it will be removed from filteredOrders and OrderDetailCard will handle navigation
+      // We don't need to manually close here - the useEffect in OrderDetailCard will handle it
     },
   });
 
