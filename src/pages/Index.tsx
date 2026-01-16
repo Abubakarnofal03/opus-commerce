@@ -112,26 +112,25 @@ const Index = () => {
   return (
     <>
       <SEOHead
-        title="The Shopping Cart – Pakistan's Online Store for Home Decor, Wallets & More"
-        description="Shop premium home decor, wallets, furniture, accessories & garden decorations online in Pakistan. Fast delivery, quality products at TheShoppingCart.shop"
-        keywords={[
-          'home decor',
-          'wallets',
-          'furniture',
-          'accessories',
-          'garden decorations',
-          'shopping cart',
-          'the shopping cart',
-          'theshoppingcart.shop',
-          'buy online in Pakistan',
-          'premium decor items',
-          'online shopping Pakistan',
-          'home accessories',
-          'leather wallets'
-        ]}
-        canonicalUrl="https://theshoppingcart.shop"
-        structuredData={structuredData}
-      />
+              title="Juraab – Pakistan's Online Store for Home Decor, Wallets & More"
+              description="Shop premium home decor, wallets, furniture, accessories & garden decorations online in Pakistan. Fast delivery, quality products at juraab.shop"
+              keywords={[
+                'home decor',
+                'wallets',
+                'furniture',
+                'accessories',
+                'garden decorations',
+                'juraab',
+                'juraab.shop',
+                'buy online in Pakistan',
+                'premium decor items',
+                'online shopping Pakistan',
+                'home accessories',
+                'leather wallets'
+              ]}
+              canonicalUrl="https://juraab.shop"
+              structuredData={structuredData}
+            />
       
       <div className="min-h-screen flex flex-col">
         <Navbar />
@@ -196,14 +195,14 @@ const Index = () => {
         {/* Introduction Section for SEO */}
         {/* <section className="py-12 bg-background">
           <div className="container mx-auto px-4 max-w-4xl text-center">
-            {/* <p className="text-lg text-muted-foreground leading-relaxed">
-              Welcome to <strong>The Shopping Cart</strong> – your trusted online destination for premium <strong>home decor</strong>, 
+            <p className="text-lg text-muted-foreground leading-relaxed">
+              Welcome to <strong>Juraab</strong> – your trusted online destination for premium <strong>home decor</strong>, 
               elegant <strong>wallets</strong>, stylish <strong>furniture</strong>, quality <strong>accessories</strong>, and beautiful 
               <strong> garden decorations</strong> in Pakistan. Shop with confidence and enjoy fast delivery across the country. 
-              TheShoppingCart.shop brings you carefully curated products that blend style, quality, and affordability.
+              juraab.shop brings you carefully curated products that blend style, quality, and affordability. We are the best jurab store in Pakistan.
             </p> 
           </div>
-        </section> */}
+        </section>
 
         {/* Shop by Category - Dynamic */}
         <section 

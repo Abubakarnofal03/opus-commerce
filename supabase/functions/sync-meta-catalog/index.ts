@@ -53,13 +53,13 @@ Deno.serve(async (req) => {
       data: {
         name: product.name,
         description: product.description || '',
-        url: `https://theshoppingcart.shop/product/${product.id}`,
+        url: `https://juraab.shop/product/${product.id}`,
         image_url: product.images && product.images.length > 0 ? product.images[0] : '',
         availability: product.stock_quantity > 0 ? 'in stock' : 'out of stock',
         condition: 'new',
         price: parseFloat(product.price),
         currency: 'PKR',
-        brand: 'The Shopping Cart',
+        brand: 'Juraab',
         category: product.categories?.name || 'General',
       },
     }));

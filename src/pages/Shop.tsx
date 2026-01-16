@@ -275,11 +275,11 @@ const Shop = () => {
 
   const selectedCategoryData = categories?.find(c => c.slug === selectedCategory);
   const pageTitle = selectedCategoryData
-    ? `Shop ${selectedCategoryData.name} Online | The Shopping Cart`
-    : "Shop All Products Online | The Shopping Cart";
+    ? `Shop ${selectedCategoryData.name} Online | Juraab`
+    : "Shop All Products Online | Juraab";
   const pageDescription = selectedCategoryData
-    ? `Browse premium ${selectedCategoryData.name.toLowerCase()} online in Pakistan. Quality products, fast delivery at TheShoppingCart.shop`
-    : "Discover premium home decor, wallets, accessories, and furniture at TheShoppingCart.shop – fast delivery across Pakistan.";
+    ? `Browse premium ${selectedCategoryData.name.toLowerCase()} online in Pakistan. Quality products, fast delivery at juraab.shop`
+    : "Discover premium home decor, wallets, accessories, and furniture at juraab.shop – fast delivery across Pakistan.";
   const pageKeywords = selectedCategoryData?.focus_keywords || [
     'online shopping Pakistan',
     'home decor',
@@ -307,7 +307,7 @@ const Shop = () => {
         title={pageTitle}
         description={pageDescription}
         keywords={pageKeywords}
-        canonicalUrl={selectedCategory ? `https://theshoppingcart.shop/shop?category=${selectedCategory}` : "https://theshoppingcart.shop/shop"}
+        canonicalUrl={selectedCategory ? `https://juraab.shop/shop?category=${selectedCategory}` : "https://juraab.shop/shop"}
         structuredData={structuredData}
       />
       

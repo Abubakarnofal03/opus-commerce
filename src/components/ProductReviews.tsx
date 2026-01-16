@@ -16,9 +16,10 @@ import { ImageUpload } from "@/components/admin/ImageUpload";
 
 interface ProductReviewsProps {
   productId: string;
+  productName: string;
 }
 
-export default function ProductReviews({ productId }: ProductReviewsProps) {
+export default function ProductReviews({ productId, productName }: ProductReviewsProps) {
   const [sortBy, setSortBy] = useState("newest");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [showReviewDialog, setShowReviewDialog] = useState(false);
@@ -284,7 +285,7 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
                       <img
                         key={index}
                         src={image}
-                        alt={`Review ${index + 1}`}
+                        alt={`Review for ${productName} ${index + 1}`}
                         className="w-20 h-20 object-cover rounded cursor-pointer hover:opacity-75 transition-opacity"
                         onClick={() => setSelectedImage(image)}
                       />
@@ -310,7 +311,7 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
       <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
         <DialogContent className="max-w-4xl">
           {selectedImage && (
-            <img src={selectedImage} alt="Review" className="w-full h-auto rounded" />
+            <img src={selectedImage} alt={`Review for ${productName}`} className="w-full h-auto rounded" />
           )}
         </DialogContent>
       </Dialog>

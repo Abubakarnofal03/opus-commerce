@@ -50,8 +50,8 @@ serve(async (req) => {
 
     console.log(`Found ${products?.length || 0} products`);
 
-    const storeDomain = "theshoppingcart.shop";
-    const brandName = "The Shopping Cart";
+    const storeDomain = "juraab.shop";
+    const brandName = "Juraab";
     const currency = "PKR";
 
     // Helper to escape CSV values

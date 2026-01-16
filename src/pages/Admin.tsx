@@ -1713,7 +1713,7 @@ const Admin = () => {
                                     <img
                                       key={index}
                                       src={image}
-                                      alt={`Review ${index + 1}`}
+                                      alt={`Review for ${review.products?.name} ${index + 1}`}
                                       className="w-16 h-16 object-cover rounded"
                                     />
                                   ))}

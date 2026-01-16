@@ -161,7 +161,7 @@ CREATE TABLE public.blogs (
   content TEXT NOT NULL,
   excerpt TEXT,
   featured_image_url TEXT,
-  author TEXT DEFAULT 'The Shopping Cart',
+  author TEXT DEFAULT 'juraab',
   published BOOLEAN DEFAULT FALSE,
   meta_title TEXT,
   meta_description TEXT,

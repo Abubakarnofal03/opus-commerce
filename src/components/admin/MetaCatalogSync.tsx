@@ -149,9 +149,9 @@ export const MetaCatalogSync = () => {
           <h4 className="font-semibold">Configuration:</h4>
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div className="text-muted-foreground">Store Domain:</div>
-            <div className="font-mono">theshoppingcart.shop</div>
+            <div className="font-mono">juraab.shop</div>
             <div className="text-muted-foreground">Brand Name:</div>
-            <div>The Shopping Cart</div>
+            <div>Juraab</div>
             <div className="text-muted-foreground">Currency:</div>
             <div>PKR</div>
           </div>
