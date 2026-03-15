@@ -13,8 +13,10 @@ import {
   Save,
   Pencil,
   Trash2,
-  MessageCircle
+  MessageCircle,
+  PhoneCall
 } from "lucide-react";
+import { isCapacitor } from "@/lib/capacitor";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
@@ -77,14 +79,12 @@ export const OrderDetailCard = ({
   const [editingNote, setEditingNote] = useState<{ note: string } | null>(null);
   const [editingConfirmation, setEditingConfirmation] = useState<{ confirmation: string } | null>(null);
 
-  // Swipe gesture state
+  // Swipe gesture state — using native listeners so we can preventDefault (React listeners are passive)
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const touchEndRef = useRef<{ x: number; y: number } | null>(null);
   const [swipeOffset, setSwipeOffset] = useState(0);
-
-  // Minimum swipe distance (in pixels)
+  const sheetRef = useRef<HTMLDivElement>(null);
   const minSwipeDistance = 50;
-  // Minimum horizontal/vertical ratio to consider it a horizontal swipe
   const minHorizontalRatio = 1.5;
 
   const { data: order, isLoading } = useQuery({
@@ -160,113 +160,63 @@ export const OrderDetailCard = ({
     }
   };
 
-  // Handle keyboard navigation
+  // ── Native non-passive touch listeners ──────────────────────────────────────
+  // React touch listeners are passive by default → e.preventDefault() is ignored
+  // → scroll container always wins over horizontal swipe. Fix: native listeners.
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!orderId || !onNavigate) return;
-      if (e.key === 'ArrowLeft' && hasPrevious) {
-        handlePrevious();
-      } else if (e.key === 'ArrowRight' && hasNext) {
-        handleNext();
-      } else if (e.key === 'Escape') {
-        onClose();
+    const el = sheetRef.current;
+    if (!el || !orderId) return;
+
+    const onStart = (e: TouchEvent) => {
+      const target = e.target as HTMLElement;
+      // Don't intercept touches on interactive elements
+      if (target.closest('button, input, textarea, select, [role="button"], [contenteditable]')) return;
+      touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      touchEndRef.current = null;
+    };
+
+    const onMove = (e: TouchEvent) => {
+      if (!touchStartRef.current) return;
+      const dx = e.touches[0].clientX - touchStartRef.current.x;
+      const dy = Math.abs(e.touches[0].clientY - touchStartRef.current.y);
+      const isHorizontal = Math.abs(dx) > dy * minHorizontalRatio && Math.abs(dx) > 10;
+      if (isHorizontal) {
+        e.preventDefault(); // Works because listener is non-passive
+        setSwipeOffset(Math.max(-70, Math.min(70, dx * 0.4)));
       }
+      touchEndRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [orderId, hasPrevious, hasNext, onNavigate]);
+    const onEnd = () => {
+      if (!touchStartRef.current || !touchEndRef.current) {
+        touchStartRef.current = null;
+        setSwipeOffset(0);
+        return;
+      }
+      const dx = touchStartRef.current.x - touchEndRef.current.x;
+      const dy = Math.abs(touchStartRef.current.y - touchEndRef.current.y);
+      const isHorizontal = Math.abs(dx) > dy * minHorizontalRatio;
 
-  // Swipe handlers
-  const onTouchStart = (e: React.TouchEvent) => {
-    // Don't trigger swipe if touching interactive elements
-    const target = e.target as HTMLElement;
-    if (
-      target.closest('button') ||
-      target.closest('input') ||
-      target.closest('textarea') ||
-      target.closest('select') ||
-      target.closest('[role="button"]') ||
-      target.closest('[contenteditable]') ||
-      target.closest('[data-radix-portal]') ||
-      target.closest('[role="dialog"]')
-    ) {
-      return;
-    }
+      if (isHorizontal) {
+        if (dx > minSwipeDistance && hasNext && onNavigate) handleNext();
+        if (dx < -minSwipeDistance && hasPrevious && onNavigate) handlePrevious();
+      }
 
-    const touch = e.touches[0];
-    touchEndRef.current = null;
-    touchStartRef.current = {
-      x: touch.clientX,
-      y: touch.clientY,
+      setSwipeOffset(0);
+      touchStartRef.current = null;
+      touchEndRef.current = null;
     };
-  };
 
-  const onTouchMove = (e: React.TouchEvent) => {
-    if (!touchStartRef.current) return;
+    el.addEventListener('touchstart', onStart, { passive: true });
+    el.addEventListener('touchmove', onMove, { passive: false }); // non-passive = can preventDefault
+    el.addEventListener('touchend', onEnd, { passive: true });
 
-    const touch = e.touches[0];
-    const currentX = touch.clientX;
-    const currentY = touch.clientY;
-    const deltaX = currentX - touchStartRef.current.x;
-    const deltaY = Math.abs(currentY - touchStartRef.current.y);
-
-    // Only prevent scroll if swipe is primarily horizontal
-    const isHorizontal = Math.abs(deltaX) > deltaY * minHorizontalRatio;
-
-    if (isHorizontal && Math.abs(deltaX) > 10) {
-      // Prevent scrolling when swiping horizontally
-      e.preventDefault();
-      e.stopPropagation();
-      // Limit the offset for visual feedback (max 60px)
-      setSwipeOffset(Math.max(-60, Math.min(60, deltaX * 0.4)));
-    }
-
-    // Update touchEnd for swipe detection
-    touchEndRef.current = { x: currentX, y: currentY };
-  };
-
-  const onTouchEnd = (e: React.TouchEvent) => {
-    if (!touchStartRef.current || !touchEndRef.current) {
-      touchStartRef.current = null;
-      touchEndRef.current = null;
-      setSwipeOffset(0);
-      return;
-    }
-
-    const deltaX = touchStartRef.current.x - touchEndRef.current.x;
-    const deltaY = Math.abs(touchStartRef.current.y - touchEndRef.current.y);
-
-    // Only trigger swipe if it's primarily horizontal
-    const isHorizontal = Math.abs(deltaX) > deltaY * minHorizontalRatio;
-
-    if (!isHorizontal) {
-      // Reset if swipe wasn't horizontal enough (likely scrolling)
-      touchStartRef.current = null;
-      touchEndRef.current = null;
-      setSwipeOffset(0);
-      return;
-    }
-
-    const isLeftSwipe = deltaX > minSwipeDistance;
-    const isRightSwipe = deltaX < -minSwipeDistance;
-
-    if (isLeftSwipe && hasNext && onNavigate) {
-      e.preventDefault();
-      handleNext();
-    }
-    if (isRightSwipe && hasPrevious && onNavigate) {
-      e.preventDefault();
-      handlePrevious();
-    }
-
-    // Reset with animation
-    setSwipeOffset(0);
-    setTimeout(() => {
-      touchStartRef.current = null;
-      touchEndRef.current = null;
-    }, 200);
-  };
+    return () => {
+      el.removeEventListener('touchstart', onStart);
+      el.removeEventListener('touchmove', onMove);
+      el.removeEventListener('touchend', onEnd);
+    };
+  }, [orderId, hasNext, hasPrevious, onNavigate]);
 
   if (!orderId) return null;
 
@@ -274,18 +224,17 @@ export const OrderDetailCard = ({
     <Sheet open={!!orderId} onOpenChange={(open) => !open && onClose()}>
       <SheetContent
         side="right"
-        className="w-full sm:max-w-2xl overflow-y-auto"
+        className="w-full sm:max-w-2xl overflow-y-auto p-0"
       >
+        {/* Full-height container with swipe ref — catches touches anywhere on screen */}
         <div
-          className="h-full w-full"
+          ref={sheetRef}
+          className="h-full w-full px-4 py-6 sm:px-6"
           style={{
             transform: swipeOffset ? `translateX(${swipeOffset}px)` : undefined,
             transition: swipeOffset !== 0 ? 'none' : 'transform 0.2s ease-out',
-            touchAction: 'pan-y pinch-zoom',
+            touchAction: 'pan-y', // Allow vertical scroll, JS handles horizontal
           }}
-          onTouchStart={onTouchStart}
-          onTouchMove={onTouchMove}
-          onTouchEnd={onTouchEnd}
         >
           {isLoading ? (
             <div className="flex items-center justify-center h-full">
@@ -594,14 +543,26 @@ export const OrderDetailCard = ({
                       ) : (
                         <div className="flex items-center gap-2">
                           <p className="font-medium">{order.phone}</p>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => setEditingPhone({ phone: order.phone || '' })}
-                            className="h-6 w-6 p-0"
-                          >
-                            <Pencil className="h-3 w-3" />
-                          </Button>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => setEditingPhone({ phone: order.phone || '' })}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            {isCapacitor() && order.phone && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+                                onClick={() => window.open(`tel:${order.phone}`, '_system')}
+                              >
+                                <PhoneCall className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       )}
                     </div>

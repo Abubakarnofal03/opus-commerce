@@ -2,11 +2,14 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 import { FloatingCartButton } from "@/components/FloatingCartButton";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { usePageViewTracking } from "@/hooks/useAnalytics";
+import { useEffect } from "react";
+import { isCapacitor } from "@/lib/capacitor";
+import { supabase } from "@/integrations/supabase/client";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Shop from "./pages/Shop";
@@ -33,10 +36,28 @@ const queryClient = new QueryClient({
   },
 });
 
+// Redirect on launch when running inside Capacitor
+const CapacitorRedirect = () => {
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (!isCapacitor()) return;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        navigate('/admin', { replace: true });
+      } else {
+        navigate('/auth', { replace: true });
+      }
+    });
+  }, [navigate]);
+  return null;
+};
+
 const AppContent = () => {
   usePageViewTracking();
+  const inCap = isCapacitor();
   return (
     <>
+      <CapacitorRedirect />
       <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
@@ -54,8 +75,8 @@ const AppContent = () => {
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
-        <WhatsAppButton />
-        <FloatingCartButton />
+        {!inCap && <WhatsAppButton />}
+        {!inCap && <FloatingCartButton />}
       </>
   );
 };

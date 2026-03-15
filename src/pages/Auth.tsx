@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { isCapacitor } from "@/lib/capacitor";
 
 const Auth = () => {
   const [loading, setLoading] = useState(false);
@@ -79,14 +80,15 @@ const Auth = () => {
         title: "Welcome back!",
         description: "You have been signed in successfully.",
       });
-      navigate("/");
+      // In Capacitor (admin app) go straight to admin panel
+      navigate(isCapacitor() ? "/admin" : "/");
     }
     setLoading(false);
   };
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar />
+      {!isCapacitor() && <Navbar />}
       <div className="flex-1 flex items-center justify-center px-4 py-12">
         <Card className="w-full max-w-md">
           <CardHeader>
@@ -175,7 +177,7 @@ const Auth = () => {
           </CardContent>
         </Card>
       </div>
-      <Footer />
+      {!isCapacitor() && <Footer />}
     </div>
   );
 };

@@ -1,4 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import { isCapacitor } from "@/lib/capacitor";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
+import { Store, Home, RefreshCw } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -38,6 +42,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import * as XLSX from 'xlsx';
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 
 // Format phone number for WhatsApp
 const formatPhoneForWhatsApp = (phone: string): string => {
@@ -58,30 +64,10 @@ const formatPhoneForWhatsApp = (phone: string): string => {
   return '92' + cleaned;
 };
 
-// Generate WhatsApp message
+// Generate brief WhatsApp message
 const generateWhatsAppMessage = (order: any): string => {
-  const items = order.order_items?.map((item: any) => {
-    const variationInfo = item.variation_name ? `\n  Variation: ${item.variation_name}` : '';
-    const colorInfo = item.color_name ? `\n  Color: ${item.color_name}` : '';
-    return `• ${item.products?.name}${variationInfo}${colorInfo}\n  Qty: ${item.quantity} × ${formatPrice(item.price)} = ${formatPrice(item.price * item.quantity)}`;
-  }).join('\n\n') || 'No items';
-
-  return `*Order Confirmation Request*
-
-Order #: ${order.order_number}
-Customer: ${order.first_name} ${order.last_name}
-
-*Order Items:*
-${items}
-
-*Order Total: ${formatPrice(order.total_amount)}*
-
-*Delivery Address:*
-${order.shipping_address}
-${order.shipping_city}, ${order.shipping_state || ''} ${order.shipping_zip || ''}
-
-Do you confirm this order?
-Please reply YES to confirm or NO to cancel.`;
+  const orderLink = `https://juraab.shop/order-confirmation/${order.id}`;
+  return `Hi ${order.first_name},\n\nPlease reply YES to confirm your order #${order.order_number} for ${formatPrice(order.total_amount)}.\n\nView your order details here:\n${orderLink}\n\nThank you!\nJuraab`;
 };
 
 // Open WhatsApp with pre-filled message
@@ -89,9 +75,14 @@ const sendWhatsAppConfirmation = (order: any) => {
   const formattedPhone = formatPhoneForWhatsApp(order.phone);
   const message = generateWhatsAppMessage(order);
   const encodedMessage = encodeURIComponent(message);
-  const whatsappUrl = `https://web.whatsapp.com/send?phone=${formattedPhone}&text=${encodedMessage}`;
   
-  window.open(whatsappUrl, '_blank');
+  if (isCapacitor()) {
+    // Force native app in Capacitor
+    window.open(`whatsapp://send?phone=${formattedPhone}&text=${encodedMessage}`, '_system');
+  } else {
+    // Web fallback
+    window.open(`https://web.whatsapp.com/send?phone=${formattedPhone}&text=${encodedMessage}`, '_blank');
+  }
 };
 
 const Admin = () => {
@@ -100,6 +91,17 @@ const Admin = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+
+  // Native push notifications — only in Capacitor mode
+  usePushNotifications(isCapacitor() && isAdmin ? user?.id : null);
+
+  // Pull-to-refresh — only in Capacitor mode
+  const { pullDistance, isRefreshing } = usePullToRefresh({
+    threshold: 72,
+    onRefresh: useCallback(async () => {
+      await queryClient.invalidateQueries();
+    }, [queryClient]),
+  });
 
   const [productDialog, setProductDialog] = useState({ open: false, product: null });
   const [categoryDialog, setCategoryDialog] = useState({ open: false, category: null });
@@ -158,7 +160,9 @@ const Admin = () => {
   }, [statusFilter, productFilter, searchQuery, ordersPageSize]);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // Use onAuthStateChange so we get the session from localStorage on app relaunch
+    // and handle token auto-refresh correctly in the native app
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!session) {
         navigate('/auth');
       } else {
@@ -166,6 +170,8 @@ const Admin = () => {
         checkAdminStatus(session.user.id);
       }
     });
+
+    return () => subscription.unsubscribe();
   }, [navigate]);
 
   const checkAdminStatus = async (userId: string) => {
@@ -837,21 +843,37 @@ const Admin = () => {
       )
     ].join("\n");
 
-    // Create and download CSV file
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    
     const dateRangeStr = filterByDate && instaStartDate && instaEndDate 
       ? `_${format(instaStartDate, 'yyyy-MM-dd')}_to_${format(instaEndDate, 'yyyy-MM-dd')}`
       : '';
     const fileName = `insta_world_orders${dateRangeStr}_${format(new Date(), 'yyyy-MM-dd_HH-mm')}.csv`;
-    link.setAttribute("download", fileName);
-    link.style.visibility = "hidden";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+
+    if (isCapacitor()) {
+      try {
+        const result = await Filesystem.writeFile({
+          path: fileName,
+          data: csvContent,
+          directory: Directory.Cache,
+          encoding: Encoding.UTF8,
+        });
+        await Share.share({ title: fileName, url: result.uri });
+      } catch (err) {
+        console.error("Native CSV export failed", err);
+        toast({ title: "Export Error", description: "Failed to save file on device.", variant: "destructive" });
+        return;
+      }
+    } else {
+      // Browser Web Fallback
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", fileName);
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
 
     setInstaWorldDialog(false);
     setInstaStartDate(undefined);
@@ -1006,21 +1028,37 @@ const Admin = () => {
       )
     ].join("\n");
 
-    // Create and download CSV file
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    
     const dateRangeStr = filterByDate && customStartDate && customEndDate 
       ? `_${format(customStartDate, 'yyyy-MM-dd')}_to_${format(customEndDate, 'yyyy-MM-dd')}`
       : '';
     const fileName = `custom_orders${dateRangeStr}_${format(new Date(), 'yyyy-MM-dd_HH-mm')}.csv`;
-    link.setAttribute("download", fileName);
-    link.style.visibility = "hidden";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+
+    if (isCapacitor()) {
+      try {
+        const result = await Filesystem.writeFile({
+          path: fileName,
+          data: csvContent,
+          directory: Directory.Cache,
+          encoding: Encoding.UTF8,
+        });
+        await Share.share({ title: fileName, url: result.uri });
+      } catch (err) {
+        console.error("Native CSV export failed", err);
+        toast({ title: "Export Error", description: "Failed to save file on device.", variant: "destructive" });
+        return;
+      }
+    } else {
+      // Browser Web Fallback
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", fileName);
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
 
     setCustomExportDialog(false);
     setCustomStartDate(undefined);
@@ -1119,7 +1157,25 @@ const Admin = () => {
       ? `_${format(startDate, 'yyyy-MM-dd')}_to_${format(endDate, 'yyyy-MM-dd')}`
       : '';
     const fileName = `orders${dateRangeStr}_${format(new Date(), 'yyyy-MM-dd_HH-mm')}.xlsx`;
-    XLSX.writeFile(workbook, fileName);
+
+    if (isCapacitor()) {
+      try {
+        const base64 = XLSX.write(workbook, { type: 'base64', bookType: 'xlsx' });
+        const result = await Filesystem.writeFile({
+          path: fileName,
+          data: base64,
+          directory: Directory.Cache, // Base64 encoding is assumed when data doesn't use the encoding param
+        });
+        await Share.share({ title: fileName, url: result.uri });
+      } catch (err) {
+        console.error("Native Excel export failed", err);
+        toast({ title: "Export Error", description: "Failed to save file on device.", variant: "destructive" });
+        return;
+      }
+    } else {
+      // Browser Web Fallback
+      XLSX.writeFile(workbook, fileName);
+    }
 
     toast({
       title: "Export successful",
@@ -1157,6 +1213,31 @@ const Admin = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
+
+      {/* Capacitor pull-to-refresh indicator */}
+      {isCapacitor() && (
+        <div
+          style={{
+            height: Math.max(0, pullDistance),
+            overflow: 'hidden',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: pullDistance === 0 ? 'height 0.25s ease' : 'none',
+            background: 'transparent',
+          }}
+        >
+          <RefreshCw
+            className={`text-accent transition-transform ${isRefreshing ? 'animate-spin' : ''}`}
+            style={{
+              transform: `rotate(${Math.min(pullDistance * 3, 360)}deg)`,
+              opacity: Math.min(pullDistance / 40, 1),
+              width: 22,
+              height: 22,
+            }}
+          />
+        </div>
+      )}
       
       <main className="flex-1 py-4 sm:py-6 lg:py-12">
         <div className="container mx-auto px-3 sm:px-4 lg:px-6">

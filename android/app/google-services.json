@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "55280699814",
+    "project_id": "juraab-9707c",
+    "storage_bucket": "juraab-9707c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:55280699814:android:a5f12ecb5cf9e171392767",
+        "android_client_info": {
+          "package_name": "com.opuscommerce.admin"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAhRjVZLQkqZayiwW9WEgmTaIIKE9waVeg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

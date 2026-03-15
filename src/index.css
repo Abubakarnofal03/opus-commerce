@@ -224,3 +224,31 @@ All colors MUST be HSL.
     box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.35);
   }
 }
+
+/* ─── Capacitor / Mobile App Fixes ──────────────────────────────────────────────
+   overflow-x: hidden on <html> breaks vertical scroll in Android WebView.
+   Only apply it to <body> which clips overflow without killing scroll.
+──────────────────────────────────────────────────────────────────────────────── */
+body {
+  /* Prevent horizontal scrolling — keeps content from spilling sideways */
+  overflow-x: hidden;
+}
+
+/* When the Capacitor shell fires, apply stricter mobile rules */
+body.is-capacitor {
+  /* No bounce/overscroll on Android */
+  overscroll-behavior: none;
+  /* Remove tap highlight flash */
+  -webkit-tap-highlight-color: transparent;
+  /* Text should not be selectable in an app context */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Allow text selection inside inputs and textareas */
+body.is-capacitor input,
+body.is-capacitor textarea,
+body.is-capacitor [contenteditable] {
+  user-select: text;
+  -webkit-user-select: text;
+}
