@@ -32,6 +32,7 @@ import { DraggableProductList } from "@/components/admin/DraggableProductList";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatPrice } from "@/lib/currency";
+import { StoreSettings } from "@/components/admin/StoreSettings";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -1292,6 +1293,7 @@ const Admin = () => {
                 <TabsTrigger value="banners" className="text-xs sm:text-sm px-2 sm:px-3 whitespace-nowrap flex-shrink-0">Banners</TabsTrigger>
                 <TabsTrigger value="blogs" className="text-xs sm:text-sm px-2 sm:px-3 whitespace-nowrap flex-shrink-0">Blogs</TabsTrigger>
                 <TabsTrigger value="meta-catalog" className="text-xs sm:text-sm px-2 sm:px-3 whitespace-nowrap flex-shrink-0">Meta Catalog</TabsTrigger>
+                <TabsTrigger value="settings" className="text-xs sm:text-sm px-2 sm:px-3 whitespace-nowrap flex-shrink-0">Settings</TabsTrigger>
               </TabsList>
             </div>
 
@@ -2027,6 +2029,10 @@ const Admin = () => {
             <TabsContent value="meta-catalog" className="space-y-4">
               <MetaCatalogSync />
               <TikTokFeedGenerator />
+            </TabsContent>
+
+            <TabsContent value="settings" className="space-y-4">
+              <StoreSettings />
             </TabsContent>
           </Tabs>
         </div>

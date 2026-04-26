@@ -7,9 +7,10 @@ import { FloatingCartButton } from "@/components/FloatingCartButton";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { usePageViewTracking } from "@/hooks/useAnalytics";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { isCapacitor } from "@/lib/capacitor";
 import { supabase } from "@/integrations/supabase/client";
+import { initCurrency } from "@/lib/currency";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Shop from "./pages/Shop";
@@ -51,10 +52,19 @@ const CapacitorRedirect = () => {
   }, [navigate]);
   return null;
 };
-
 const AppContent = () => {
   usePageViewTracking();
   const inCap = isCapacitor();
+  const [currencyLoaded, setCurrencyLoaded] = useState(false);
+
+  useEffect(() => {
+    initCurrency().then(() => setCurrencyLoaded(true));
+  }, []);
+
+  if (!currencyLoaded) {
+    return null; // Don't render until currency is fetched to avoid flash of wrong currency
+  }
+
   return (
     <>
       <CapacitorRedirect />
