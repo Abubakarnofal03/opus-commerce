@@ -136,8 +136,8 @@ const Index = () => {
         <Navbar />
       
       <main className="flex-1">
-        {/* Dynamic Hero Banner */}
-        <section className="relative w-full aspect-[16/9] sm:aspect-[16/8] md:aspect-[16/7] flex items-center justify-center overflow-hidden">
+        {/* Dynamic Hero Banner - Premium Full-Screen */}
+        <section className="relative w-full h-[85vh] min-h-[600px] flex items-center justify-center overflow-hidden">
           {banners && banners.map((banner, index) => (
             <div
               key={banner.id}
@@ -148,42 +148,42 @@ const Index = () => {
               }`}
               style={{ backgroundImage: `url(${banner.image_url})` }}
             >
-              <div className="absolute inset-0 bg-primary/40" />
+              <div className="absolute inset-0 bg-gradient-to-b from-primary/50 via-primary/30 to-primary/60" />
             </div>
           ))}
           
           {activeBanner && activeBanner.show_text_overlay && (
             <div 
               key={currentBannerIndex}
-              className="relative z-10 text-center text-primary-foreground px-4 sm:px-6 md:px-8 max-w-5xl mx-auto transition-all duration-700 ease-in-out"
+              className="relative z-10 text-center text-white px-6 sm:px-8 md:px-12 max-w-6xl mx-auto"
             >
-              <h1 className="font-display text-2xl sm:text-3xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-3 sm:mb-4 md:mb-6 gold-accent pb-4 md:pb-8 animate-fade-in leading-tight">
+              <h1 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-medium mb-4 sm:mb-6 md:mb-8 animate-fade-in leading-tight tracking-tight drop-shadow-lg">
                 {activeBanner.title}
               </h1>
-              <p className="hidden sm:block text-base md:text-xl lg:text-2xl mb-4 sm:mb-6 md:mb-8 max-w-2xl mx-auto animate-fade-in">
+              <p className="hidden sm:block text-lg md:text-xl lg:text-2xl mb-6 sm:mb-8 md:mb-10 max-w-3xl mx-auto animate-fade-in animate-fade-in-delay-1 font-light tracking-wide drop-shadow-md">
                 {activeBanner.subtitle}
               </p>
-              <div className="animate-fade-in">
-                <Button asChild size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground text-sm sm:text-base h-9 sm:h-10 md:h-11 px-4 sm:px-6 md:px-8">
-                  <Link to={activeBanner.link_url || '/shop'}>
-                    Explore Collection <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
+              <div className="animate-fade-in animate-fade-in-delay-2">
+                <Button asChild size="lg" className="bg-white/95 hover:bg-white text-primary font-medium text-sm sm:text-base md:text-lg h-11 sm:h-12 md:h-14 px-6 sm:px-8 md:px-10 rounded-none shadow-2xl hover:shadow-white/20 transition-all duration-300">
+                  <Link to={activeBanner.link_url || '/shop'} className="flex items-center gap-2">
+                    Explore Collection <ArrowRight className="h-5 w-5 sm:h-6 sm:w-6" />
                   </Link>
                 </Button>
               </div>
             </div>
           )}
           
-          {/* Navigation Dots */}
+          {/* Navigation Dots - Minimalist */}
           {banners && banners.length > 1 && (
-            <div className="absolute bottom-4 sm:bottom-6 md:bottom-8 left-1/2 transform -translate-x-1/2 flex gap-2 z-20">
+            <div className="absolute bottom-8 sm:bottom-12 left-1/2 transform -translate-x-1/2 flex gap-3 z-20">
               {banners.map((_, index) => (
                 <button
                   key={index}
                   onClick={() => setCurrentBannerIndex(index)}
-                  className={`h-2 sm:h-3 rounded-full transition-all duration-300 ${
+                  className={`h-1.5 rounded-full transition-all duration-500 ${
                     index === currentBannerIndex
-                      ? 'bg-accent w-6 sm:w-8'
-                      : 'bg-white/50 hover:bg-white/75 w-2 sm:w-3'
+                      ? 'bg-white w-8'
+                      : 'bg-white/40 hover:bg-white/70 w-1.5'
                   }`}
                   aria-label={`Go to banner ${index + 1}`}
                 />
@@ -204,58 +204,55 @@ const Index = () => {
           </div>
         </section>
 
-        {/* Shop by Category - Dynamic */}
+        {/* Shop by Category - Premium Editorial Layout */}
         <section 
           id="categories-section"
           ref={(el) => (sectionRefs.current['categories-section'] = el)}
-          className="py-20 relative overflow-hidden"
+          className="py-24 lg:py-32 relative overflow-hidden bg-background"
         >
-          {/* Animated gradient background */}
-          <div className="absolute inset-0 bg-gradient-to-br from-accent/5 via-transparent to-primary/5 animate-pulse opacity-50" />
-          
-          <div className="container mx-auto px-4 relative z-10">
-            <div className={`text-center mb-12 transition-all duration-700 ${
+          <div className="container mx-auto px-6 lg:px-8 relative z-10">
+            <div className={`text-center mb-16 lg:mb-20 transition-all duration-700 ${
               visibleSections.has('categories-section') 
                 ? 'opacity-100 translate-y-0' 
                 : 'opacity-0 translate-y-10'
             }`}>
-              <h2 className="font-display text-3xl md:text-4xl font-bold mb-4 gold-accent pb-8">
-                Shop Home Decor, Wallets, Accessories & More
+              <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-medium mb-6 gold-accent pb-8 tracking-tight">
+                Curated Collections
               </h2>
-              <p className="text-muted-foreground max-w-2xl mx-auto">
-                Explore our curated collections of premium products
+              <p className="text-muted-foreground text-lg max-w-2xl mx-auto font-light">
+                Explore our carefully selected categories of premium products
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
               {categories?.map((category, index) => (
                 <Link 
                   key={category.id} 
                   to={`/shop?category=${category.slug}`} 
-                  className={`group transition-all duration-500 ${
+                  className={`group relative transition-all duration-700 ${
                     visibleSections.has('categories-section')
                       ? 'opacity-100 translate-y-0'
                       : 'opacity-0 translate-y-10'
                   }`}
                   style={{ transitionDelay: `${index * 150}ms` }}
                 >
-                  <Card className="glass-card glass-hover overflow-hidden rounded-xl relative">
-                    {/* Shimmer effect on hover */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 group-hover:animate-shimmer" style={{ backgroundSize: '200% 100%' }} />
-                    
-                    <div className="aspect-square bg-muted relative overflow-hidden">
+                  <Card className="overflow-hidden rounded-none shadow-elegant hover:shadow-luxury transition-all duration-500 h-full border-0">
+                    <div className="aspect-[4/5] bg-muted relative overflow-hidden">
                       {category.image_url && (
                         <img 
                           src={category.image_url} 
                           alt={category.name}
-                          className="w-full h-full object-cover group-hover:scale-110 group-hover:rotate-2 transition-all duration-500"
+                          className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700 ease-out"
                         />
                       )}
-                      <div className="absolute inset-0 bg-primary/40 group-hover:bg-primary/60 transition-colors duration-300" />
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <h3 className="font-display text-3xl md:text-4xl font-bold text-white text-center px-4 group-hover:scale-110 transition-transform duration-300">
-                          {category.name}
-                        </h3>
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-60 group-hover:opacity-50 transition-opacity duration-500" />
+                      <div className="absolute inset-0 flex items-end justify-center pb-8">
+                        <div className="text-center transform group-hover:-translate-y-2 transition-transform duration-500">
+                          <h3 className="font-display text-2xl md:text-3xl font-medium text-white tracking-wide mb-2">
+                            {category.name}
+                          </h3>
+                          <div className="w-0 h-px bg-white group-hover:w-16 mx-auto transition-all duration-500" />
+                        </div>
                       </div>
                     </div>
                   </Card>
