@@ -8,11 +8,11 @@ export const WhatsAppButton = () => {
   const whatsappUrl = `https://wa.me/${phoneNumber.replace(/\+/g, "")}`;
   const [shouldMoveUp, setShouldMoveUp] = useState(false);
   const location = useLocation();
+  const isProductPage = location.pathname.startsWith('/product/');
 
   // Check if on product page and scrolled down to show sticky bar
   useEffect(() => {
     const handleScroll = () => {
-      const isProductPage = location.pathname.startsWith('/product/');
       const hasScrolled = window.scrollY > 500;
       setShouldMoveUp(isProductPage && hasScrolled);
     };
@@ -28,15 +28,17 @@ export const WhatsAppButton = () => {
       href={whatsappUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className={`fixed right-4 z-40 animate-fade-in transition-all duration-300 ${
-        shouldMoveUp ? 'bottom-44' : 'bottom-24'
+      className={`fixed right-3 z-40 animate-fade-in transition-all duration-300 ${
+        isProductPage ? 'hidden sm:block' : ''
+      } ${
+        shouldMoveUp ? 'bottom-36' : 'bottom-20 sm:bottom-24'
       }`}
     >
       <Button
         size="icon"
-        className="h-14 w-14 rounded-full bg-[#25D366] hover:bg-[#20BA5A] shadow-lg hover:shadow-xl transition-all"
+        className="h-12 w-12 rounded-full bg-[#25D366] shadow-lg transition-all hover:bg-[#20BA5A] hover:shadow-xl sm:h-14 sm:w-14"
       >
-        <MessageCircle className="h-6 w-6 text-white fill-white" />
+        <MessageCircle className="h-5 w-5 fill-white text-white sm:h-6 sm:w-6" />
       </Button>
     </a>
   );

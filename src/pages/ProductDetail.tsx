@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
@@ -32,6 +32,7 @@ const ProductDetail = ({ key }: { key?: string }) => {
   const [selectedVariation, setSelectedVariation] = useState<any>(null);
   const [selectedColor, setSelectedColor] = useState<any>(null);
   const [showStickyBar, setShowStickyBar] = useState(false);
+  const purchaseActionsRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -55,13 +56,6 @@ const ProductDetail = ({ key }: { key?: string }) => {
       setUser(session?.user ?? null);
     });
 
-    // Handle sticky bar on scroll
-    const handleScroll = () => {
-      setShowStickyBar(window.scrollY > 500);
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   const { data: product, isLoading } = useQuery({
@@ -72,6 +66,20 @@ const ProductDetail = ({ key }: { key?: string }) => {
       return data;
     },
   });
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const actions = purchaseActionsRef.current;
+      setShowStickyBar(Boolean(actions && actions.getBoundingClientRect().bottom < 0));
+    };
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("resize", handleScroll);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", handleScroll);
+    };
+  }, [product?.id]);
 
   const { data: sales } = useQuery({
     queryKey: ["sales"],
@@ -482,24 +490,24 @@ const ProductDetail = ({ key }: { key?: string }) => {
               </div>
 
               <div className="space-y-5 md:space-y-6">
-                <div className="liquid-glass rounded-[28px] p-6 md:p-8">
-                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <div className="liquid-glass rounded-[24px] p-4 sm:rounded-[28px] sm:p-6 md:p-8">
+                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2 sm:mb-3">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">{product.categories?.name}</p>
                     {product.sku && <p className="text-[11px] text-muted-foreground">Item {product.sku}</p>}
                   </div>
-                  <h1 className="editorial-title mb-5 text-4xl sm:text-5xl lg:text-[3.5rem]">
+                  <h1 className="editorial-title mb-4 text-[2rem] sm:mb-5 sm:text-4xl lg:text-[3.5rem]">
                     {product.name}
                   </h1>
                   {discount ? (
-                    <div className="space-y-4">
-                      <Badge className="rounded-full border-0 bg-destructive px-3.5 py-1.5 text-xs font-bold uppercase tracking-wide text-destructive-foreground shadow-sm">Save {discount}%</Badge>
-                      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-                        <p className="text-[2.75rem] font-bold leading-none tracking-[-0.035em] text-destructive sm:text-[3.25rem] lg:text-[3.75rem]">{formatPrice(totalPrice)}</p>
-                        <p className="text-xl font-medium text-muted-foreground/70 line-through md:text-2xl">
+                    <div className="space-y-3 sm:space-y-4">
+                      <Badge className="rounded-full border-0 bg-destructive px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-destructive-foreground shadow-sm sm:px-3.5 sm:py-1.5 sm:text-xs">Save {discount}%</Badge>
+                      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 sm:gap-x-4">
+                        <p className="text-[2.25rem] font-bold leading-none tracking-[-0.035em] text-destructive sm:text-[2.75rem] lg:text-[3.5rem]">{formatPrice(totalPrice)}</p>
+                        <p className="text-base font-medium text-muted-foreground/70 line-through sm:text-xl md:text-2xl">
                           {formatPrice(displayPrice * quantity)}
                         </p>
                       </div>
-                      <p className="inline-flex rounded-full bg-emerald-600/10 px-3 py-1.5 text-sm font-semibold text-emerald-700 dark:text-emerald-400">
+                      <p className="inline-flex rounded-full bg-emerald-600/10 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400 sm:px-3 sm:py-1.5 sm:text-sm">
                         You save {formatPrice((displayPrice - finalPrice) * quantity)}
                       </p>
                       {quantity > 1 && (
@@ -510,7 +518,7 @@ const ProductDetail = ({ key }: { key?: string }) => {
                     </div>
                   ) : (
                     <div>
-                      <p className="text-3xl font-semibold text-foreground md:text-4xl">{formatPrice(totalPrice)}</p>
+                      <p className="text-2xl font-semibold text-foreground sm:text-3xl md:text-4xl">{formatPrice(totalPrice)}</p>
                       {quantity > 1 && (
                         <p className="text-sm text-muted-foreground mt-1">
                           {formatPrice(displayPrice)} × {quantity}
@@ -519,7 +527,7 @@ const ProductDetail = ({ key }: { key?: string }) => {
                     </div>
                   )}
                 {product.stock_quantity !== undefined && product.stock_quantity < 10 && (
-                  <div className="mt-6 rounded-2xl border border-accent/25 bg-accent/8 p-4">
+                  <div className="mt-4 rounded-xl border border-accent/25 bg-accent/8 p-3 sm:mt-6 sm:rounded-2xl sm:p-4">
                     {product.stock_quantity > 0 ? (
                       <p className="text-sm font-semibold text-foreground">
                         Only {product.stock_quantity} {product.stock_quantity === 1 ? "piece" : "pieces"} currently available
@@ -531,7 +539,7 @@ const ProductDetail = ({ key }: { key?: string }) => {
                 )}
 
                 {variations && variations.length > 0 && (
-                  <div className="mt-7 space-y-3 border-t pt-6">
+                  <div className="mt-5 space-y-3 border-t pt-5 sm:mt-7 sm:pt-6">
                     <h2 className="text-base font-semibold text-foreground">Choose an option</h2>
                     <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                       {variations.map((variation, index) => {
@@ -558,7 +566,7 @@ const ProductDetail = ({ key }: { key?: string }) => {
                             }}
                             disabled={isOutOfStock}
                             className={`
-                              relative flex min-h-[76px] flex-col items-center justify-center rounded-2xl px-3 py-3 transition-all duration-200
+                              relative flex min-h-[68px] flex-col items-center justify-center rounded-xl px-2 py-2.5 transition-all duration-200 sm:min-h-[76px] sm:rounded-2xl sm:px-3 sm:py-3
                               ${isOutOfStock
                                 ? 'opacity-50 cursor-not-allowed bg-muted/50 border border-dashed border-border'
                                 : isSelected
@@ -616,7 +624,7 @@ const ProductDetail = ({ key }: { key?: string }) => {
                 )}
 
                 {colors && colors.length > 0 && (
-                  <div className="mt-7 border-t pt-6">
+                  <div className="mt-5 border-t pt-5 sm:mt-7 sm:pt-6">
                     <h2 className="mb-3 text-base font-semibold">Choose a colour</h2>
                     <div className="flex flex-wrap gap-3">
                       {colors.map((color) => {
@@ -648,7 +656,7 @@ const ProductDetail = ({ key }: { key?: string }) => {
                             }}
                             disabled={isOutOfStock}
                             className={`
-                              relative flex min-h-[58px] items-center gap-2 rounded-2xl px-4 py-3 transition-all duration-200
+                              relative flex min-h-[52px] items-center gap-2 rounded-xl px-3 py-2 transition-all duration-200 sm:min-h-[58px] sm:rounded-2xl sm:px-4 sm:py-3
                               ${isOutOfStock
                                 ? 'opacity-40 cursor-not-allowed bg-card border-2 border-border'
                                 : selectedColor?.id === color.id
@@ -692,22 +700,22 @@ const ProductDetail = ({ key }: { key?: string }) => {
                   </div>
                 )}
 
-                <div className="mt-7 border-t pt-6">
-                  <h2 className="mb-3 text-base font-semibold">Quantity</h2>
+                <div className="mt-5 border-t pt-5 sm:mt-7 sm:pt-6">
+                  <h2 className="mb-2 text-sm font-semibold sm:mb-3 sm:text-base">Quantity</h2>
                   <div className="inline-flex items-center rounded-full border bg-card/70 p-1">
                     <Button
                       variant="outline"
                       size="icon"
-                      className="h-11 w-11 rounded-full border-0"
+                      className="h-10 w-10 rounded-full border-0 sm:h-11 sm:w-11"
                       onClick={() => setQuantity(Math.max(1, quantity - 1))}
                     >
                       <Minus className="h-3 w-3 md:h-4 md:w-4" />
                     </Button>
-                    <span className="w-12 text-center text-lg font-semibold" aria-live="polite">{quantity}</span>
+                    <span className="w-10 text-center text-base font-semibold sm:w-12 sm:text-lg" aria-live="polite">{quantity}</span>
                     <Button
                       variant="outline"
                       size="icon"
-                      className="h-11 w-11 rounded-full border-0"
+                      className="h-10 w-10 rounded-full border-0 sm:h-11 sm:w-11"
                       onClick={() => {
                         const maxQty = selectedColor
                           ? selectedColor.quantity
@@ -727,10 +735,10 @@ const ProductDetail = ({ key }: { key?: string }) => {
                   </div>
                 </div>
 
-                <div className="mt-7 grid gap-3 sm:grid-cols-2">
+                <div ref={purchaseActionsRef} className="mt-5 grid grid-cols-2 gap-2 sm:mt-7 sm:gap-3">
                   <Button
                     variant="outline"
-                    className="h-14 w-full rounded-full border-2 border-primary bg-transparent text-base font-semibold text-primary shadow-none hover:bg-primary/10 hover:text-primary dark:border-primary dark:bg-transparent dark:text-primary dark:hover:bg-primary/10 disabled:border-border disabled:bg-muted disabled:text-muted-foreground disabled:opacity-100"
+                    className="h-12 w-full rounded-full border-2 border-primary bg-transparent px-2 text-sm font-semibold text-primary shadow-none hover:bg-primary/10 hover:text-primary dark:border-primary dark:bg-transparent dark:text-primary dark:hover:bg-primary/10 disabled:border-border disabled:bg-muted disabled:text-muted-foreground disabled:opacity-100 sm:h-14 sm:px-4 sm:text-base"
                     size="lg"
                     onClick={() => addToCart.mutate()}
                     disabled={
@@ -740,13 +748,13 @@ const ProductDetail = ({ key }: { key?: string }) => {
                           product.stock_quantity === 0)
                     }
                   >
-                    <ShoppingCart className="mr-2 !h-5 !w-5 text-current" />
+                    <ShoppingCart className="!h-4 !w-4 text-current sm:!h-5 sm:!w-5" />
                     {selectedColor && selectedColor.quantity === 0 ? 'Out of Stock' :
                       selectedVariation && !selectedColor && selectedVariation.quantity === 0 ? 'Out of Stock' :
                         'Add to Cart'}
                   </Button>
                   <Button
-                    className="h-14 w-full rounded-full bg-primary text-base font-semibold text-primary-foreground shadow-lg shadow-primary/15"
+                    className="h-12 w-full rounded-full bg-primary px-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/15 sm:h-14 sm:text-base"
                     size="lg"
                     onClick={handleBuyNow}
                     disabled={
@@ -759,10 +767,10 @@ const ProductDetail = ({ key }: { key?: string }) => {
                     Buy now
                   </Button>
                 </div>
-                <p className="mt-4 text-center text-xs text-muted-foreground">Secure checkout · No account required</p>
+                <p className="mt-3 text-center text-[10px] text-muted-foreground sm:mt-4 sm:text-xs">Secure checkout · No account required</p>
                 </div>
                 {/* Trust Badges */}
-                <div className="grid grid-cols-2 gap-3 rounded-[24px] border bg-card/55 p-5">
+                <div className="grid grid-cols-2 gap-2 rounded-[20px] border bg-card/55 p-4 sm:gap-3 sm:rounded-[24px] sm:p-5">
                   <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-secondary">
                       <ShieldCheck className="h-5 w-5 text-accent" />
@@ -950,10 +958,10 @@ const ProductDetail = ({ key }: { key?: string }) => {
 
         {/* Sticky Add to Cart Bar */}
         {showStickyBar && (
-          <div className="liquid-glass fixed bottom-3 left-3 right-3 z-40 rounded-[22px] shadow-2xl animate-slide-up sm:bottom-4 sm:left-4 sm:right-4">
-            <div className="page-wrap py-3">
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
+          <div className="liquid-glass fixed bottom-2 left-2 right-2 z-40 rounded-[20px] shadow-2xl animate-slide-up sm:bottom-4 sm:left-4 sm:right-4 sm:rounded-[22px]">
+            <div className="page-wrap py-2 sm:py-3">
+              <div className="flex items-center justify-between gap-2 sm:gap-4">
+                <div className="min-w-0 flex-1 sm:flex sm:items-center sm:gap-4">
                   {product.images?.[0] && (
                     <img
                       src={product.images[0]}
@@ -961,9 +969,9 @@ const ProductDetail = ({ key }: { key?: string }) => {
                       className="hidden h-12 w-12 rounded-xl object-cover sm:block"
                     />
                   )}
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-sm line-clamp-1">{product.name}</h3>
-                    <p className={`text-lg font-bold ${discount ? "text-destructive" : "text-foreground"}`}>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="line-clamp-1 text-xs font-semibold sm:text-sm">{product.name}</h3>
+                    <p className={`text-base font-bold sm:text-lg ${discount ? "text-destructive" : "text-foreground"}`}>
                       {formatPrice(totalPrice)}
                     </p>
                   </div>
@@ -1013,7 +1021,7 @@ const ProductDetail = ({ key }: { key?: string }) => {
                           'Add to Cart'}
                     </Button>
                     <Button
-                      className="h-11 flex-1 rounded-full bg-primary px-6 font-semibold text-primary-foreground sm:flex-initial"
+                      className="h-10 flex-1 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground sm:h-11 sm:flex-initial sm:px-6"
                       onClick={handleBuyNow}
                       disabled={
                         addToCart.isPending ||

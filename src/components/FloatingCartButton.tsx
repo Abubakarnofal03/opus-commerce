@@ -66,6 +66,9 @@ export const FloatingCartButton = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [location.pathname]);
 
+  // The product page already has bag access in the header and purchase controls.
+  if (location.pathname.startsWith('/product/')) return null;
+
   return (
     <Link
       to="/cart"
