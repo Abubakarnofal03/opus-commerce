@@ -1,422 +1,168 @@
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { ArrowRight, Award, Headphones, RotateCcw, ShieldCheck, Sparkles, Truck } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { ProductCard } from "@/components/ProductCard";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Link } from "react-router-dom";
-import { ArrowRight, ShieldCheck, Truck, CreditCard, Award } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { formatPrice } from "@/lib/currency";
-import { calculateSalePrice } from "@/lib/saleUtils";
-import { Badge } from "@/components/ui/badge";
-import { Star } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
 import { SEOHead } from "@/components/SEOHead";
-import { organizationSchema, websiteSchema, breadcrumbSchema } from "@/lib/structuredData";
+import { organizationSchema, websiteSchema } from "@/lib/structuredData";
+import heroFallback from "@/assets/hero-image.jpg";
 
 const Index = () => {
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
-  const [visibleSections, setVisibleSections] = useState<Set<string>>(new Set());
-  const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
 
-  const { data: banners } = useQuery({
-    queryKey: ['banners'],
+  const { data: banners = [] } = useQuery({
+    queryKey: ["banners"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('banners')
-        .select('*')
-        .eq('active', true)
-        .order('sort_order');
+      const { data, error } = await supabase.from("banners").select("*").eq("active", true).order("sort_order");
       if (error) throw error;
-      return data;
+      return data || [];
     },
   });
 
-  // Auto-rotate banners every 5 seconds
+  const { data: featuredProducts = [] } = useQuery({
+    queryKey: ["featured-products"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("products").select("*, categories(*)").eq("is_featured", true).limit(4);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const { data: categories = [] } = useQuery({
+    queryKey: ["home-categories"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("categories").select("*").order("name").limit(3);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const { data: sales = [] } = useQuery({
+    queryKey: ["sales"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("sales").select("*").eq("is_active", true).gt("end_date", new Date().toISOString());
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
   useEffect(() => {
-    if (!banners || banners.length <= 1) return;
+    if (banners.length <= 1) return;
+    const interval = window.setInterval(() => setCurrentBannerIndex((index) => (index + 1) % banners.length), 6500);
+    return () => window.clearInterval(interval);
+  }, [banners.length]);
 
-    const interval = setInterval(() => {
-      setCurrentBannerIndex((prev) => (prev + 1) % banners.length);
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [banners]);
-
-  // Intersection Observer for scroll animations
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setVisibleSections((prev) => new Set(prev).add(entry.target.id));
-          }
-        });
-      },
-      { threshold: 0.1 }
-    );
-
-    Object.values(sectionRefs.current).forEach((ref) => {
-      if (ref) observer.observe(ref);
-    });
-
-    return () => observer.disconnect();
-  }, []);
-
-  const { data: featuredProducts } = useQuery({
-    queryKey: ['featured-products'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*, categories(*)')
-        .eq('is_featured', true)
-        .limit(4);
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const { data: categories } = useQuery({
-    queryKey: ['home-categories'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('categories')
-        .select('*')
-        .order('name')
-        .limit(3);
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const { data: sales } = useQuery({
-    queryKey: ['sales'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('sales')
-        .select('*')
-        .eq('is_active', true)
-        .gt('end_date', new Date().toISOString());
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const activeBanner = banners?.[currentBannerIndex];
-
-  const structuredData = {
-    "@context": "https://schema.org",
-    "@graph": [organizationSchema, websiteSchema]
-  };
+  const activeBanner = banners[currentBannerIndex];
+  const heroTitle = activeBanner?.show_text_overlay && activeBanner.title ? activeBanner.title : "Objects that make a home feel entirely your own.";
+  const heroSubtitle = activeBanner?.show_text_overlay && activeBanner.subtitle ? activeBanner.subtitle : "A considered edit of decor, accessories, and everyday pieces chosen for beauty, quality, and ease.";
+  const heroLink = activeBanner?.link_url || "/shop";
 
   return (
     <>
       <SEOHead
-              title="Juraab – Pakistan's Online Store for Home Decor, Wallets & More"
-              description="Shop premium home decor, wallets, furniture, accessories & garden decorations online in Pakistan. Fast delivery, quality products at juraab.shop"
-              keywords={[
-                'home decor',
-                'wallets',
-                'furniture',
-                'accessories',
-                'garden decorations',
-                'juraab',
-                'juraab.shop',
-                'buy online in Pakistan',
-                'premium decor items',
-                'online shopping Pakistan',
-                'home accessories',
-                'leather wallets'
-              ]}
-              canonicalUrl="https://juraab.shop"
-              structuredData={structuredData}
-            />
-      
-      <div className="min-h-screen flex flex-col">
+        title="Juraab — Curated Objects for Modern Living"
+        description="Discover considered home decor, accessories, wallets and furniture selected for quality, character and everyday ease."
+        keywords={["Juraab", "home decor", "furniture", "accessories", "wallets", "curated lifestyle store"]}
+        canonicalUrl="https://juraab.shop"
+        structuredData={{ "@context": "https://schema.org", "@graph": [organizationSchema, websiteSchema] }}
+      />
+
+      <div className="min-h-screen">
         <Navbar />
-      
-      <main className="flex-1">
-        {/* Dynamic Hero Banner */}
-        <section className="relative w-full aspect-[16/9] sm:aspect-[16/8] md:aspect-[16/7] flex items-center justify-center overflow-hidden">
-          {banners && banners.map((banner, index) => (
-            <div
-              key={banner.id}
-              className={`absolute inset-0 bg-cover bg-center transition-all duration-1000 ease-in-out ${
-                index === currentBannerIndex
-                  ? 'opacity-100 scale-100'
-                  : 'opacity-0 scale-105'
-              }`}
-              style={{ backgroundImage: `url(${banner.image_url})` }}
-            >
-              <div className="absolute inset-0 bg-primary/40" />
+        <main>
+          <section className="page-wrap pt-2 sm:pt-4">
+            <div className="relative min-h-[610px] overflow-hidden rounded-[30px] bg-primary sm:min-h-[680px] lg:min-h-[720px]">
+              {banners.length > 0 ? banners.map((banner, index) => (
+                <div key={banner.id} className={`absolute inset-0 transition-all duration-1000 ${index === currentBannerIndex ? "scale-100 opacity-100" : "scale-105 opacity-0"}`}>
+                  <img src={banner.image_url} alt="" className="h-full w-full object-cover" />
+                </div>
+              )) : <img src={heroFallback} alt="A warm, modern living room" className="absolute inset-0 h-full w-full object-cover" />}
+              <div className="image-wash absolute inset-0" />
+              <div className="absolute -left-20 top-16 h-64 w-64 rounded-full bg-accent/25 blur-3xl" />
+
+              <div className="relative z-10 flex min-h-[610px] items-end px-6 pb-8 pt-28 sm:min-h-[680px] sm:px-10 sm:pb-10 lg:min-h-[720px] lg:items-center lg:px-16 lg:pb-0">
+                <div key={currentBannerIndex} className="max-w-3xl animate-fade-in text-white">
+                  <span className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.22em] backdrop-blur-xl">
+                    <Sparkles className="h-3.5 w-3.5 text-[#e1bd7b]" /> The new Juraab edit
+                  </span>
+                  <h1 className="editorial-title text-[clamp(3rem,7vw,6.75rem)]">{heroTitle}</h1>
+                  <p className="mt-6 max-w-xl text-base leading-7 text-white/78 sm:text-lg sm:leading-8">{heroSubtitle}</p>
+                  <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                    <Button asChild size="lg" className="premium-button h-14 bg-white px-7 text-primary hover:bg-white/92">
+                      <Link to={heroLink}>Explore the collection <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                    </Button>
+                    <Button asChild size="lg" variant="outline" className="h-14 rounded-full border-white/30 bg-white/10 px-7 text-white backdrop-blur-xl hover:bg-white/20 hover:text-white">
+                      <Link to="/about">Our point of view</Link>
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="liquid-glass absolute bottom-8 right-8 z-20 hidden max-w-[260px] rounded-[22px] p-5 text-foreground lg:block">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">The Juraab promise</p>
+                <p className="mt-2 font-display text-xl leading-snug">Beautifully chosen. Clearly presented. Easy to order.</p>
+              </div>
+
+              {banners.length > 1 && <div className="absolute right-6 top-6 z-20 flex gap-2 rounded-full bg-black/15 p-2 backdrop-blur-xl sm:right-8 sm:top-8">{banners.map((_, index) => <button key={index} onClick={() => setCurrentBannerIndex(index)} className={`h-2 rounded-full transition-all ${index === currentBannerIndex ? "w-7 bg-white" : "w-2 bg-white/45 hover:bg-white/80"}`} aria-label={`Show banner ${index + 1}`} />)}</div>}
             </div>
-          ))}
-          
-          {activeBanner && activeBanner.show_text_overlay && (
-            <div 
-              key={currentBannerIndex}
-              className="relative z-10 text-center text-primary-foreground px-4 sm:px-6 md:px-8 max-w-5xl mx-auto transition-all duration-700 ease-in-out"
-            >
-              <h1 className="font-display text-2xl sm:text-3xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-3 sm:mb-4 md:mb-6 gold-accent pb-4 md:pb-8 animate-fade-in leading-tight">
-                {activeBanner.title}
-              </h1>
-              <p className="hidden sm:block text-base md:text-xl lg:text-2xl mb-4 sm:mb-6 md:mb-8 max-w-2xl mx-auto animate-fade-in">
-                {activeBanner.subtitle}
-              </p>
-              <div className="animate-fade-in">
-                <Button asChild size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground text-sm sm:text-base h-9 sm:h-10 md:h-11 px-4 sm:px-6 md:px-8">
-                  <Link to={activeBanner.link_url || '/shop'}>
-                    Explore Collection <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
-                  </Link>
-                </Button>
+          </section>
+
+          <section className="page-wrap py-8 sm:py-10" aria-label="Shopping benefits">
+            <div className="grid divide-y rounded-[24px] border border-border/60 bg-card/65 px-5 sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
+              {[
+                { icon: ShieldCheck, title: "Secure checkout", detail: "Your order is protected" },
+                { icon: Truck, title: "Reliable delivery", detail: "Updates from door to door" },
+                { icon: RotateCcw, title: "Easy returns", detail: "7 days to change your mind" },
+                { icon: Headphones, title: "Human support", detail: "Real help when you need it" },
+              ].map(({ icon: Icon, title, detail }) => <div key={title} className="flex items-center gap-4 px-3 py-5 sm:px-5"><Icon className="h-5 w-5 shrink-0 text-accent" strokeWidth={1.6} /><div><p className="text-sm font-semibold">{title}</p><p className="mt-0.5 text-xs text-muted-foreground">{detail}</p></div></div>)}
+            </div>
+          </section>
+
+          <section className="section-pad page-wrap">
+            <div className="mb-10 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+              <div><p className="section-kicker">Shop by mood</p><h2 className="editorial-title max-w-2xl text-4xl sm:text-5xl lg:text-6xl">Find the piece your space has been waiting for.</h2></div>
+              <Link to="/shop" className="inline-flex min-h-12 items-center gap-2 text-sm font-semibold">View everything <ArrowRight className="h-4 w-4" /></Link>
+            </div>
+            <div className="grid gap-4 md:grid-cols-3">
+              {categories.map((category, index) => (
+                <Link key={category.id} to={`/shop?category=${category.slug}`} className={`group relative min-h-[430px] overflow-hidden rounded-[28px] ${index === 1 ? "md:translate-y-8" : ""}`}>
+                  {category.image_url ? <img src={category.image_url} alt={category.name} className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" /> : <div className="absolute inset-0 bg-gradient-to-br from-secondary to-muted" />}
+                  <div className="absolute inset-0 bg-gradient-to-t from-primary/75 via-primary/5 to-transparent" />
+                  <div className="absolute inset-x-0 bottom-0 p-6 text-white sm:p-8">
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/65">Collection 0{index + 1}</span>
+                    <div className="mt-2 flex items-end justify-between gap-4"><h3 className="font-display text-3xl font-normal sm:text-4xl">{category.name}</h3><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/25 bg-white/10 backdrop-blur-xl transition-transform group-hover:rotate-45"><ArrowRight className="h-4 w-4" /></span></div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+
+          <section className="section-pad bg-secondary/45">
+            <div className="page-wrap">
+              <div className="mb-10 text-center"><p className="section-kicker">The signature edit</p><h2 className="editorial-title mx-auto max-w-3xl text-4xl sm:text-5xl lg:text-6xl">Pieces people return to again and again.</h2><p className="mx-auto mt-5 max-w-xl text-sm leading-7 text-muted-foreground sm:text-base">Distinctive, useful, and chosen to live beautifully in real homes.</p></div>
+              <div className="grid grid-cols-1 gap-x-5 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
+                {featuredProducts.map((product) => <ProductCard key={product.id} product={product} sales={sales} />)}
+              </div>
+              <div className="mt-12 text-center"><Button asChild variant="outline" size="lg" className="h-13 rounded-full border-primary/20 bg-card/70 px-7"><Link to="/shop">Shop all products <ArrowRight className="ml-2 h-4 w-4" /></Link></Button></div>
+            </div>
+          </section>
+
+          <section className="section-pad page-wrap">
+            <div className="liquid-dark relative overflow-hidden rounded-[32px] px-6 py-14 sm:px-12 sm:py-16 lg:px-16">
+              <div className="absolute -right-20 -top-32 h-96 w-96 rounded-full bg-accent/20 blur-3xl" />
+              <div className="relative z-10 grid items-center gap-10 lg:grid-cols-[1fr_.8fr]">
+                <div><p className="section-kicker !text-white/55">Why Juraab</p><h2 className="editorial-title max-w-2xl text-4xl sm:text-5xl lg:text-6xl">Premium should feel effortless—not intimidating.</h2></div>
+                <div className="grid gap-5 sm:grid-cols-2">
+                  {[{ icon: Award, title: "Considered quality", text: "Every product is selected for material, finish, and everyday usefulness." }, { icon: Sparkles, title: "Simple by design", text: "Clear choices, readable details, and an ordering journey anyone can follow." }].map(({ icon: Icon, title, text }) => <div key={title} className="rounded-[24px] border border-white/12 bg-white/[.06] p-6"><Icon className="h-6 w-6 text-accent" /><h3 className="mt-5 font-sans text-base font-semibold">{title}</h3><p className="mt-2 text-sm leading-6 text-white/60">{text}</p></div>)}
+                </div>
               </div>
             </div>
-          )}
-          
-          {/* Navigation Dots */}
-          {banners && banners.length > 1 && (
-            <div className="absolute bottom-4 sm:bottom-6 md:bottom-8 left-1/2 transform -translate-x-1/2 flex gap-2 z-20">
-              {banners.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentBannerIndex(index)}
-                  className={`h-2 sm:h-3 rounded-full transition-all duration-300 ${
-                    index === currentBannerIndex
-                      ? 'bg-accent w-6 sm:w-8'
-                      : 'bg-white/50 hover:bg-white/75 w-2 sm:w-3'
-                  }`}
-                  aria-label={`Go to banner ${index + 1}`}
-                />
-              ))}
-            </div>
-          )}
-        </section>
-
-        {/* Introduction Section for SEO */}
-        {/* <section className="py-12 bg-background">
-          <div className="container mx-auto px-4 max-w-4xl text-center">
-            <p className="text-lg text-muted-foreground leading-relaxed">
-              Welcome to <strong>Juraab</strong> – your trusted online destination for premium <strong>home decor</strong>, 
-              elegant <strong>wallets</strong>, stylish <strong>furniture</strong>, quality <strong>accessories</strong>, and beautiful 
-              <strong> garden decorations</strong> in Pakistan. Shop with confidence and enjoy fast delivery across the country. 
-              juraab.shop brings you carefully curated products that blend style, quality, and affordability. We are the best jurab store in Pakistan.
-            </p> 
-          </div>
-        </section>
-
-        {/* Shop by Category - Dynamic */}
-        <section 
-          id="categories-section"
-          ref={(el) => (sectionRefs.current['categories-section'] = el)}
-          className="py-20 relative overflow-hidden"
-        >
-          {/* Animated gradient background */}
-          <div className="absolute inset-0 bg-gradient-to-br from-accent/5 via-transparent to-primary/5 animate-pulse opacity-50" />
-          
-          <div className="container mx-auto px-4 relative z-10">
-            <div className={`text-center mb-12 transition-all duration-700 ${
-              visibleSections.has('categories-section') 
-                ? 'opacity-100 translate-y-0' 
-                : 'opacity-0 translate-y-10'
-            }`}>
-              <h2 className="font-display text-3xl md:text-4xl font-bold mb-4 gold-accent pb-8">
-                Shop Home Decor, Wallets, Accessories & More
-              </h2>
-              <p className="text-muted-foreground max-w-2xl mx-auto">
-                Explore our curated collections of premium products
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {categories?.map((category, index) => (
-                <Link 
-                  key={category.id} 
-                  to={`/shop?category=${category.slug}`} 
-                  className={`group transition-all duration-500 ${
-                    visibleSections.has('categories-section')
-                      ? 'opacity-100 translate-y-0'
-                      : 'opacity-0 translate-y-10'
-                  }`}
-                  style={{ transitionDelay: `${index * 150}ms` }}
-                >
-                  <Card className="glass-card glass-hover overflow-hidden rounded-xl relative">
-                    {/* Shimmer effect on hover */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 group-hover:animate-shimmer" style={{ backgroundSize: '200% 100%' }} />
-                    
-                    <div className="aspect-square bg-muted relative overflow-hidden">
-                      {category.image_url && (
-                        <img 
-                          src={category.image_url} 
-                          alt={category.name}
-                          className="w-full h-full object-cover group-hover:scale-110 group-hover:rotate-2 transition-all duration-500"
-                        />
-                      )}
-                      <div className="absolute inset-0 bg-primary/40 group-hover:bg-primary/60 transition-colors duration-300" />
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <h3 className="font-display text-3xl md:text-4xl font-bold text-white text-center px-4 group-hover:scale-110 transition-transform duration-300">
-                          {category.name}
-                        </h3>
-                      </div>
-                    </div>
-                  </Card>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Trust Badges with Shadow Cards */}
-        <section 
-          id="trust-section"
-          ref={(el) => (sectionRefs.current['trust-section'] = el)}
-          className="py-16 bg-muted/30 relative overflow-hidden"
-        >
-          {/* Floating decorative elements */}
-          <div className="absolute top-10 left-10 w-32 h-32 bg-accent/10 rounded-full blur-3xl animate-float" />
-          <div className="absolute bottom-10 right-10 w-40 h-40 bg-primary/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }} />
-          
-          <div className="container mx-auto px-4 relative z-10">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              {[
-                { icon: ShieldCheck, title: "Secure Checkout", desc: "100% secure payments" },
-                { icon: CreditCard, title: "Cash on Delivery", desc: "Pay when you receive" },
-                { icon: Truck, title: "Fast Delivery", desc: "Quick shipping nationwide" },
-                { icon: Award, title: "Premium Quality", desc: "Handcrafted excellence" }
-              ].map((badge, index) => (
-                <Card 
-                  key={index}
-                  className={`glass-card glass-hover rounded-xl transition-all duration-500 ${
-                    visibleSections.has('trust-section')
-                      ? 'opacity-100 translate-y-0'
-                      : 'opacity-0 translate-y-10'
-                  }`}
-                  style={{ transitionDelay: `${index * 100}ms` }}
-                >
-                  <CardContent className="p-6 flex items-center space-x-4">
-                    <badge.icon className="h-12 w-12 text-accent flex-shrink-0 group-hover:scale-110 transition-transform duration-300" />
-                    <div>
-                      <h3 className="font-semibold text-lg">{badge.title}</h3>
-                      <p className="text-sm text-muted-foreground">{badge.desc}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Featured Collection - Dynamic */}
-        <section 
-          id="products-section"
-          ref={(el) => (sectionRefs.current['products-section'] = el)}
-          className="py-20 bg-muted/30 relative overflow-hidden"
-        >
-          {/* Animated gradient orbs */}
-          <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-accent/20 to-transparent rounded-full blur-3xl animate-pulse" />
-          <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-primary/20 to-transparent rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1.5s' }} />
-          
-          <div className="container mx-auto px-4 relative z-10">
-            <div className={`text-center mb-12 transition-all duration-700 ${
-              visibleSections.has('products-section') 
-                ? 'opacity-100 translate-y-0' 
-                : 'opacity-0 translate-y-10'
-            }`}>
-              <h2 className="font-display text-3xl md:text-4xl font-bold mb-4 gold-accent pb-8">
-                Featured Products - Best Sellers
-              </h2>
-              <p className="text-muted-foreground max-w-2xl mx-auto">
-                Handpicked premium home decor, wallets, and accessories for the discerning customer
-              </p>
-            </div>
-
-            <div className="flex flex-wrap justify-center gap-6">
-              {featuredProducts?.map((product, index) => {
-                const productSale = sales?.find(s => s.product_id === product.id);
-                const globalSale = sales?.find(s => s.is_global);
-                const { finalPrice, discount } = calculateSalePrice(product.price, productSale, globalSale);
-                
-                return (
-                  <Link 
-                    key={product.id} 
-                    to={`/product/${product.slug}`} 
-                    className={`w-full sm:w-[calc(50%-0.75rem)] lg:w-[calc(25%-1.125rem)] min-w-[280px] max-w-[400px] transition-all duration-500 ${
-                      visibleSections.has('products-section')
-                        ? 'opacity-100 translate-y-0'
-                        : 'opacity-0 translate-y-10'
-                    }`}
-                    style={{ transitionDelay: `${index * 100}ms` }}
-                  >
-                    <Card className="glass-card glass-hover overflow-hidden rounded-xl group relative h-full cursor-pointer transform hover:scale-105 transition-all duration-300">
-                      {discount && (
-                        <Badge className="absolute top-2 left-2 z-10 bg-destructive text-destructive-foreground animate-pulse">
-                          {discount}% OFF
-                        </Badge>
-                      )}
-                      {product.is_featured && !discount && (
-                        <Badge className="absolute top-2 left-2 z-10 bg-accent text-accent-foreground">
-                          <Star className="h-3 w-3 mr-1 animate-pulse" fill="currentColor" />
-                          Featured
-                        </Badge>
-                      )}
-                      <div className="aspect-square bg-muted relative overflow-hidden">
-                        {product.images?.[0] && (
-                          <img
-                            src={product.images[0]}
-                            alt={product.name}
-                            className="w-full h-full object-cover group-hover:scale-110 group-hover:rotate-1 transition-all duration-500"
-                          />
-                        )}
-                        {/* Shimmer overlay on hover */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-0 group-hover:opacity-100 group-hover:animate-shimmer" style={{ backgroundSize: '200% 100%' }} />
-                      </div>
-                      <CardContent className="p-6">
-                        <p className="text-xs text-muted-foreground mb-2">
-                          {product.categories?.name}
-                        </p>
-                        <h3 className="font-display text-lg font-semibold mb-2 truncate">
-                          {product.name}
-                        </h3>
-                        <div className="mb-4">
-                          {discount ? (
-                            <div className="flex items-center gap-2">
-                              <p className="text-xl font-bold text-destructive">
-                                {formatPrice(finalPrice)}
-                              </p>
-                              <p className="text-sm text-muted-foreground line-through">
-                                {formatPrice(product.price)}
-                              </p>
-                            </div>
-                          ) : (
-                            <p className="text-xl font-bold text-accent">
-                              {formatPrice(product.price)}
-                            </p>
-                          )}
-                        </div>
-                        <Button className="w-full group-hover:bg-accent group-hover:text-accent-foreground transition-colors" size="sm">
-                          View Details
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  </Link>
-                );
-              })}
-            </div>
-
-            <div className={`text-center mt-12 transition-all duration-700 ${
-              visibleSections.has('products-section') 
-                ? 'opacity-100 translate-y-0' 
-                : 'opacity-0 translate-y-10'
-            }`} style={{ transitionDelay: '600ms' }}>
-              <Button asChild variant="outline" size="lg" className="hover:scale-105 transition-transform">
-                <Link to="/shop">
-                  View All Products <ArrowRight className="ml-2 h-5 w-5" />
-                </Link>
-              </Button>
-            </div>
-          </div>
-        </section>
-      </main>
-
+          </section>
+        </main>
         <Footer />
       </div>
     </>

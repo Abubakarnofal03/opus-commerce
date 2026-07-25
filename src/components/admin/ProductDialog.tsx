@@ -234,12 +234,12 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[94vh] w-[calc(100vw-1rem)] max-w-2xl overflow-y-auto rounded-[24px] p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle>{product ? "Edit Product" : "Add New Product"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="name">Product Name *</Label>
               <Input
@@ -270,7 +270,7 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="price">Price *</Label>
               <Input
@@ -295,7 +295,7 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="stock">Stock Quantity *</Label>
               <Input
@@ -316,7 +316,7 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSucce
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="weight_kg">Weight (kg)</Label>
               <Input

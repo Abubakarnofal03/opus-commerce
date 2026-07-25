@@ -92,7 +92,7 @@ export function BannerDialog({ open, onOpenChange, banner, onSuccess }: BannerDi
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-h-[94vh] w-[calc(100vw-1rem)] overflow-y-auto rounded-[24px] p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle>{banner ? "Edit Banner" : "Add New Banner"}</DialogTitle>
         </DialogHeader>

@@ -3,7 +3,6 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,6 +20,7 @@ import { organizationSchema, productSchema, breadcrumbSchema } from "@/lib/struc
 import ProductReviews from "@/components/ProductReviews";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { ProductCard } from "@/components/ProductCard";
 
 
 const ProductDetail = ({ key }: { key?: string }) => {
@@ -35,9 +35,6 @@ const ProductDetail = ({ key }: { key?: string }) => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-
-  // Simulate real-time activity for social proof
-  const [recentPurchases] = useState(() => Math.floor(Math.random() * 24) + 6); // 6-29 purchases
 
   // Reset component state when slug changes
   useEffect(() => {
@@ -138,14 +135,14 @@ const ProductDetail = ({ key }: { key?: string }) => {
   // Set first variation as default when variations load
   useEffect(() => {
     if (variations && variations.length > 0 && !selectedVariation) {
-      setSelectedVariation(variations[0]);
+      setSelectedVariation(variations.find((variation) => variation.quantity > 0) || variations[0]);
     }
   }, [variations, selectedVariation]);
 
   // Set first color as default when colors load
   useEffect(() => {
     if (colors && colors.length > 0 && !selectedColor) {
-      setSelectedColor(colors[0]);
+      setSelectedColor(colors.find((color) => color.quantity > 0) || colors[0]);
     }
   }, [colors, selectedColor]);
 
@@ -372,12 +369,18 @@ const ProductDetail = ({ key }: { key?: string }) => {
       <div className="min-h-screen flex flex-col">
         <Navbar />
 
-        <main className="flex-1 py-8 md:py-12 bg-gradient-to-b from-leather-smoked/10 via-background to-background">
-          <div className="container mx-auto px-4">
+        <main className="flex-1 pb-16 pt-6 md:pb-24 md:pt-10">
+          <div className="page-wrap">
+            <nav aria-label="Breadcrumb" className="mb-6 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <Link to="/" className="hover:text-foreground">Home</Link><span>/</span>
+              <Link to="/shop" className="hover:text-foreground">Shop</Link><span>/</span>
+              {product.categories && <><Link to={`/shop?category=${product.categories.slug}`} className="hover:text-foreground">{product.categories.name}</Link><span>/</span></>}
+              <span className="max-w-[220px] truncate text-foreground">{product.name}</span>
+            </nav>
             {/* Standard Layout */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
+            <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1.08fr_.92fr] lg:gap-14">
               {/* Media Gallery */}
-              <div className="space-y-3 md:space-y-4">
+              <div className="space-y-3 md:space-y-4 lg:sticky lg:top-28 lg:self-start">
                 {/* Media Carousel (Video + Images) */}
                 {(product.video_url || (product.images && product.images.length > 0)) &&
                   (product.video_url ? 1 : 0) + (product.images?.length || 0) > 1 ? (
@@ -386,7 +389,7 @@ const ProductDetail = ({ key }: { key?: string }) => {
                       {/* Video as first carousel item */}
                       {product.video_url && (
                         <CarouselItem key="video">
-                          <div className="aspect-square bg-gradient-to-br from-leather-espresso/10 to-leather-charcoal/10 rounded-xl overflow-hidden border-2 border-leather-tan/20 shadow-leather">
+                          <div className="aspect-[4/5] overflow-hidden rounded-[28px] border border-white/70 bg-secondary/50 shadow-xl shadow-primary/5">
                             <video
                               src={product.video_url}
                               controls
@@ -402,7 +405,7 @@ const ProductDetail = ({ key }: { key?: string }) => {
                       {product.images?.map((image, index) => (
                         <CarouselItem key={`image-${index}`}>
                           <div
-                            className="aspect-square bg-gradient-to-br from-leather-espresso/10 to-leather-charcoal/10 rounded-xl overflow-hidden cursor-zoom-in border-2 border-leather-tan/20 hover:border-leather-gold/50 shadow-leather hover:shadow-gold-glow transition-all duration-300"
+                            className="aspect-[4/5] cursor-zoom-in overflow-hidden rounded-[28px] border border-white/70 bg-secondary/50 shadow-xl shadow-primary/5 transition-all duration-300 hover:shadow-2xl"
                             onClick={() => {
                               setSelectedImageIndex(index);
                               setZoomDialogOpen(true);
@@ -424,7 +427,7 @@ const ProductDetail = ({ key }: { key?: string }) => {
                   /* Single item display */
                   <>
                     {product.video_url ? (
-                      <div className="aspect-square bg-gradient-to-br from-leather-espresso/10 to-leather-charcoal/10 rounded-xl overflow-hidden border-2 border-leather-tan/20 shadow-leather">
+                      <div className="aspect-[4/5] overflow-hidden rounded-[28px] border border-white/70 bg-secondary/50 shadow-xl shadow-primary/5">
                         <video
                           src={product.video_url}
                           controls
@@ -436,7 +439,7 @@ const ProductDetail = ({ key }: { key?: string }) => {
                       </div>
                     ) : product.images?.[0] ? (
                       <div
-                        className="aspect-square bg-gradient-to-br from-leather-espresso/10 to-leather-charcoal/10 rounded-xl overflow-hidden cursor-zoom-in border-2 border-leather-tan/20 hover:border-leather-gold/50 shadow-leather hover:shadow-gold-glow transition-all duration-300"
+                        className="aspect-[4/5] cursor-zoom-in overflow-hidden rounded-[28px] border border-white/70 bg-secondary/50 shadow-xl shadow-primary/5 transition-all duration-300 hover:shadow-2xl"
                         onClick={() => {
                           setSelectedImageIndex(0);
                           setZoomDialogOpen(true);
@@ -458,7 +461,7 @@ const ProductDetail = ({ key }: { key?: string }) => {
                           setSelectedImageIndex(index);
                           setZoomDialogOpen(true);
                         }}
-                        className="flex-shrink-0 w-16 h-16 md:w-20 md:h-20 rounded-lg overflow-hidden border-2 hover:border-primary transition-all duration-200"
+                        className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-xl border-2 border-transparent bg-secondary transition-all duration-200 hover:border-primary md:h-20 md:w-20"
                       >
                         <img
                           src={image}
@@ -470,36 +473,34 @@ const ProductDetail = ({ key }: { key?: string }) => {
                   </div>
                 )}
 
-                {/* Social Proof Badge */}
+                {/* Clear stock status */}
                 {product.stock_quantity > 0 && (
-                  <div className="flex items-center justify-center">
-                    <div className="inline-flex items-center gap-1.5 bg-orange-500/10 border border-orange-500/20 px-3 py-1.5 rounded-full">
-                      <span className="text-xs font-semibold text-orange-600 dark:text-orange-400">
-                        🔥 {recentPurchases} sold in last 24 hours
-                      </span>
-                    </div>
+                  <div className="flex items-center justify-center gap-2 text-xs font-medium text-muted-foreground">
+                    <span className="h-2 w-2 rounded-full bg-emerald-600" /> In stock and ready to order
                   </div>
                 )}
               </div>
 
-              <div className="space-y-4 md:space-y-6">
-                <div className="glass-card p-6 md:p-8 rounded-xl border-leather-tan/20">
-                  <p className="text-xs md:text-sm text-leather-gold font-semibold mb-2 uppercase tracking-wider">{product.categories?.name}</p>
-                  {product.sku && <p className="text-xs md:text-sm text-muted-foreground mb-3">SKU: <span className="text-leather-cognac font-medium">{product.sku}</span></p>}
-                  <h1 className="font-display text-2xl md:text-3xl lg:text-4xl font-bold mb-4 md:mb-6 text-refined leading-tight">
+              <div className="space-y-5 md:space-y-6">
+                <div className="liquid-glass rounded-[28px] p-6 md:p-8">
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">{product.categories?.name}</p>
+                    {product.sku && <p className="text-[11px] text-muted-foreground">Item {product.sku}</p>}
+                  </div>
+                  <h1 className="editorial-title mb-5 text-4xl sm:text-5xl lg:text-[3.5rem]">
                     {product.name}
                   </h1>
                   {discount ? (
-                    <div className="space-y-3">
-                      <Badge className="bg-gradient-to-r from-destructive to-red-700 text-white font-bold px-4 py-2 text-sm shadow-lg animate-pulse">{discount}% OFF SALE</Badge>
-                      <div className="flex items-baseline gap-3">
-                        <p className="text-3xl md:text-4xl lg:text-5xl font-bold text-destructive">{formatPrice(totalPrice)}</p>
-                        <p className="text-lg md:text-xl text-muted-foreground line-through opacity-60">
+                    <div className="space-y-4">
+                      <Badge className="rounded-full border-0 bg-destructive px-3.5 py-1.5 text-xs font-bold uppercase tracking-wide text-destructive-foreground shadow-sm">Save {discount}%</Badge>
+                      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+                        <p className="text-[2.75rem] font-bold leading-none tracking-[-0.035em] text-destructive sm:text-[3.25rem] lg:text-[3.75rem]">{formatPrice(totalPrice)}</p>
+                        <p className="text-xl font-medium text-muted-foreground/70 line-through md:text-2xl">
                           {formatPrice(displayPrice * quantity)}
                         </p>
                       </div>
-                      <p className="text-sm md:text-base font-semibold text-green-600 dark:text-green-400">
-                        You Save: {formatPrice((displayPrice - finalPrice) * quantity)}
+                      <p className="inline-flex rounded-full bg-emerald-600/10 px-3 py-1.5 text-sm font-semibold text-emerald-700 dark:text-emerald-400">
+                        You save {formatPrice((displayPrice - finalPrice) * quantity)}
                       </p>
                       {quantity > 1 && (
                         <p className="text-sm text-muted-foreground">
@@ -509,7 +510,7 @@ const ProductDetail = ({ key }: { key?: string }) => {
                     </div>
                   ) : (
                     <div>
-                      <p className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground">{formatPrice(totalPrice)}</p>
+                      <p className="text-3xl font-semibold text-foreground md:text-4xl">{formatPrice(totalPrice)}</p>
                       {quantity > 1 && (
                         <p className="text-sm text-muted-foreground mt-1">
                           {formatPrice(displayPrice)} × {quantity}
@@ -517,25 +518,22 @@ const ProductDetail = ({ key }: { key?: string }) => {
                       )}
                     </div>
                   )}
-                </div>
-
                 {product.stock_quantity !== undefined && product.stock_quantity < 10 && (
-                  <div className="glass-card border-2 border-orange-500/30 bg-gradient-to-r from-orange-500/10 to-red-500/10 rounded-xl p-4 animate-pulse">
+                  <div className="mt-6 rounded-2xl border border-accent/25 bg-accent/8 p-4">
                     {product.stock_quantity > 0 ? (
-                      <p className="text-sm font-bold text-orange-600 dark:text-orange-400">
-                        🔥 Hurry! Only {product.stock_quantity} {product.stock_quantity === 1 ? "item" : "items"} left in
-                        stock!
+                      <p className="text-sm font-semibold text-foreground">
+                        Only {product.stock_quantity} {product.stock_quantity === 1 ? "piece" : "pieces"} currently available
                       </p>
                     ) : (
-                      <p className="text-sm font-bold text-destructive">❌ Out of stock</p>
+                      <p className="text-sm font-semibold text-destructive">Currently out of stock</p>
                     )}
                   </div>
                 )}
 
                 {variations && variations.length > 0 && (
-                  <div className="space-y-3">
-                    <h2 className="font-semibold text-base md:text-lg text-foreground">Select Variation</h2>
-                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                  <div className="mt-7 space-y-3 border-t pt-6">
+                    <h2 className="text-base font-semibold text-foreground">Choose an option</h2>
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                       {variations.map((variation, index) => {
                         const isOutOfStock = variation.quantity === 0;
                         const varSale = sales?.find((s) => s.product_id === product?.id);
@@ -560,7 +558,7 @@ const ProductDetail = ({ key }: { key?: string }) => {
                             }}
                             disabled={isOutOfStock}
                             className={`
-                              relative flex flex-col items-center justify-center px-2 py-2 rounded-lg transition-all duration-200 min-h-[70px]
+                              relative flex min-h-[76px] flex-col items-center justify-center rounded-2xl px-3 py-3 transition-all duration-200
                               ${isOutOfStock
                                 ? 'opacity-50 cursor-not-allowed bg-muted/50 border border-dashed border-border'
                                 : isSelected
@@ -597,7 +595,7 @@ const ProductDetail = ({ key }: { key?: string }) => {
                               </div>
                               {varDiscount > 0 ? (
                                 <>
-                                  <div className={`text-sm font-bold ${isSelected ? 'text-white' : 'text-primary'}`}>
+                                  <div className={`text-sm font-bold ${isSelected ? 'text-white' : 'text-destructive'}`}>
                                     {formatPrice(varFinalPrice)}
                                   </div>
                                   <div className={`text-[10px] line-through ${isSelected ? 'text-white/60' : 'text-muted-foreground'}`}>
@@ -618,8 +616,8 @@ const ProductDetail = ({ key }: { key?: string }) => {
                 )}
 
                 {colors && colors.length > 0 && (
-                  <div>
-                    <h2 className="font-semibold text-base md:text-lg mb-3">Select Color</h2>
+                  <div className="mt-7 border-t pt-6">
+                    <h2 className="mb-3 text-base font-semibold">Choose a colour</h2>
                     <div className="flex flex-wrap gap-3">
                       {colors.map((color) => {
                         const isOutOfStock = color.quantity === 0;
@@ -650,7 +648,7 @@ const ProductDetail = ({ key }: { key?: string }) => {
                             }}
                             disabled={isOutOfStock}
                             className={`
-                              relative px-4 py-3 rounded-xl transition-all duration-200 flex items-center gap-2
+                              relative flex min-h-[58px] items-center gap-2 rounded-2xl px-4 py-3 transition-all duration-200
                               ${isOutOfStock
                                 ? 'opacity-40 cursor-not-allowed bg-card border-2 border-border'
                                 : selectedColor?.id === color.id
@@ -672,7 +670,7 @@ const ProductDetail = ({ key }: { key?: string }) => {
                               <div className="font-semibold text-sm">{color.name}</div>
                               {colorDiscount ? (
                                 <div className="space-y-0.5">
-                                  <div className="text-xs font-bold">{formatPrice(colorFinalPrice)}</div>
+                                  <div className={`text-xs font-bold ${selectedColor?.id === color.id ? 'text-white' : 'text-destructive'}`}>{formatPrice(colorFinalPrice)}</div>
                                   <div className="text-xs line-through opacity-60">{formatPrice(colorDisplayPrice)}</div>
                                 </div>
                               ) : (
@@ -694,22 +692,22 @@ const ProductDetail = ({ key }: { key?: string }) => {
                   </div>
                 )}
 
-                <div>
-                  <h2 className="font-semibold text-base md:text-lg mb-2">Quantity</h2>
-                  <div className="flex items-center space-x-3 md:space-x-4">
+                <div className="mt-7 border-t pt-6">
+                  <h2 className="mb-3 text-base font-semibold">Quantity</h2>
+                  <div className="inline-flex items-center rounded-full border bg-card/70 p-1">
                     <Button
                       variant="outline"
                       size="icon"
-                      className="h-9 w-9 md:h-10 md:w-10"
+                      className="h-11 w-11 rounded-full border-0"
                       onClick={() => setQuantity(Math.max(1, quantity - 1))}
                     >
                       <Minus className="h-3 w-3 md:h-4 md:w-4" />
                     </Button>
-                    <span className="text-lg md:text-xl font-semibold w-10 md:w-12 text-center">{quantity}</span>
+                    <span className="w-12 text-center text-lg font-semibold" aria-live="polite">{quantity}</span>
                     <Button
                       variant="outline"
                       size="icon"
-                      className="h-9 w-9 md:h-10 md:w-10"
+                      className="h-11 w-11 rounded-full border-0"
                       onClick={() => {
                         const maxQty = selectedColor
                           ? selectedColor.quantity
@@ -729,9 +727,10 @@ const ProductDetail = ({ key }: { key?: string }) => {
                   </div>
                 </div>
 
-                <div className="space-y-3 pt-2 md:pt-4">
+                <div className="mt-7 grid gap-3 sm:grid-cols-2">
                   <Button
-                    className="w-full text-sm md:text-base h-12 md:h-14 btn-liquid-secondary btn-leather-texture font-semibold"
+                    variant="outline"
+                    className="h-14 w-full rounded-full border-2 border-primary bg-transparent text-base font-semibold text-primary shadow-none hover:bg-primary/10 hover:text-primary dark:border-primary dark:bg-transparent dark:text-primary dark:hover:bg-primary/10 disabled:border-border disabled:bg-muted disabled:text-muted-foreground disabled:opacity-100"
                     size="lg"
                     onClick={() => addToCart.mutate()}
                     disabled={
@@ -741,13 +740,13 @@ const ProductDetail = ({ key }: { key?: string }) => {
                           product.stock_quantity === 0)
                     }
                   >
-                    <ShoppingCart className="mr-2 h-5 w-5 md:h-6 md:w-6 icon-cart" />
+                    <ShoppingCart className="mr-2 !h-5 !w-5 text-current" />
                     {selectedColor && selectedColor.quantity === 0 ? 'Out of Stock' :
                       selectedVariation && !selectedColor && selectedVariation.quantity === 0 ? 'Out of Stock' :
                         'Add to Cart'}
                   </Button>
                   <Button
-                    className="w-full text-sm md:text-base h-12 md:h-14 btn-liquid-primary btn-leather-texture font-bold text-white"
+                    className="h-14 w-full rounded-full bg-primary text-base font-semibold text-primary-foreground shadow-lg shadow-primary/15"
                     size="lg"
                     onClick={handleBuyNow}
                     disabled={
@@ -757,132 +756,134 @@ const ProductDetail = ({ key }: { key?: string }) => {
                           product.stock_quantity === 0)
                     }
                   >
-                    Buy Now
+                    Buy now
                   </Button>
                 </div>
+                <p className="mt-4 text-center text-xs text-muted-foreground">Secure checkout · No account required</p>
+                </div>
                 {/* Trust Badges */}
-                <div className="grid grid-cols-2 gap-4 py-6 border-y-2 border-leather-tan/20">
+                <div className="grid grid-cols-2 gap-3 rounded-[24px] border bg-card/55 p-5">
                   <div className="flex items-center gap-3">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-leather-gold/20 to-leather-cognac/20 flex items-center justify-center shadow-inner">
-                      <ShieldCheck className="h-5 w-5 text-leather-gold" />
+                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-secondary">
+                      <ShieldCheck className="h-5 w-5 text-accent" />
                     </div>
                     <div>
-                      <p className="text-xs font-bold leading-tight text-foreground">7 Day Easy</p>
-                      <p className="text-xs text-leather-cognac leading-tight">Return</p>
+                      <p className="text-xs font-semibold leading-tight text-foreground">7-day easy</p>
+                      <p className="text-xs leading-tight text-muted-foreground">returns</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-leather-gold/20 to-leather-cognac/20 flex items-center justify-center shadow-inner">
-                      <Banknote className="h-5 w-5 text-leather-cognac" />
+                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-secondary">
+                      <Banknote className="h-5 w-5 text-accent" />
                     </div>
                     <div>
-                      <p className="text-xs font-bold leading-tight text-foreground">Cash on</p>
-                      <p className="text-xs text-leather-cognac leading-tight">Delivery</p>
+                      <p className="text-xs font-semibold leading-tight text-foreground">Cash on</p>
+                      <p className="text-xs leading-tight text-muted-foreground">delivery</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-leather-gold/20 to-leather-cognac/20 flex items-center justify-center shadow-inner">
-                      <Truck className="h-5 w-5 text-leather-gold" />
+                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-secondary">
+                      <Truck className="h-5 w-5 text-accent" />
                     </div>
                     <div>
-                      <p className="text-xs font-bold leading-tight text-foreground">Free Delivery</p>
-                      <p className="text-xs text-leather-cognac leading-tight">3-5 days nationwide</p>
+                      <p className="text-xs font-semibold leading-tight text-foreground">Tracked delivery</p>
+                      <p className="text-xs leading-tight text-muted-foreground">order updates</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-leather-gold/20 to-leather-cognac/20 flex items-center justify-center shadow-inner">
-                      <Package className="h-5 w-5 text-leather-cognac" />
+                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-secondary">
+                      <Package className="h-5 w-5 text-accent" />
                     </div>
                     <div>
-                      <p className="text-xs font-bold leading-tight text-foreground">100% Original</p>
-                      <p className="text-xs text-leather-cognac leading-tight">Products</p>
+                      <p className="text-xs font-semibold leading-tight text-foreground">Quality checked</p>
+                      <p className="text-xs leading-tight text-muted-foreground">before dispatch</p>
                     </div>
                   </div>
                 </div>
                 {product.description && (
-                  <div className="glass-card p-6 rounded-xl border-leather-tan/20">
-                    <h2 className="font-display text-xl md:text-2xl font-bold mb-4 text-leather-gold">Product Description</h2>
-                    <div className="divider-gold mb-4" />
-                    <p className="text-sm md:text-base text-foreground/90 leading-relaxed whitespace-pre-wrap">
+                  <div className="rounded-[24px] border bg-card/55 p-6">
+                    <p className="section-kicker">The details</p>
+                    <h2 className="font-display text-2xl font-normal">About this piece</h2>
+                    <p className="mt-4 whitespace-pre-wrap text-sm leading-7 text-muted-foreground md:text-base">
                       {product.description}
                     </p>
                   </div>
                 )}
 
                 {/* Why Buy This Section */}
-                <div className="glass-card p-6 rounded-xl border-leather-tan/20 bg-gradient-to-br from-green-500/5 to-blue-500/5">
-                  <h2 className="font-display text-xl md:text-2xl font-bold mb-4 flex items-center gap-2">
-                    <Star className="h-5 w-5 text-yellow-500 fill-yellow-500" />
-                    Why Choose This Product?
+                <div className="rounded-[24px] border bg-card/55 p-6">
+                  <h2 className="flex items-center gap-2 font-display text-2xl font-normal">
+                    <Star className="h-5 w-5 fill-accent text-accent" />
+                    The Juraab standard
                   </h2>
-                  <div className="space-y-3">
+                  <div className="mt-5 space-y-3">
                     <div className="flex items-start gap-3">
                       <div className="w-2 h-2 rounded-full bg-green-500 mt-2 flex-shrink-0" />
-                      <p className="text-sm text-foreground/90">Premium quality materials ensuring long-lasting durability</p>
+                      <p className="text-sm leading-6 text-muted-foreground">Selected with close attention to material, finish, and everyday durability.</p>
                     </div>
                     <div className="flex items-start gap-3">
                       <div className="w-2 h-2 rounded-full bg-green-500 mt-2 flex-shrink-0" />
-                      <p className="text-sm text-foreground/90">Verified by thousands of satisfied customers across Pakistan</p>
+                      <p className="text-sm leading-6 text-muted-foreground">Clear product details and real support if you need help choosing.</p>
                     </div>
                     <div className="flex items-start gap-3">
                       <div className="w-2 h-2 rounded-full bg-green-500 mt-2 flex-shrink-0" />
-                      <p className="text-sm text-foreground/90">7-day easy return policy with full refund guarantee</p>
+                      <p className="text-sm leading-6 text-muted-foreground">A straightforward 7-day return window for added confidence.</p>
                     </div>
                     <div className="flex items-start gap-3">
                       <div className="w-2 h-2 rounded-full bg-green-500 mt-2 flex-shrink-0" />
-                      <p className="text-sm text-foreground/90">Free delivery with secure Cash on Delivery option</p>
+                      <p className="text-sm leading-6 text-muted-foreground">Secure checkout with cash-on-delivery where available.</p>
                     </div>
                   </div>
                 </div>
 
                 {/* FAQ Section */}
-                <div className="glass-card p-6 rounded-xl border-leather-tan/20">
-                  <h2 className="font-display text-xl md:text-2xl font-bold mb-4 text-leather-gold">Frequently Asked Questions</h2>
-                  <div className="divider-gold mb-4" />
-                  <div className="space-y-4">
-                    <details className="group">
-                      <summary className="flex justify-between items-center cursor-pointer list-none font-semibold text-sm py-3 border-b border-border">
-                        <span>🚚 What are the delivery charges?</span>
-                        <span className="transition group-open:rotate-180">▼</span>
+                <div className="rounded-[24px] border bg-card/55 p-6">
+                  <p className="section-kicker">Good to know</p>
+                  <h2 className="font-display text-2xl font-normal">Frequently asked questions</h2>
+                  <div className="mt-5 divide-y">
+                    <details className="group py-1">
+                      <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between py-3 text-sm font-semibold">
+                        <span>What are the delivery charges?</span>
+                        <span className="text-xl font-normal transition group-open:rotate-45">+</span>
                       </summary>
                       <p className="text-sm text-muted-foreground mt-3 pl-6">
-                        We offer FREE delivery all across Pakistan. No hidden charges!
+                        Delivery costs, if any, are shown clearly during checkout before you confirm your order.
                       </p>
                     </details>
-                    <details className="group">
-                      <summary className="flex justify-between items-center cursor-pointer list-none font-semibold text-sm py-3 border-b border-border">
-                        <span>💳 What payment methods do you accept?</span>
-                        <span className="transition group-open:rotate-180">▼</span>
+                    <details className="group py-1">
+                      <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between py-3 text-sm font-semibold">
+                        <span>What payment methods do you accept?</span>
+                        <span className="text-xl font-normal transition group-open:rotate-45">+</span>
                       </summary>
                       <p className="text-sm text-muted-foreground mt-3 pl-6">
                         We accept Cash on Delivery (COD) and online bank transfers for your convenience.
                       </p>
                     </details>
-                    <details className="group">
-                      <summary className="flex justify-between items-center cursor-pointer list-none font-semibold text-sm py-3 border-b border-border">
-                        <span>🔄 Can I return the product if I don't like it?</span>
-                        <span className="transition group-open:rotate-180">▼</span>
+                    <details className="group py-1">
+                      <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between py-3 text-sm font-semibold">
+                        <span>Can I return the product if it is not right for me?</span>
+                        <span className="text-xl font-normal transition group-open:rotate-45">+</span>
                       </summary>
                       <p className="text-sm text-muted-foreground mt-3 pl-6">
                         Yes! We offer a 7-day easy return policy. If you're not satisfied, simply return it for a full refund.
                       </p>
                     </details>
-                    <details className="group">
-                      <summary className="flex justify-between items-center cursor-pointer list-none font-semibold text-sm py-3 border-b border-border">
-                        <span>📦 How long does delivery take?</span>
-                        <span className="transition group-open:rotate-180">▼</span>
+                    <details className="group py-1">
+                      <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between py-3 text-sm font-semibold">
+                        <span>How long does delivery take?</span>
+                        <span className="text-xl font-normal transition group-open:rotate-45">+</span>
                       </summary>
                       <p className="text-sm text-muted-foreground mt-3 pl-6">
                         Delivery typically takes 2-5 business days depending on your location in Pakistan.
                       </p>
                     </details>
-                    <details className="group">
-                      <summary className="flex justify-between items-center cursor-pointer list-none font-semibold text-sm py-3 border-b border-border">
-                        <span>✅ Is this product original/authentic?</span>
-                        <span className="transition group-open:rotate-180">▼</span>
+                    <details className="group py-1">
+                      <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between py-3 text-sm font-semibold">
+                        <span>Is every item quality checked?</span>
+                        <span className="text-xl font-normal transition group-open:rotate-45">+</span>
                       </summary>
                       <p className="text-sm text-muted-foreground mt-3 pl-6">
-                        Absolutely! We guarantee 100% original products. All items are quality-checked before dispatch.
+                        Yes. Items are checked before dispatch, and our support team is available if something is not as expected.
                       </p>
                     </details>
                   </div>
@@ -912,85 +913,14 @@ const ProductDetail = ({ key }: { key?: string }) => {
 
             {/* Related Products */}
             {relatedProducts && relatedProducts.length > 0 && (
-              <div className="mt-12 md:mt-20">
-                <div className="text-center mb-8">
-                  <h2 className="font-display text-2xl md:text-3xl lg:text-4xl font-bold mb-3 gold-accent pb-6">
-                    You May Also Like
-                  </h2>
-                  <p className="text-muted-foreground max-w-2xl mx-auto">
-                    Discover more from our curated collection
-                  </p>
+              <div className="mt-16 md:mt-24">
+                <div className="mb-10 text-center">
+                  <p className="section-kicker">Complete the edit</p>
+                  <h2 className="editorial-title text-4xl sm:text-5xl">You may also like</h2>
+                  <p className="mx-auto mt-4 max-w-2xl text-sm text-muted-foreground">More considered pieces from the same collection.</p>
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-                  {relatedProducts.map((relatedProduct) => {
-                    const relatedProductSale = sales?.find((s) => s.product_id === relatedProduct.id);
-                    const relatedGlobalSale = sales?.find((s) => s.is_global);
-                    const { finalPrice: relatedFinalPrice, discount: relatedDiscount } = calculateSalePrice(
-                      relatedProduct.price,
-                      relatedProductSale,
-                      relatedGlobalSale,
-                    );
-
-                    return (
-                      <Card
-                        key={relatedProduct.id}
-                        className="glass-card overflow-hidden rounded-xl relative border-leather-tan/20 hover:border-leather-gold/50 shadow-leather hover:shadow-gold-glow transition-all duration-300 group cursor-pointer"
-                      >
-                        {relatedDiscount && (
-                          <Badge className="absolute top-3 left-3 z-10 bg-gradient-to-r from-destructive to-red-700 text-white font-bold px-3 py-1 shadow-lg">
-                            {relatedDiscount}% OFF
-                          </Badge>
-                        )}
-                        <div className="aspect-square bg-gradient-to-br from-leather-espresso/10 to-leather-charcoal/10 relative overflow-hidden">
-                          {relatedProduct.images?.[0] && (
-                            <>
-                              <img
-                                src={relatedProduct.images[0]}
-                                alt={relatedProduct.name}
-                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                              />
-                              <div className="absolute inset-0 bg-gradient-to-t from-leather-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                            </>
-                          )}
-                        </div>
-                        <CardContent className="p-3 md:p-4">
-                          <h3 className="font-display text-sm md:text-base font-semibold mb-1 md:mb-2 truncate">
-                            {relatedProduct.name}
-                          </h3>
-                          <div className="mb-2 md:mb-3">
-                            {relatedDiscount ? (
-                              <div className="flex items-baseline gap-2">
-                                <p className="text-lg md:text-xl font-bold text-destructive">
-                                  {formatPrice(relatedFinalPrice)}
-                                </p>
-                                <p className="text-xs text-muted-foreground line-through opacity-60">
-                                  {formatPrice(relatedProduct.price)}
-                                </p>
-                              </div>
-                            ) : (
-                              <p className="text-lg md:text-xl font-bold bg-gradient-to-r from-leather-gold to-leather-cognac bg-clip-text text-transparent">
-                                {formatPrice(relatedProduct.price)}
-                              </p>
-                            )}
-                          </div>
-                          <Button
-                            asChild
-                            className="w-full text-xs md:text-sm btn-liquid-primary btn-leather-texture font-semibold text-white"
-                            size="sm"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              // Force a full page reload to ensure fresh data
-                              window.location.href = `/product/${relatedProduct.slug}`;
-                            }}
-                          >
-                            <Link to={`/product/${relatedProduct.slug}`} onClick={(e) => e.preventDefault()}>
-                              View Details
-                            </Link>
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
+                <div className="grid grid-cols-1 gap-x-5 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
+                  {relatedProducts.map((relatedProduct) => <ProductCard key={relatedProduct.id} product={relatedProduct} sales={sales || []} user={user} />)}
                 </div>
               </div>
             )}
@@ -1020,30 +950,30 @@ const ProductDetail = ({ key }: { key?: string }) => {
 
         {/* Sticky Add to Cart Bar */}
         {showStickyBar && (
-          <div className="fixed bottom-0 left-0 right-0 z-40 glass-card border-t shadow-2xl animate-slide-up">
-            <div className="container mx-auto px-4 py-3">
+          <div className="liquid-glass fixed bottom-3 left-3 right-3 z-40 rounded-[22px] shadow-2xl animate-slide-up sm:bottom-4 sm:left-4 sm:right-4">
+            <div className="page-wrap py-3">
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
                   {product.images?.[0] && (
                     <img
                       src={product.images[0]}
                       alt={product.name}
-                      className="w-12 h-12 object-cover rounded-lg hidden sm:block"
+                      className="hidden h-12 w-12 rounded-xl object-cover sm:block"
                     />
                   )}
                   <div className="flex-1">
                     <h3 className="font-semibold text-sm line-clamp-1">{product.name}</h3>
-                    <p className="text-lg font-bold text-foreground">
+                    <p className={`text-lg font-bold ${discount ? "text-destructive" : "text-foreground"}`}>
                       {formatPrice(totalPrice)}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="hidden sm:flex items-center gap-2 bg-background/50 rounded-lg px-2 py-1">
+                  <div className="hidden items-center gap-2 rounded-full border bg-card/50 px-2 py-1 sm:flex">
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7"
+                      className="h-8 w-8 rounded-full"
                       onClick={() => setQuantity(Math.max(1, quantity - 1))}
                     >
                       <Minus className="h-3 w-3" />
@@ -1052,7 +982,7 @@ const ProductDetail = ({ key }: { key?: string }) => {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7"
+                      className="h-8 w-8 rounded-full"
                       onClick={() => {
                         const maxQty = selectedColor
                           ? selectedColor.quantity
@@ -1067,7 +997,8 @@ const ProductDetail = ({ key }: { key?: string }) => {
                   </div>
                   <div className="flex gap-2">
                     <Button
-                      className="btn-liquid-secondary font-semibold hidden sm:inline-flex"
+                      variant="outline"
+                      className="hidden h-11 rounded-full border-2 border-primary bg-transparent px-5 font-semibold text-primary hover:bg-primary/10 hover:text-primary dark:border-primary dark:bg-transparent dark:text-primary dark:hover:bg-primary/10 disabled:border-border disabled:bg-muted disabled:text-muted-foreground disabled:opacity-100 sm:inline-flex"
                       onClick={() => addToCart.mutate()}
                       disabled={
                         addToCart.isPending ||
@@ -1076,13 +1007,13 @@ const ProductDetail = ({ key }: { key?: string }) => {
                             product.stock_quantity === 0)
                       }
                     >
-                      <ShoppingCart className="mr-2 h-4 w-4" />
+                      <ShoppingCart className="mr-2 !h-4 !w-4 text-current" />
                       {selectedColor && selectedColor.quantity === 0 ? 'Out of Stock' :
                         selectedVariation && !selectedColor && selectedVariation.quantity === 0 ? 'Out of Stock' :
                           'Add to Cart'}
                     </Button>
                     <Button
-                      className="btn-liquid-primary font-bold text-white flex-1 sm:flex-initial"
+                      className="h-11 flex-1 rounded-full bg-primary px-6 font-semibold text-primary-foreground sm:flex-initial"
                       onClick={handleBuyNow}
                       disabled={
                         addToCart.isPending ||
@@ -1091,7 +1022,7 @@ const ProductDetail = ({ key }: { key?: string }) => {
                             product.stock_quantity === 0)
                       }
                     >
-                      Buy Now
+                      Buy now
                     </Button>
                   </div>
                 </div>

@@ -1,14 +1,13 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, User, Menu, X, LogOut, ChevronDown } from "lucide-react";
-import { useState, useEffect } from "react";
+import { ChevronDown, LogOut, Menu, ShoppingBag, User, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { getGuestCart } from "@/lib/cartUtils";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { SaleTimer } from "./SaleTimer";
-import logo from "@/assets/logo.jpg";
-import { useQuery } from "@tanstack/react-query";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,11 +22,7 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 export const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -36,20 +31,39 @@ export const Navbar = () => {
   const [cartCount, setCartCount] = useState(0);
   const [shopOpen, setShopOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
 
-  // Fetch categories using React Query with shared cache
   const { data: categories = [] } = useQuery({
-    queryKey: ['categories'],
+    queryKey: ["categories"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('categories')
-        .select('*')
-        .order('name');
+      const { data, error } = await supabase.from("categories").select("*").order("name");
       if (error) throw error;
       return data || [];
     },
   });
+
+  const checkAdminStatus = async (userId: string) => {
+    const { data } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "admin")
+      .maybeSingle();
+    setIsAdmin(!!data);
+  };
+
+  const fetchCartCount = async (userId?: string) => {
+    if (userId) {
+      const { count } = await supabase
+        .from("cart_items")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", userId);
+      setCartCount(count || 0);
+    } else {
+      setCartCount(getGuestCart().reduce((sum, item) => sum + item.quantity, 0));
+    }
+  };
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -57,6 +71,8 @@ export const Navbar = () => {
       if (session?.user) {
         checkAdminStatus(session.user.id);
         fetchCartCount(session.user.id);
+      } else {
+        fetchCartCount();
       }
     });
 
@@ -67,288 +83,134 @@ export const Navbar = () => {
         fetchCartCount(session.user.id);
       } else {
         setIsAdmin(false);
-        setCartCount(0);
+        fetchCartCount();
       }
     });
-
     return () => subscription.unsubscribe();
   }, []);
 
-  const checkAdminStatus = async (userId: string) => {
-    const { data } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userId)
-      .eq('role', 'admin')
-      .maybeSingle();
-    setIsAdmin(!!data);
-  };
-
-  const fetchCartCount = async (userId?: string) => {
-    if (userId) {
-      const { count } = await supabase
-        .from('cart_items')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId);
-      setCartCount(count || 0);
-    } else {
-      // Guest user - use session storage
-      const guestCart = getGuestCart();
-      setCartCount(guestCart.length);
-    }
-  };
-
-  // Update cart count for guest users when cart changes
   useEffect(() => {
-    if (!user) {
-      const updateGuestCart = () => {
-        const guestCart = getGuestCart();
-        setCartCount(guestCart.length);
-      };
-      
-      window.addEventListener('storage', updateGuestCart);
-      // Check on mount
-      updateGuestCart();
-      
-      return () => window.removeEventListener('storage', updateGuestCart);
-    }
+    const updateCart = () => fetchCartCount(user?.id);
+    window.addEventListener("storage", updateCart);
+    window.addEventListener("opus-cart-updated", updateCart);
+    return () => {
+      window.removeEventListener("storage", updateCart);
+      window.removeEventListener("opus-cart-updated", updateCart);
+    };
   }, [user]);
+
+  useEffect(() => setMobileMenuOpen(false), [location.pathname, location.search]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    toast({ title: "Logged out successfully" });
+    toast({ title: "You are signed out" });
     navigate("/");
   };
+
+  const navLink = (path: string) =>
+    `rounded-full px-4 py-2.5 text-[15px] font-medium transition-colors ${
+      location.pathname === path ? "bg-primary/8 text-primary" : "text-foreground/72 hover:bg-primary/5 hover:text-foreground"
+    }`;
 
   return (
     <>
       <SaleTimer />
-      <nav className="sticky top-0 z-50 glass-card border-b backdrop-blur-xl">
-        <div className="container mx-auto px-4">
-          <div className="flex h-16 items-center justify-between">
-          {/* Logo - Always Visible */}
-          <Link to="/" className="flex items-center space-x-3 flex-shrink-0">
-            <div className="h-14 w-14 overflow-hidden flex items-center justify-center">
-              <img src={logo} alt="Juraab" className="h-full w-full object-contain" />
-            </div>
-            <h1 className="text-lg md:text-2xl font-display font-bold text-[#5D4037]">
-              Juraab
-            </h1>
-          </Link>
-
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
-            <Link to="/" className="text-sm font-medium hover:text-accent transition-colors">
-              Home
-            </Link>
-            <NavigationMenu>
-              <NavigationMenuList>
-                <NavigationMenuItem>
-                  <NavigationMenuTrigger className="text-sm font-medium bg-transparent hover:bg-transparent data-[state=open]:bg-transparent hover:text-accent transition-colors h-auto p-0">
-                    Catalog
-                  </NavigationMenuTrigger>
-                  <NavigationMenuContent>
-                    <div className="w-48 p-2">
-                      <NavigationMenuLink asChild>
-                        <Link
-                          to="/shop"
-                          className="block px-3 py-2 text-sm hover:bg-accent/10 rounded-md transition-colors"
-                        >
-                          All Products
-                        </Link>
-                      </NavigationMenuLink>
-                      {categories.map((category) => (
-                        <NavigationMenuLink key={category.id} asChild>
-                          <Link
-                            to={`/shop?category=${category.slug}`}
-                            className="block px-3 py-2 text-sm hover:bg-accent/10 rounded-md transition-colors"
-                          >
-                            {category.name}
-                          </Link>
-                        </NavigationMenuLink>
-                      ))}
-                    </div>
-                  </NavigationMenuContent>
-                </NavigationMenuItem>
-              </NavigationMenuList>
-            </NavigationMenu>
-            <Link to="/about" className="text-sm font-medium hover:text-accent transition-colors">
-              About
-            </Link>
-            <Link to="/contact" className="text-sm font-medium hover:text-accent transition-colors">
-              Contact
-            </Link>
-          </div>
-
-          {/* Actions */}
-          <div className="hidden md:flex items-center space-x-4">
-            <ThemeToggle />
-            <Link to="/cart" className="relative">
-              <Button variant="ghost" size="icon">
-                <ShoppingCart className="h-5 w-5" />
-                {cartCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-accent text-accent-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                    {cartCount}
-                  </span>
-                )}
-              </Button>
-            </Link>
-            {user ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon">
-                    <User className="h-5 w-5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => navigate('/orders')}>
-                    My Orders
-                  </DropdownMenuItem>
-                  {isAdmin && (
-                    <DropdownMenuItem onClick={() => navigate('/admin')}>
-                      Admin Dashboard
-                    </DropdownMenuItem>
-                  )}
-                  <DropdownMenuItem onClick={handleLogout}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Logout
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              <Button onClick={() => navigate('/auth')} variant="default">
-                Sign In
-              </Button>
-            )}
-          </div>
-
-          {/* Mobile Actions - Only Hamburger Menu */}
-          <div className="flex md:hidden items-center">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="glass-button rounded-full"
-            >
-              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </Button>
-          </div>
-        </div>
-
-        {/* Mobile Menu */}
-        {mobileMenuOpen && (
-          <div className="md:hidden py-4 space-y-4 animate-fade-in glass-card mx-4 rounded-2xl mt-2 mb-4">
-            {/* Cart Item at Top */}
-            <Link
-              to="/cart"
-              className="flex items-center justify-between px-4 py-3 hover:bg-accent/10 transition-colors rounded-xl mx-2"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              <span className="text-sm font-medium flex items-center gap-2">
-                <ShoppingCart className="h-4 w-4" />
-                Cart
+      <header className="sticky top-0 z-50 py-2 sm:py-3">
+        <div className="page-wrap">
+          <nav className="liquid-glass flex h-[68px] items-center justify-between rounded-[24px] px-3 sm:px-5" aria-label="Main navigation">
+            <Link to="/" className="group flex min-w-0 items-center gap-3 rounded-full pr-2" aria-label="Juraab home">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary font-display text-2xl italic text-primary-foreground shadow-md transition-transform group-hover:-rotate-6">J</span>
+              <span className="hidden min-[390px]:block">
+                <span className="block text-[17px] font-semibold tracking-[0.22em] text-foreground">JURAAB</span>
+                <span className="block text-[9px] uppercase tracking-[0.2em] text-muted-foreground">Objects for living</span>
               </span>
-              {cartCount > 0 && (
-                <span className="bg-accent text-accent-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                  {cartCount}
-                </span>
-              )}
             </Link>
-            <div className="h-px bg-border mx-4" />
-            <div className="flex items-center justify-between px-4">
-              <span className="text-sm font-medium">Theme</span>
-              <ThemeToggle />
+
+            <div className="hidden items-center gap-1 md:flex">
+              <Link to="/" className={navLink("/")}>Home</Link>
+              <NavigationMenu>
+                <NavigationMenuList>
+                  <NavigationMenuItem>
+                    <NavigationMenuTrigger className="h-auto rounded-full bg-transparent px-4 py-2.5 text-[15px] font-medium text-foreground/72 hover:bg-primary/5 hover:text-foreground data-[state=open]:bg-primary/5">
+                      Shop
+                    </NavigationMenuTrigger>
+                    <NavigationMenuContent>
+                      <div className="w-64 space-y-1 p-3">
+                        <NavigationMenuLink asChild>
+                          <Link to="/shop" className="block rounded-xl px-4 py-3 text-sm font-semibold hover:bg-muted">View all products</Link>
+                        </NavigationMenuLink>
+                        {categories.map((category) => (
+                          <NavigationMenuLink key={category.id} asChild>
+                            <Link to={`/shop?category=${category.slug}`} className="block rounded-xl px-4 py-2.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground">
+                              {category.name}
+                            </Link>
+                          </NavigationMenuLink>
+                        ))}
+                      </div>
+                    </NavigationMenuContent>
+                  </NavigationMenuItem>
+                </NavigationMenuList>
+              </NavigationMenu>
+              <Link to="/about" className={navLink("/about")}>Our story</Link>
+              <Link to="/contact" className={navLink("/contact")}>Help</Link>
             </div>
-            <Link
-              to="/"
-              className="block px-4 text-sm font-medium hover:text-accent transition-colors"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Home
-            </Link>
-            <Collapsible open={shopOpen} onOpenChange={setShopOpen}>
-              <CollapsibleTrigger className="flex items-center justify-between px-4 text-left w-full text-sm font-medium hover:text-accent transition-colors">
-                <span>Catalog</span>
-                <ChevronDown className={`h-4 w-4 transition-transform ${shopOpen ? 'rotate-180' : ''}`} />
-              </CollapsibleTrigger>
-              <CollapsibleContent className="pl-8 space-y-2 pt-2">
-                <Link
-                  to="/shop"
-                  className="block px-4 text-sm hover:text-accent transition-colors py-1"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  All Products
-                </Link>
-                {categories.map((category) => (
-                  <Link
-                    key={category.id}
-                    to={`/shop?category=${category.slug}`}
-                    className="block px-4 text-sm hover:text-accent transition-colors py-1"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    {category.name}
-                  </Link>
-                ))}
-              </CollapsibleContent>
-            </Collapsible>
-            <Link
-              to="/about"
-              className="block px-4 text-sm font-medium hover:text-accent transition-colors"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              About
-            </Link>
-            <Link
-              to="/contact"
-              className="block px-4 text-sm font-medium hover:text-accent transition-colors"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Contact
-            </Link>
-            {user ? (
-              <>
-                <Link
-                  to="/orders"
-                  className="block px-4 text-sm font-medium hover:text-accent transition-colors"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  My Orders
-                </Link>
-                {isAdmin && (
-                  <Link
-                    to="/admin"
-                    className="block px-4 text-sm font-medium hover:text-accent transition-colors"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    Admin Dashboard
-                  </Link>
+
+            <div className="flex items-center gap-1 sm:gap-2">
+              <div className="hidden lg:block"><ThemeToggle /></div>
+              <Link to="/cart" className="relative flex min-h-11 items-center gap-2 rounded-full px-3 text-sm font-semibold transition-colors hover:bg-primary/5" aria-label={`Shopping bag with ${cartCount} items`}>
+                <ShoppingBag className="h-5 w-5" strokeWidth={1.7} />
+                <span className="hidden sm:inline">Bag</span>
+                {cartCount > 0 && <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] text-primary-foreground">{cartCount}</span>}
+              </Link>
+
+              <div className="hidden md:block">
+                {user ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="h-11 rounded-full px-3"><User className="mr-2 h-4 w-4" />Account</Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-52 rounded-2xl p-2">
+                      <DropdownMenuItem onClick={() => navigate("/orders")} className="rounded-xl">My orders</DropdownMenuItem>
+                      {isAdmin && <DropdownMenuItem onClick={() => navigate("/admin")} className="rounded-xl">Admin dashboard</DropdownMenuItem>}
+                      <DropdownMenuItem onClick={handleLogout} className="rounded-xl"><LogOut className="mr-2 h-4 w-4" />Sign out</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  <Button onClick={() => navigate("/auth")} className="h-11 rounded-full px-5">Sign in</Button>
                 )}
-                <button
-                  onClick={() => {
-                    handleLogout();
-                    setMobileMenuOpen(false);
-                  }}
-                  className="block px-4 text-left w-full text-sm font-medium hover:text-accent transition-colors"
-                >
-                  Logout
-                </button>
-              </>
-            ) : (
-              <Button
-                onClick={() => {
-                  navigate('/auth');
-                  setMobileMenuOpen(false);
-                }}
-                variant="default"
-                className="w-full"
-              >
-                Sign In
+              </div>
+
+              <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="h-11 w-11 rounded-full md:hidden" aria-label={mobileMenuOpen ? "Close menu" : "Open menu"} aria-expanded={mobileMenuOpen}>
+                {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
               </Button>
-            )}
-          </div>
-        )}
-      </div>
-    </nav>
+            </div>
+          </nav>
+
+          {mobileMenuOpen && (
+            <div className="liquid-glass mt-2 rounded-[24px] p-4 md:hidden animate-fade-in">
+              <div className="space-y-1">
+                <Link to="/" className="block rounded-2xl px-4 py-3 text-base font-semibold hover:bg-muted">Home</Link>
+                <Collapsible open={shopOpen} onOpenChange={setShopOpen}>
+                  <CollapsibleTrigger className="flex w-full items-center justify-between rounded-2xl px-4 py-3 text-base font-semibold hover:bg-muted">
+                    Shop <ChevronDown className={`h-4 w-4 transition-transform ${shopOpen ? "rotate-180" : ""}`} />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="ml-3 border-l pl-3">
+                    <Link to="/shop" className="block rounded-xl px-4 py-3 text-sm font-medium hover:bg-muted">All products</Link>
+                    {categories.map((category) => <Link key={category.id} to={`/shop?category=${category.slug}`} className="block rounded-xl px-4 py-2.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground">{category.name}</Link>)}
+                  </CollapsibleContent>
+                </Collapsible>
+                <Link to="/about" className="block rounded-2xl px-4 py-3 text-base font-semibold hover:bg-muted">Our story</Link>
+                <Link to="/contact" className="block rounded-2xl px-4 py-3 text-base font-semibold hover:bg-muted">Help & contact</Link>
+                <Link to="/orders" className="block rounded-2xl px-4 py-3 text-base font-semibold hover:bg-muted">Track an order</Link>
+              </div>
+              <div className="mt-3 flex items-center justify-between border-t pt-4">
+                <div className="flex items-center gap-3"><span className="text-sm text-muted-foreground">Appearance</span><ThemeToggle /></div>
+                {user ? <Button variant="outline" onClick={handleLogout} className="rounded-full">Sign out</Button> : <Button onClick={() => navigate("/auth")} className="rounded-full px-6">Sign in</Button>}
+              </div>
+            </div>
+          )}
+        </div>
+      </header>
     </>
   );
 };

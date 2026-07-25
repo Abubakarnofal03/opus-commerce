@@ -78,7 +78,7 @@ export function CategoryDialog({ open, onOpenChange, category, onSuccess }: Cate
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-h-[94vh] w-[calc(100vw-1rem)] overflow-y-auto rounded-[24px] p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle>{category ? "Edit Category" : "Add New Category"}</DialogTitle>
         </DialogHeader>

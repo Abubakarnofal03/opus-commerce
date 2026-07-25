@@ -102,7 +102,7 @@ export const BlogDialog = ({ blog, open, onOpenChange, onSuccess }: BlogDialogPr
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[94vh] w-[calc(100vw-1rem)] max-w-3xl overflow-y-auto rounded-[24px] p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle>{blog ? "Edit Blog Post" : "Create Blog Post"}</DialogTitle>
         </DialogHeader>

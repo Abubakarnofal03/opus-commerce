@@ -1,43 +1,30 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { ArrowRight, SlidersHorizontal } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
-import { Card, CardContent } from "@/components/ui/card";
+import { ProductCard } from "@/components/ProductCard";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Link, useSearchParams } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { ShoppingCart, Star, SlidersHorizontal } from "lucide-react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { addToGuestCart } from "@/lib/cartUtils";
-import { formatPrice } from "@/lib/currency";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { supabase } from "@/integrations/supabase/client";
+import { formatPrice } from "@/lib/currency";
 import { SEOHead } from "@/components/SEOHead";
-import { organizationSchema, breadcrumbSchema } from "@/lib/structuredData";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { calculateSalePrice } from "@/lib/saleUtils";
-import { trackAddToCart } from "@/lib/metaPixel";
-import { trackEvent } from "@/hooks/useAnalytics";
+import { breadcrumbSchema, organizationSchema } from "@/lib/structuredData";
 import {
   Pagination,
   PaginationContent,
+  PaginationEllipsis,
   PaginationItem,
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
-  PaginationEllipsis,
 } from "@/components/ui/pagination";
 
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 12;
 
 const Shop = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -49,589 +36,164 @@ const Shop = () => {
   const [user, setUser] = useState<any>(null);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
 
-  // Debounce price changes
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedMinPrice(minPrice);
-      setDebouncedMaxPrice(maxPrice);
-    }, 500); // Wait 500ms after user stops typing
-
-    return () => clearTimeout(timer);
+    const timer = window.setTimeout(() => {
+      setDebouncedMinPrice(minPrice || "0");
+      setDebouncedMaxPrice(maxPrice || "50000");
+    }, 450);
+    return () => window.clearTimeout(timer);
   }, [minPrice, maxPrice]);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-    });
+    supabase.auth.getSession().then(({ data: { session } }) => setUser(session?.user ?? null));
   }, []);
 
-  const { data: categories, isLoading: categoriesLoading } = useQuery({
-    queryKey: ['categories'],
+  const { data: categories = [], isLoading: categoriesLoading } = useQuery({
+    queryKey: ["categories"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('categories')
-        .select('*')
-        .order('name');
+      const { data, error } = await supabase.from("categories").select("*").order("name");
       if (error) throw error;
-      return data;
+      return data || [];
     },
   });
 
-  const { data: sales } = useQuery({
-    queryKey: ['sales'],
+  const { data: sales = [] } = useQuery({
+    queryKey: ["sales"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('sales')
-        .select('*')
-        .eq('is_active', true)
-        .gt('end_date', new Date().toISOString());
+      const { data, error } = await supabase.from("sales").select("*").eq("is_active", true).gt("end_date", new Date().toISOString());
       if (error) throw error;
-      return data;
+      return data || [];
     },
   });
 
   const { data: productsData, isLoading: productsLoading } = useQuery({
-    queryKey: ['products', selectedCategory, debouncedMinPrice, debouncedMaxPrice, currentPage],
+    queryKey: ["products", selectedCategory, debouncedMinPrice, debouncedMaxPrice, currentPage],
     queryFn: async () => {
       let query = supabase
-        .from('products')
-        .select('*, categories(*)', { count: 'exact' })
-        .gte('price', parseFloat(debouncedMinPrice))
-        .lte('price', parseFloat(debouncedMaxPrice));
+        .from("products")
+        .select("*, categories(*)", { count: "exact" })
+        .gte("price", Math.max(0, Number(debouncedMinPrice) || 0))
+        .lte("price", Math.max(0, Number(debouncedMaxPrice) || 50000));
 
       if (selectedCategory) {
-        const category = categories?.find(c => c.slug === selectedCategory);
-        if (category) {
-          query = query.eq('category_id', category.id);
-        }
+        const category = categories.find((item) => item.slug === selectedCategory);
+        if (category) query = query.eq("category_id", category.id);
       }
 
       const from = (currentPage - 1) * ITEMS_PER_PAGE;
-      const to = from + ITEMS_PER_PAGE - 1;
-
       const { data, error, count } = await query
-        .order('sort_order', { ascending: true })
-        .order('created_at', { ascending: false })
-        .range(from, to);
+        .order("sort_order", { ascending: true })
+        .order("created_at", { ascending: false })
+        .range(from, from + ITEMS_PER_PAGE - 1);
       if (error) throw error;
-      return { products: data, count };
+      return { products: data || [], count: count || 0 };
     },
-    enabled: !!categories,
+    enabled: !categoriesLoading,
   });
 
-  const products = productsData?.products;
-  const totalCount = productsData?.count || 0;
-  const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
-
-  // Reset to page 1 when filters change
+  useEffect(() => setCurrentPage(1), [selectedCategory, debouncedMinPrice, debouncedMaxPrice]);
   useEffect(() => {
-    setCurrentPage(1);
-  }, [selectedCategory, debouncedMinPrice, debouncedMaxPrice]);
-
-  // Scroll to top when page changes
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (currentPage > 1) window.scrollTo({ top: 220, behavior: "smooth" });
   }, [currentPage]);
 
-  const addToCart = useMutation({
-    mutationFn: async (product: any) => {
-      if (!user) {
-        addToGuestCart({
-          product_id: product.id,
-          quantity: 1,
-          product_name: product.name,
-          product_price: product.price,
-          product_image: product.images?.[0],
-          shipping_cost: product.shipping_cost || 0,
-        });
-        return product;
-      }
-
-      const { data: existingItem } = await supabase
-        .from('cart_items')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('product_id', product.id)
-        .maybeSingle();
-
-      if (existingItem) {
-        const { error } = await supabase
-          .from('cart_items')
-          .update({ quantity: existingItem.quantity + 1 })
-          .eq('id', existingItem.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('cart_items')
-          .insert({
-            user_id: user.id,
-            product_id: product.id,
-            quantity: 1,
-          });
-        if (error) throw error;
-      }
-      
-      return product;
-    },
-    onSuccess: (product) => {
-      queryClient.invalidateQueries({ queryKey: ['cart'] });
-      
-      // Track Meta Pixel AddToCart event
-      trackAddToCart(product.id, product.name, product.price);
-      
-      // Track analytics event
-      trackEvent('add_to_cart', {
-        product_id: product.id,
-        product_name: product.name,
-        price: product.price,
-      });
-      
-      toast({
-        title: "Added to cart",
-        description: "Product has been added to your cart.",
-      });
-    },
-  });
-
-  const handleCategoryChange = (value: string) => {
-    if (value === "all") {
-      setSearchParams({});
-    } else {
-      setSearchParams({ category: value });
-    }
-  };
-
-  const renderSkeletonLoader = () => (
-    <section className="py-8 md:py-12">
-      <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 md:gap-8">
-          {/* Filters Sidebar Skeleton */}
-          <div className="lg:col-span-1 space-y-4 md:space-y-6">
-            <Card className="glass-card rounded-xl">
-              <CardContent className="p-4 md:p-6">
-                <Skeleton className="h-6 w-20 mb-4" />
-                <div className="space-y-4 md:space-y-6">
-                  <div>
-                    <Skeleton className="h-4 w-16 mb-3" />
-                    <Skeleton className="h-10 w-full" />
-                  </div>
-                  <div>
-                    <Skeleton className="h-4 w-20 mb-3" />
-                    <div className="grid grid-cols-2 gap-2">
-                      <Skeleton className="h-16 w-full" />
-                      <Skeleton className="h-16 w-full" />
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Products Grid Skeleton */}
-          <div className="lg:col-span-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-              {[...Array(6)].map((_, index) => (
-                <Card key={index} className="glass-card overflow-hidden rounded-xl">
-                  <Skeleton className="aspect-square w-full" />
-                  <CardContent className="p-3 md:p-4 space-y-2">
-                    <Skeleton className="h-3 w-24" />
-                    <Skeleton className="h-5 w-full" />
-                    <Skeleton className="h-3 w-16" />
-                    <Skeleton className="h-6 w-28" />
-                    <div className="grid grid-cols-2 gap-2 mt-3">
-                      <Skeleton className="h-8 w-full" />
-                      <Skeleton className="h-8 w-full" />
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-
+  const handleCategoryChange = (slug: string | null) => setSearchParams(slug ? { category: slug } : {});
+  const selectedCategoryData = categories.find((category) => category.slug === selectedCategory);
+  const products = productsData?.products || [];
+  const totalCount = productsData?.count || 0;
+  const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
   const isLoading = categoriesLoading || productsLoading;
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <Navbar />
-        <section className="py-8 md:py-12 bg-muted/30">
-          <div className="container mx-auto px-4">
-            <Skeleton className="h-12 w-64 mx-auto mb-4" />
-            <Skeleton className="h-4 w-96 mx-auto" />
-          </div>
-        </section>
-        {renderSkeletonLoader()}
-        <Footer />
+  const FilterFields = () => (
+    <div className="space-y-7">
+      <div>
+        <Label className="text-sm font-semibold">Price range</Label>
+        <p className="mt-1 text-xs text-muted-foreground">Set a comfortable spending range.</p>
+        <div className="mt-4 grid grid-cols-2 gap-3">
+          <label className="space-y-1.5 text-xs text-muted-foreground">Minimum<Input type="number" min="0" inputMode="numeric" value={minPrice} onChange={(event) => setMinPrice(event.target.value)} className="h-12 rounded-xl bg-card text-base text-foreground" /></label>
+          <label className="space-y-1.5 text-xs text-muted-foreground">Maximum<Input type="number" min="0" inputMode="numeric" value={maxPrice} onChange={(event) => setMaxPrice(event.target.value)} className="h-12 rounded-xl bg-card text-base text-foreground" /></label>
+        </div>
+        <p className="mt-3 rounded-xl bg-secondary/60 px-3 py-2 text-xs text-muted-foreground">Showing {formatPrice(Number(debouncedMinPrice) || 0)} to {formatPrice(Number(debouncedMaxPrice) || 50000)}</p>
       </div>
-    );
-  }
+      <Button variant="outline" className="h-12 w-full rounded-full" onClick={() => { setMinPrice("0"); setMaxPrice("50000"); }}>Reset price</Button>
+    </div>
+  );
 
-  const selectedCategoryData = categories?.find(c => c.slug === selectedCategory);
-  const pageTitle = selectedCategoryData
-    ? `Shop ${selectedCategoryData.name} Online | Juraab`
-    : "Shop All Products Online | Juraab";
-  const pageDescription = selectedCategoryData
-    ? `Browse premium ${selectedCategoryData.name.toLowerCase()} online in Pakistan. Quality products, fast delivery at juraab.shop`
-    : "Discover premium home decor, wallets, accessories, and furniture at juraab.shop – fast delivery across Pakistan.";
-  const pageKeywords = selectedCategoryData?.focus_keywords || [
-    'online shopping Pakistan',
-    'home decor',
-    'wallets',
-    'furniture',
-    'accessories',
-    'buy online Pakistan'
-  ];
-
-  const structuredData = {
-    "@context": "https://schema.org",
-    "@graph": [
-      organizationSchema,
-      breadcrumbSchema([
-        { name: "Home", url: "/" },
-        { name: "Shop", url: "/shop" },
-        ...(selectedCategoryData ? [{ name: selectedCategoryData.name, url: `/shop?category=${selectedCategory}` }] : [])
-      ])
-    ]
-  };
+  const pageTitle = selectedCategoryData ? `${selectedCategoryData.name} — Juraab Collection` : "Shop the Juraab Collection";
+  const pageDescription = selectedCategoryData ? `Explore Juraab's considered ${selectedCategoryData.name.toLowerCase()} collection.` : "Explore considered decor, furniture, accessories and gifts from Juraab.";
 
   return (
     <>
       <SEOHead
         title={pageTitle}
         description={pageDescription}
-        keywords={pageKeywords}
+        keywords={selectedCategoryData?.focus_keywords || ["Juraab collection", "home decor", "furniture", "accessories"]}
         canonicalUrl={selectedCategory ? `https://juraab.shop/shop?category=${selectedCategory}` : "https://juraab.shop/shop"}
-        structuredData={structuredData}
+        structuredData={{ "@context": "https://schema.org", "@graph": [organizationSchema, breadcrumbSchema([{ name: "Home", url: "/" }, { name: "Shop", url: "/shop" }, ...(selectedCategoryData ? [{ name: selectedCategoryData.name, url: `/shop?category=${selectedCategory}` }] : [])])] }}
       />
-      
-      <div className="min-h-screen flex flex-col">
+
+      <div className="min-h-screen">
         <Navbar />
-      
-      <main className="flex-1">
-        <section className="py-8 md:py-12 bg-muted/30">
-          <div className="container mx-auto px-4">
-            <h1 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-3 md:mb-4 gold-accent pb-6 md:pb-8">
-              Our Collection
-            </h1>
-            <p className="text-center text-muted-foreground max-w-2xl mx-auto text-sm md:text-base px-4">
-              Explore our curated selection of premium products
-            </p>
-          </div>
-        </section>
+        <main>
+          <section className="page-wrap pt-8 sm:pt-12 lg:pt-16">
+            <div className="relative overflow-hidden rounded-[30px] bg-primary px-6 py-14 text-primary-foreground sm:px-10 sm:py-16 lg:px-16 lg:py-20">
+              <div className="absolute -right-16 -top-28 h-80 w-80 rounded-full bg-accent/20 blur-3xl" />
+              <div className="relative z-10 max-w-3xl">
+                <p className="section-kicker !text-white/55">Curated for real life</p>
+                <h1 className="editorial-title text-5xl sm:text-6xl lg:text-7xl">{selectedCategoryData?.name || "The collection"}</h1>
+                <p className="mt-5 max-w-xl text-base leading-7 text-white/66 sm:text-lg">Distinctive objects, honest details, and a refreshingly simple way to shop.</p>
+              </div>
+              <div className="liquid-glass absolute bottom-6 right-6 hidden rounded-[20px] px-5 py-4 text-foreground lg:block"><p className="text-2xl font-semibold">{totalCount}</p><p className="text-xs text-muted-foreground">pieces to discover</p></div>
+            </div>
+          </section>
 
-        <section className="py-8 md:py-12">
-          <div className="container mx-auto px-4">
-            {/* Mobile Filter Button */}
-            <div className="lg:hidden mb-4">
+          <section className="page-wrap py-8 sm:py-10">
+            <div className="flex gap-2 overflow-x-auto pb-2 [scrollbar-width:none]">
+              <button onClick={() => handleCategoryChange(null)} className={`min-h-12 shrink-0 rounded-full border px-5 text-sm font-semibold transition-colors ${!selectedCategory ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card/70 hover:border-primary/30"}`}>All pieces</button>
+              {categories.map((category) => <button key={category.id} onClick={() => handleCategoryChange(category.slug)} className={`min-h-12 shrink-0 rounded-full border px-5 text-sm font-semibold transition-colors ${selectedCategory === category.slug ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card/70 hover:border-primary/30"}`}>{category.name}</button>)}
+            </div>
+          </section>
+
+          <section className="page-wrap pb-20 lg:pb-28">
+            <div className="mb-7 flex items-center justify-between gap-4 border-b pb-5">
+              <p className="text-sm text-muted-foreground"><span className="font-semibold text-foreground">{totalCount}</span> {totalCount === 1 ? "piece" : "pieces"}</p>
               <Sheet open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
-                <SheetTrigger asChild>
-                  <Button variant="outline" className="w-full">
-                    <SlidersHorizontal className="h-4 w-4 mr-2" />
-                    Filters
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="left" className="w-[280px] sm:w-[350px]">
-                  <SheetHeader>
-                    <SheetTitle>Filter Products</SheetTitle>
-                  </SheetHeader>
-                  <div className="mt-6 space-y-6">
-                    <div>
-                      <label className="text-sm font-medium mb-3 block">Category</label>
-                      <Select value={selectedCategory || "all"} onValueChange={handleCategoryChange}>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="All Categories" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Categories</SelectItem>
-                          {categories?.map((category) => (
-                            <SelectItem key={category.id} value={category.slug}>
-                              {category.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium mb-3 block">
-                        Price Range
-                      </label>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <Label className="text-xs">Min</Label>
-                          <Input
-                            type="number"
-                            min="0"
-                            value={minPrice}
-                            onChange={(e) => setMinPrice(e.target.value)}
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-xs">Max</Label>
-                          <Input
-                            type="number"
-                            min="0"
-                            value={maxPrice}
-                            onChange={(e) => setMaxPrice(e.target.value)}
-                          />
-                        </div>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Showing: {formatPrice(parseFloat(debouncedMinPrice))} - {formatPrice(parseFloat(debouncedMaxPrice))}
-                      </p>
-                    </div>
-
-                    <Button 
-                      className="w-full" 
-                      onClick={() => setMobileFiltersOpen(false)}
-                    >
-                      Apply Filters
-                    </Button>
-                  </div>
+                <SheetTrigger asChild><Button variant="outline" className="h-11 rounded-full lg:hidden"><SlidersHorizontal className="mr-2 h-4 w-4" />Price filter</Button></SheetTrigger>
+                <SheetContent side="bottom" className="rounded-t-[28px] px-6 pb-8">
+                  <SheetHeader><SheetTitle className="font-display text-2xl font-normal">Refine the collection</SheetTitle></SheetHeader>
+                  <div className="mt-7"><FilterFields /><Button className="mt-3 h-12 w-full rounded-full" onClick={() => setMobileFiltersOpen(false)}>Show products <ArrowRight className="ml-2 h-4 w-4" /></Button></div>
                 </SheetContent>
               </Sheet>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 md:gap-8">
-              {/* Filters Sidebar - Desktop Only */}
-              <div className="hidden lg:block lg:col-span-1 space-y-4 md:space-y-6">
-                <Card className="glass-card rounded-xl">
-                  <CardContent className="p-4 md:p-6">
-                    <h3 className="font-display text-base md:text-lg font-semibold mb-3 md:mb-4">Filters</h3>
-                    
-                    <div className="space-y-4 md:space-y-6">
-                      <div>
-                        <label className="text-xs md:text-sm font-medium mb-2 md:mb-3 block">Category</label>
-                        <Select value={selectedCategory || "all"} onValueChange={handleCategoryChange}>
-                          <SelectTrigger className="w-full text-sm">
-                            <SelectValue placeholder="All Categories" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">All Categories</SelectItem>
-                            {categories?.map((category) => (
-                              <SelectItem key={category.id} value={category.slug}>
-                                {category.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+            <div className="grid gap-8 lg:grid-cols-[250px_1fr] xl:gap-12">
+              <aside className="hidden lg:block">
+                <div className="liquid-glass sticky top-28 rounded-[24px] p-6">
+                  <p className="section-kicker">Refine</p>
+                  <FilterFields />
+                </div>
+              </aside>
 
-                      <div>
-                        <label className="text-xs md:text-sm font-medium mb-2 md:mb-3 block">
-                          Price Range
-                        </label>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <Label className="text-xs">Min</Label>
-                            <Input
-                              type="number"
-                              min="0"
-                              value={minPrice}
-                              onChange={(e) => setMinPrice(e.target.value)}
-                              className="text-sm"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-xs">Max</Label>
-                            <Input
-                              type="number"
-                              min="0"
-                              value={maxPrice}
-                              onChange={(e) => setMaxPrice(e.target.value)}
-                              className="text-sm"
-                            />
-                          </div>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-2">
-                          Showing: {formatPrice(parseFloat(debouncedMinPrice))} - {formatPrice(parseFloat(debouncedMaxPrice))}
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Products Grid */}
-              <div className="col-span-1 lg:col-span-3">
-                {products?.length === 0 ? (
-                  <div className="text-center py-12">
-                    <p className="text-muted-foreground">No products found with the selected filters.</p>
-                  </div>
+              <div>
+                {isLoading ? (
+                  <div className="grid grid-cols-1 gap-x-5 gap-y-10 sm:grid-cols-2 xl:grid-cols-3">{Array.from({ length: 6 }).map((_, index) => <div key={index}><Skeleton className="aspect-[4/5] rounded-[24px]" /><Skeleton className="mt-4 h-4 w-2/3" /><Skeleton className="mt-3 h-4 w-1/3" /></div>)}</div>
+                ) : products.length === 0 ? (
+                  <div className="rounded-[28px] border border-dashed bg-card/50 px-6 py-20 text-center"><h2 className="font-display text-3xl font-normal">Nothing here just yet.</h2><p className="mx-auto mt-3 max-w-md text-sm leading-6 text-muted-foreground">Try another category or widen your price range to see more pieces.</p><Button className="mt-6 rounded-full" onClick={() => { handleCategoryChange(null); setMinPrice("0"); setMaxPrice("50000"); }}>Show all products</Button></div>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-                     {products?.map((product) => {
-                      const productSale = sales?.find(s => s.product_id === product.id);
-                      const globalSale = sales?.find(s => s.is_global);
-                      const { finalPrice, discount } = calculateSalePrice(product.price, productSale, globalSale);
-                      
-                      return (
-                        <Link key={product.id} to={`/product/${product.slug}`} className="block transition-all duration-300 active:scale-95">
-                          <Card className="glass-card glass-hover overflow-hidden rounded-xl group relative cursor-pointer">
-                            {discount && (
-                              <Badge className="absolute top-2 left-2 z-10 bg-destructive text-destructive-foreground">
-                                {discount}% OFF
-                              </Badge>
-                            )}
-                            {product.is_featured && !discount && (
-                              <Badge className="absolute top-2 left-2 z-10 bg-accent text-accent-foreground">
-                                <Star className="h-3 w-3 mr-1" fill="currentColor" />
-                                Featured
-                              </Badge>
-                            )}
-                          <div className="aspect-square bg-muted relative overflow-hidden">
-                            {product.images?.[0] && (
-                              <img
-                                src={product.images[0]}
-                                alt={product.name}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                              />
-                            )}
-                          </div>
-                          <CardContent className="p-3 md:p-4">
-                            <p className="text-xs text-muted-foreground mb-1 truncate">
-                              {product.categories?.name}
-                            </p>
-                              <h3 className="font-display text-base md:text-lg font-semibold mb-1 md:mb-2 truncate">
-                                {product.name}
-                              </h3>
-                              {product.sku && (
-                                <p className="text-xs text-muted-foreground mb-1">
-                                  SKU: {product.sku}
-                                </p>
-                              )}
-                              <div className="mb-1 md:mb-2">
-                                {discount ? (
-                                  <div className="flex items-center gap-2">
-                                    <p className="text-lg md:text-xl font-bold text-destructive">
-                                      {formatPrice(finalPrice)}
-                                    </p>
-                                    <p className="text-sm text-muted-foreground line-through">
-                                      {formatPrice(product.price)}
-                                    </p>
-                                  </div>
-                                ) : (
-                                  <p className="text-lg md:text-xl font-bold text-accent">
-                                    {formatPrice(product.price)}
-                                  </p>
-                                )}
-                              </div>
-                            {product.stock_quantity !== undefined && product.stock_quantity < 10 && product.stock_quantity > 0 && (
-                              <p className="text-xs text-orange-500 mb-2">
-                                Only {product.stock_quantity} left in stock!
-                              </p>
-                            )}
-                              {product.stock_quantity === 0 && (
-                                <p className="text-xs text-destructive mb-2">Out of stock</p>
-                              )}
-                              <div className="grid grid-cols-2 gap-2">
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    addToCart.mutate(product);
-                                  }}
-                                  disabled={addToCart.isPending || product.stock_quantity === 0}
-                                  className="text-xs md:text-sm"
-                                >
-                                  <ShoppingCart className="h-3 w-3 md:h-4 md:w-4" />
-                                </Button>
-                                <Button size="sm" className="text-xs md:text-sm">
-                                  View
-                                </Button>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        </Link>
-                      );
-                     })}
-                  </div>
+                  <div className="grid grid-cols-1 gap-x-5 gap-y-10 sm:grid-cols-2 xl:grid-cols-3">{products.map((product) => <ProductCard key={product.id} product={product} sales={sales} user={user} />)}</div>
                 )}
 
-                {/* Pagination */}
-                {!isLoading && products && products.length > 0 && totalPages > 1 && (
-                  <div className="mt-8 flex justify-center">
-                    <Pagination>
-                      <PaginationContent>
-                        <PaginationItem>
-                          <PaginationPrevious
-                            href="#"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              if (currentPage > 1) setCurrentPage(currentPage - 1);
-                            }}
-                            className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                          />
-                        </PaginationItem>
-
-                        {[...Array(totalPages)].map((_, index) => {
-                          const pageNumber = index + 1;
-                          
-                          // Show first page, last page, current page, and pages around current
-                          if (
-                            pageNumber === 1 ||
-                            pageNumber === totalPages ||
-                            (pageNumber >= currentPage - 1 && pageNumber <= currentPage + 1)
-                          ) {
-                            return (
-                              <PaginationItem key={pageNumber}>
-                                <PaginationLink
-                                  href="#"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    setCurrentPage(pageNumber);
-                                  }}
-                                  isActive={currentPage === pageNumber}
-                                  className="cursor-pointer"
-                                >
-                                  {pageNumber}
-                                </PaginationLink>
-                              </PaginationItem>
-                            );
-                          } else if (
-                            pageNumber === currentPage - 2 ||
-                            pageNumber === currentPage + 2
-                          ) {
-                            return (
-                              <PaginationItem key={pageNumber}>
-                                <PaginationEllipsis />
-                              </PaginationItem>
-                            );
-                          }
-                          return null;
-                        })}
-
-                        <PaginationItem>
-                          <PaginationNext
-                            href="#"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              if (currentPage < totalPages) setCurrentPage(currentPage + 1);
-                            }}
-                            className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                          />
-                        </PaginationItem>
-                      </PaginationContent>
-                    </Pagination>
-                  </div>
-                )}
+                {!isLoading && totalPages > 1 && <div className="mt-14 flex justify-center"><Pagination><PaginationContent className="rounded-full border bg-card/70 p-1.5">
+                  <PaginationItem><PaginationPrevious href="#" onClick={(event) => { event.preventDefault(); if (currentPage > 1) setCurrentPage(currentPage - 1); }} className={currentPage === 1 ? "pointer-events-none opacity-40" : "cursor-pointer"} /></PaginationItem>
+                  {Array.from({ length: totalPages }).map((_, index) => { const page = index + 1; if (page === 1 || page === totalPages || (page >= currentPage - 1 && page <= currentPage + 1)) return <PaginationItem key={page}><PaginationLink href="#" onClick={(event) => { event.preventDefault(); setCurrentPage(page); }} isActive={currentPage === page}>{page}</PaginationLink></PaginationItem>; if (page === currentPage - 2 || page === currentPage + 2) return <PaginationItem key={page}><PaginationEllipsis /></PaginationItem>; return null; })}
+                  <PaginationItem><PaginationNext href="#" onClick={(event) => { event.preventDefault(); if (currentPage < totalPages) setCurrentPage(currentPage + 1); }} className={currentPage === totalPages ? "pointer-events-none opacity-40" : "cursor-pointer"} /></PaginationItem>
+                </PaginationContent></Pagination></div>}
               </div>
             </div>
-          </div>
-        </section>
-      </main>
-
-      <Footer />
-    </div>
+          </section>
+        </main>
+        <Footer />
+      </div>
     </>
   );
 };

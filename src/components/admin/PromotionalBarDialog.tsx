@@ -160,7 +160,7 @@ export const PromotionalBarDialog = ({ open, onOpenChange }: PromotionalBarDialo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[94vh] w-[calc(100vw-1rem)] max-w-4xl overflow-y-auto rounded-[24px] p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle>
             {editingBar ? "Edit Promotional Bar" : "Manage Promotional Bars"}
@@ -168,7 +168,7 @@ export const PromotionalBarDialog = ({ open, onOpenChange }: PromotionalBarDialo
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <Label htmlFor="title">Title *</Label>
               <Input

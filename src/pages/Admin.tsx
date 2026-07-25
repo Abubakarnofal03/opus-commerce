@@ -1212,8 +1212,26 @@ const Admin = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
+    <div className="admin-shell min-h-screen bg-secondary/25">
+      <header className="sticky top-0 z-50 border-b border-white/60 bg-background/75 backdrop-blur-2xl">
+        <div className="page-wrap flex min-h-[72px] items-center justify-between gap-3 py-2">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/15"><Store className="h-5 w-5" /></span>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold tracking-wide">Juraab Admin</p>
+              <p className="truncate text-xs text-muted-foreground">Store operations</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => queryClient.invalidateQueries()} className="h-11 rounded-full px-3 sm:px-4" aria-label="Refresh dashboard">
+              <RefreshCw className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Refresh</span>
+            </Button>
+            <Button onClick={() => navigate('/')} className="h-11 rounded-full px-3 sm:px-5">
+              <Home className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">View store</span>
+            </Button>
+          </div>
+        </div>
+      </header>
 
       {/* Capacitor pull-to-refresh indicator */}
       {isCapacitor() && (
@@ -1240,60 +1258,65 @@ const Admin = () => {
         </div>
       )}
       
-      <main className="flex-1 py-4 sm:py-6 lg:py-12">
-        <div className="container mx-auto px-3 sm:px-4 lg:px-6">
-          <h1 className="font-display text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 sm:mb-6 lg:mb-8 text-center gold-accent pb-4 sm:pb-6 lg:pb-8">
-            Admin Dashboard
-          </h1>
+      <main className="py-6 sm:py-8 lg:py-10">
+        <div className="page-wrap">
+          <div className="mb-6 flex flex-col justify-between gap-3 sm:mb-8 sm:flex-row sm:items-end">
+            <div>
+              <p className="section-kicker">Command centre</p>
+              <h1 className="editorial-title text-4xl sm:text-5xl">Good to see you.</h1>
+              <p className="mt-3 text-sm text-muted-foreground">Orders, catalogue, content, and performance in one place.</p>
+            </div>
+            <Badge variant="outline" className="w-fit rounded-full bg-card/70 px-4 py-2 font-medium text-muted-foreground">Live store data</Badge>
+          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
-            <Card className="hover:shadow-md transition-shadow">
-              <CardContent className="pt-4 sm:pt-6">
+          <div className="mb-7 grid grid-cols-1 gap-3 min-[430px]:grid-cols-2 lg:grid-cols-3 sm:gap-4">
+            <Card className="admin-stat-card">
+              <CardContent className="p-5 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs sm:text-sm text-muted-foreground mb-1">Total Orders</p>
-                    <p className="text-2xl sm:text-3xl font-bold truncate">{stats.totalOrders}</p>
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Total orders</p>
+                    <p className="truncate text-3xl font-semibold sm:text-4xl">{stats.totalOrders}</p>
                   </div>
-                  <ShoppingBag className="h-8 w-8 sm:h-12 sm:w-12 text-accent flex-shrink-0 ml-2" />
+                  <span className="admin-stat-icon"><ShoppingBag className="h-5 w-5" /></span>
                 </div>
               </CardContent>
             </Card>
-            <Card className="hover:shadow-md transition-shadow">
-              <CardContent className="pt-4 sm:pt-6">
+            <Card className="admin-stat-card">
+              <CardContent className="p-5 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs sm:text-sm text-muted-foreground mb-1">Total Products</p>
-                    <p className="text-2xl sm:text-3xl font-bold truncate">{stats.totalProducts}</p>
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Products</p>
+                    <p className="truncate text-3xl font-semibold sm:text-4xl">{stats.totalProducts}</p>
                   </div>
-                  <Package className="h-8 w-8 sm:h-12 sm:w-12 text-accent flex-shrink-0 ml-2" />
+                  <span className="admin-stat-icon"><Package className="h-5 w-5" /></span>
                 </div>
               </CardContent>
             </Card>
-            <Card className="hover:shadow-md transition-shadow sm:col-span-2 lg:col-span-1">
-              <CardContent className="pt-4 sm:pt-6">
+            <Card className="admin-stat-card min-[430px]:col-span-2 lg:col-span-1">
+              <CardContent className="p-5 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs sm:text-sm text-muted-foreground mb-1">Total Revenue</p>
-                    <p className="text-2xl sm:text-3xl font-bold truncate">{formatPrice(stats.totalRevenue)}</p>
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Delivered revenue</p>
+                    <p className="truncate text-3xl font-semibold sm:text-4xl">{formatPrice(stats.totalRevenue)}</p>
                   </div>
-                  <DollarSign className="h-8 w-8 sm:h-12 sm:w-12 text-accent flex-shrink-0 ml-2" />
+                  <span className="admin-stat-icon"><DollarSign className="h-5 w-5" /></span>
                 </div>
               </CardContent>
             </Card>
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
-              <TabsList className="w-full inline-flex flex-nowrap gap-1 h-auto p-1 min-w-max sm:min-w-0">
-                <TabsTrigger value="orders" className="text-xs sm:text-sm px-2 sm:px-3 whitespace-nowrap flex-shrink-0">Orders</TabsTrigger>
-                <TabsTrigger value="analytics" className="text-xs sm:text-sm px-2 sm:px-3 whitespace-nowrap flex-shrink-0">Analytics</TabsTrigger>
-                <TabsTrigger value="products" className="text-xs sm:text-sm px-2 sm:px-3 whitespace-nowrap flex-shrink-0">Products</TabsTrigger>
-                <TabsTrigger value="categories" className="text-xs sm:text-sm px-2 sm:px-3 whitespace-nowrap flex-shrink-0">Categories</TabsTrigger>
-                <TabsTrigger value="reviews" className="text-xs sm:text-sm px-2 sm:px-3 whitespace-nowrap flex-shrink-0">Reviews</TabsTrigger>
-                <TabsTrigger value="banners" className="text-xs sm:text-sm px-2 sm:px-3 whitespace-nowrap flex-shrink-0">Banners</TabsTrigger>
-                <TabsTrigger value="blogs" className="text-xs sm:text-sm px-2 sm:px-3 whitespace-nowrap flex-shrink-0">Blogs</TabsTrigger>
-                <TabsTrigger value="meta-catalog" className="text-xs sm:text-sm px-2 sm:px-3 whitespace-nowrap flex-shrink-0">Meta Catalog</TabsTrigger>
-                <TabsTrigger value="settings" className="text-xs sm:text-sm px-2 sm:px-3 whitespace-nowrap flex-shrink-0">Settings</TabsTrigger>
+            <div className="admin-tab-scroll -mx-4 overflow-x-auto px-4 pb-2 sm:mx-0 sm:px-0">
+              <TabsList className="liquid-glass inline-flex h-auto min-w-max flex-nowrap gap-1 rounded-[22px] p-1.5">
+                <TabsTrigger value="orders"><ShoppingBag className="h-4 w-4" />Orders</TabsTrigger>
+                <TabsTrigger value="analytics"><BarChart3 className="h-4 w-4" />Analytics</TabsTrigger>
+                <TabsTrigger value="products"><Package className="h-4 w-4" />Products</TabsTrigger>
+                <TabsTrigger value="categories"><Store className="h-4 w-4" />Categories</TabsTrigger>
+                <TabsTrigger value="reviews"><MessageCircle className="h-4 w-4" />Reviews</TabsTrigger>
+                <TabsTrigger value="banners"><ImageIcon className="h-4 w-4" />Banners</TabsTrigger>
+                <TabsTrigger value="blogs"><Pencil className="h-4 w-4" />Journal</TabsTrigger>
+                <TabsTrigger value="meta-catalog"><RefreshCw className="h-4 w-4" />Feeds</TabsTrigger>
+                <TabsTrigger value="settings"><Filter className="h-4 w-4" />Settings</TabsTrigger>
               </TabsList>
             </div>
 
@@ -1765,7 +1788,7 @@ const Admin = () => {
                     {reviews?.map((review: any) => (
                       <Card key={review.id} className={review.is_verified ? "border-green-200" : "border-amber-200"}>
                         <CardContent className="p-4">
-                          <div className="flex items-start justify-between gap-4">
+                          <div className="flex flex-col items-start justify-between gap-4 sm:flex-row">
                             <div className="flex-1 space-y-3">
                               <div className="flex items-center gap-3">
                                 <div className="flex items-center gap-1">
@@ -1803,7 +1826,7 @@ const Admin = () => {
                                 </div>
                               )}
                             </div>
-                            <div className="flex gap-2">
+                            <div className="flex w-full flex-wrap justify-end gap-2 sm:w-auto">
                               {!review.is_verified ? (
                                 <Button
                                   size="sm"
@@ -2038,7 +2061,7 @@ const Admin = () => {
         </div>
       </main>
 
-      <Footer />
+      <footer className="border-t bg-card/45 py-6 text-center text-xs text-muted-foreground">Juraab store operations · Live data updates automatically</footer>
 
       <ProductDialog
         open={productDialog.open}

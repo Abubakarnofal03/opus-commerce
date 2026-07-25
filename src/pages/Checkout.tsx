@@ -15,7 +15,7 @@ import { trackInitiateCheckout as trackMetaInitiateCheckout } from "@/lib/metaPi
 import { trackInitiateCheckout as trackTikTokInitiateCheckout } from "@/lib/tiktokPixel";
 import { trackEvent } from "@/hooks/useAnalytics";
 import { calculateSalePrice, Sale } from "@/lib/saleUtils";
-import { Trash2, Plus, Minus } from "lucide-react";
+import { Trash2, Plus, Minus, ShieldCheck, Truck, Banknote, LockKeyhole, ChevronLeft } from "lucide-react";
 
 const Checkout = () => {
   const [user, setUser] = useState<any>(null);
@@ -431,17 +431,31 @@ const Checkout = () => {
     <div className="min-h-screen flex flex-col">
       <Navbar />
       
-      <main className="flex-1 py-8 md:py-12">
-        <div className="container mx-auto px-4">
-          <h1 className="font-display text-3xl md:text-4xl font-bold mb-6 md:mb-8 text-center gold-accent pb-6 md:pb-8">
-            Checkout
-          </h1>
+      <main className="flex-1 pb-16 pt-6 md:pb-24 md:pt-10">
+        <div className="page-wrap">
+          <button type="button" onClick={() => navigate('/cart')} className="mb-6 inline-flex min-h-11 items-center gap-2 rounded-full px-1 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground">
+            <ChevronLeft className="h-4 w-4" /> Back to your bag
+          </button>
+          <div className="mb-8 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+            <div>
+              <p className="section-kicker">Almost yours</p>
+              <h1 className="editorial-title text-5xl sm:text-6xl">Checkout</h1>
+              <p className="mt-3 text-sm text-muted-foreground">Just your delivery details—no account or online payment needed.</p>
+            </div>
+            <div className="flex flex-wrap gap-2 text-xs font-medium text-muted-foreground">
+              <span className="inline-flex items-center gap-2 rounded-full border bg-card/70 px-3 py-2"><ShieldCheck className="h-4 w-4 text-accent" /> Secure order</span>
+              <span className="inline-flex items-center gap-2 rounded-full border bg-card/70 px-3 py-2"><Banknote className="h-4 w-4 text-accent" /> Cash on delivery</span>
+            </div>
+          </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
-            <div className="lg:col-span-2">
-              <Card>
-                <CardContent className="p-4 md:p-6">
-                  <h2 className="font-display text-xl md:text-2xl font-bold mb-4 md:mb-6">Shipping Information</h2>
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.08fr_.92fr] lg:gap-8 xl:gap-12">
+            <div>
+              <Card className="liquid-glass rounded-[28px] border-white/70">
+                <CardContent className="p-5 sm:p-7 md:p-8">
+                  <div className="mb-6 flex items-start gap-4">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">1</span>
+                    <div><h2 className="font-display text-2xl font-normal md:text-3xl">Where should we send it?</h2><p className="mt-1 text-sm text-muted-foreground">Please enter a complete address so delivery is smooth.</p></div>
+                  </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -452,7 +466,7 @@ const Checkout = () => {
                         value={formData.firstName}
                         onChange={handleInputChange}
                         required
-                        className={`mt-1 ${showErrors && !formData.firstName ? 'border-destructive' : ''}`}
+                        className={`mt-2 h-12 rounded-xl bg-card/80 text-base ${showErrors && !formData.firstName ? 'border-destructive' : ''}`}
                       />
                       {showErrors && !formData.firstName && (
                         <p className="text-destructive text-xs mt-1">First name is required</p>
@@ -466,7 +480,7 @@ const Checkout = () => {
                         value={formData.lastName}
                         onChange={handleInputChange}
                         required
-                        className="mt-1"
+                        className="mt-2 h-12 rounded-xl bg-card/80 text-base"
                       />
                     </div>
                     <div>
@@ -477,7 +491,7 @@ const Checkout = () => {
                         type="email"
                         value={formData.email}
                         onChange={handleInputChange}
-                        className="mt-1"
+                        className="mt-2 h-12 rounded-xl bg-card/80 text-base"
                       />
                     </div>
                     <div>
@@ -490,7 +504,7 @@ const Checkout = () => {
                         onChange={handleInputChange}
                         placeholder="+923001234567"
                         required
-                        className={`mt-1 ${(showErrors && !isPhoneValid) || phoneError ? 'border-destructive' : ''}`}
+                        className={`mt-2 h-12 rounded-xl bg-card/80 text-base ${(showErrors && !isPhoneValid) || phoneError ? 'border-destructive' : ''}`}
                       />
                       <p className="text-xs text-muted-foreground mt-1">
                         Format: +92 followed by 10 digits (e.g., +923001234567)
@@ -511,7 +525,7 @@ const Checkout = () => {
                         onChange={handleInputChange}
                         required
                         placeholder="e.g. House 123, Street 4, DHA Phase 2, Karachi"
-                        className={`mt-1 ${showErrors && !formData.addressLine1 ? 'border-destructive' : ''}`}
+                        className={`mt-2 h-12 rounded-xl bg-card/80 text-base ${showErrors && !formData.addressLine1 ? 'border-destructive' : ''}`}
                       />
                       {showErrors && !formData.addressLine1 && (
                         <p className="text-destructive text-xs mt-1">Address is required</p>
@@ -524,7 +538,7 @@ const Checkout = () => {
                         name="addressLine2"
                         value={formData.addressLine2}
                         onChange={handleInputChange}
-                        className="mt-1"
+                        className="mt-2 h-12 rounded-xl bg-card/80 text-base"
                       />
                     </div>
                     <div className="md:col-span-2">
@@ -535,7 +549,7 @@ const Checkout = () => {
                         value={formData.city}
                         onChange={handleInputChange}
                         required
-                        className={`mt-1 ${showErrors && !formData.city ? 'border-destructive' : ''}`}
+                        className={`mt-2 h-12 rounded-xl bg-card/80 text-base ${showErrors && !formData.city ? 'border-destructive' : ''}`}
                       />
                       {showErrors && !formData.city && (
                         <p className="text-destructive text-xs mt-1">City is required</p>
@@ -546,10 +560,10 @@ const Checkout = () => {
               </Card>
             </div>
 
-            <div>
-              <Card>
-                <CardContent className="p-4 md:p-6">
-                  <h2 className="font-display text-xl md:text-2xl font-bold mb-4">Order Summary</h2>
+            <div className="lg:sticky lg:top-28 lg:self-start">
+              <Card className="liquid-glass rounded-[28px] border-white/70">
+                <CardContent className="p-5 sm:p-7">
+                  <div className="mb-5 flex items-center gap-3"><span className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary text-sm font-semibold">2</span><h2 className="font-display text-2xl font-normal">Your order</h2></div>
                   
                   <div className="space-y-3 mb-4 md:mb-6 max-h-[400px] overflow-y-auto">
                     {items?.map((item: any, idx: number) => {
@@ -575,10 +589,10 @@ const Checkout = () => {
                       };
 
                       return (
-                        <Card key={idx} className="p-3">
+                        <Card key={idx} className="rounded-[18px] border-0 bg-secondary/55 p-3 shadow-none">
                           <div className="flex gap-3">
                             {productData.image && (
-                              <div className="w-16 h-16 bg-muted rounded overflow-hidden flex-shrink-0">
+                              <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-xl bg-muted">
                                 <img
                                   src={productData.image}
                                   alt={productData.name}
@@ -601,11 +615,11 @@ const Checkout = () => {
                                 </p>
                               )}
                               <div className="flex items-center gap-2 mt-2">
-                                <div className="flex items-center border rounded">
+                                <div className="flex items-center rounded-full border bg-card/70 p-0.5">
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-6 w-6"
+                                    className="h-8 w-8 rounded-full"
                                     onClick={() => {
                                       if (isGuest) {
                                         handleGuestQuantityUpdate(item, Math.max(1, item.quantity - 1));
@@ -622,7 +636,7 @@ const Checkout = () => {
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-6 w-6"
+                                    className="h-8 w-8 rounded-full"
                                     onClick={() => {
                                       if (isGuest) {
                                         handleGuestQuantityUpdate(item, item.quantity + 1);
@@ -637,7 +651,7 @@ const Checkout = () => {
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-6 w-6"
+                                  className="h-9 w-9 rounded-full"
                                   onClick={() => {
                                     if (isGuest) {
                                       handleGuestRemove(item);
@@ -661,7 +675,7 @@ const Checkout = () => {
                     })}
                   </div>
 
-                  <div className="space-y-2 mb-4 md:mb-6 text-sm">
+                  <div className="mb-5 space-y-3 border-y py-5 text-sm">
                     <div className="flex justify-between">
                       <span>Subtotal</span>
                       <span>{formatPrice(subtotal)}</span>
@@ -670,30 +684,35 @@ const Checkout = () => {
                       <span>Shipping</span>
                       <span>{shippingCost > 0 ? formatPrice(shippingCost) : 'FREE'}</span>
                     </div>
-                    <div className="border-t pt-2 mt-2">
-                      <div className="flex justify-between font-bold text-base md:text-lg">
+                    <div className="border-t pt-3 mt-3">
+                      <div className="flex justify-between text-lg font-semibold">
                         <span>Total</span>
-                        <span className="text-accent">{formatPrice(total)}</span>
+                        <span>{formatPrice(total)}</span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="bg-muted/30 p-3 md:p-4 rounded-lg mb-4 md:mb-6">
-                    <p className="text-sm font-semibold mb-1">Payment Method</p>
-                    <p className="text-xs md:text-sm text-muted-foreground">Cash on Delivery (COD)</p>
+                  <div className="mb-5 flex items-center gap-3 rounded-2xl border border-accent/20 bg-accent/8 p-4">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-full bg-card"><Banknote className="h-5 w-5 text-accent" /></span>
+                    <div><p className="text-sm font-semibold">Cash on delivery</p><p className="mt-0.5 text-xs text-muted-foreground">Pay when your order arrives.</p></div>
                   </div>
 
                   <Button
-                    className="w-full"
+                    className="h-14 w-full rounded-full bg-primary text-base font-semibold text-primary-foreground shadow-lg shadow-primary/15"
                     size="lg"
                     onClick={() => placeOrder.mutate()}
-                    disabled={placeOrder.isPending || !isFormValid}
+                    disabled={placeOrder.isPending}
                   >
-                    {placeOrder.isPending ? "Processing..." : "Place Order"}
+                    <LockKeyhole className="mr-2 h-4 w-4" />
+                    {placeOrder.isPending ? "Confirming order…" : "Confirm order"}
                   </Button>
                   {showErrors && !isFormValid && (
                     <p className="text-destructive text-sm mt-2 text-center">Please fill in all required fields</p>
                   )}
+                  <div className="mt-5 grid grid-cols-2 gap-3 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-2"><Truck className="h-4 w-4 text-accent" /> Tracked delivery</span>
+                    <span className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-accent" /> 7-day returns</span>
+                  </div>
                 </CardContent>
               </Card>
             </div>

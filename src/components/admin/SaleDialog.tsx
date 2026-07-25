@@ -131,7 +131,7 @@ export const SaleDialog = () => {
           Manage Sales
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[94vh] w-[calc(100vw-1rem)] max-w-2xl overflow-y-auto rounded-[24px] p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle>{editingSaleId ? 'Edit Sale' : 'Manage Sales'}</DialogTitle>
         </DialogHeader>

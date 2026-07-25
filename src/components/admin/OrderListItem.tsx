@@ -44,7 +44,7 @@ export const OrderListItem = ({
 }: OrderListItemProps) => {
   return (
     <Card 
-      className="cursor-pointer hover:bg-muted/50 transition-all hover:shadow-md border-l-4"
+      className="cursor-pointer rounded-[20px] border-l-4 transition-all hover:bg-muted/50 hover:shadow-md"
       style={{ borderLeftColor: getStatusColor(order.status).includes('yellow') ? '#eab308' : 
                               getStatusColor(order.status).includes('blue') ? '#3b82f6' :
                               getStatusColor(order.status).includes('purple') ? '#a855f7' :
@@ -53,7 +53,7 @@ export const OrderListItem = ({
       onClick={() => onClick(order.id)}
     >
       <div className="p-3 sm:p-4">
-        <div className="flex items-start gap-2 sm:gap-3">
+        <div className="grid grid-cols-[20px_minmax(0,1fr)] items-start gap-2 sm:flex sm:gap-3">
           <Checkbox
             checked={isSelected}
             onCheckedChange={() => onSelect(order.id)}
@@ -104,12 +104,12 @@ export const OrderListItem = ({
               </div>
             </div>
           </div>
-          <div onClick={(e) => e.stopPropagation()} className="flex-shrink-0">
+          <div onClick={(e) => e.stopPropagation()} className="col-span-2 w-full flex-shrink-0 sm:w-auto">
             <Select
               value={order.status}
               onValueChange={(status) => onStatusChange(order.id, status)}
             >
-              <SelectTrigger className="w-[120px] xs:w-[140px] sm:w-[150px] text-xs sm:text-sm">
+              <SelectTrigger className="h-11 w-full rounded-xl text-xs sm:w-[150px] sm:text-sm">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

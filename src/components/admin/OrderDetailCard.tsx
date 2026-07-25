@@ -224,7 +224,7 @@ export const OrderDetailCard = ({
     <Sheet open={!!orderId} onOpenChange={(open) => !open && onClose()}>
       <SheetContent
         side="right"
-        className="w-full sm:max-w-2xl overflow-y-auto p-0"
+        className="w-full overflow-y-auto p-0 sm:max-w-2xl"
       >
         {/* Full-height container with swipe ref — catches touches anywhere on screen */}
         <div
@@ -319,7 +319,7 @@ export const OrderDetailCard = ({
                           {isEditing ? (
                             <div className="space-y-3">
                               <div className="font-medium">{item.products?.name}</div>
-                              <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3 min-[430px]:grid-cols-2">
                                 <div>
                                   <label className="text-xs text-muted-foreground">Quantity</label>
                                   <Input

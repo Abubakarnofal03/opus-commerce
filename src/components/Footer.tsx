@@ -1,67 +1,58 @@
 import { Link } from "react-router-dom";
-import { Facebook, Instagram } from "lucide-react";
-import logo from "@/assets/logo.jpg";
+import { ArrowUpRight, Facebook, Instagram, Mail } from "lucide-react";
 
 export const Footer = () => {
-  const handleLinkClick = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  const handleLinkClick = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
   return (
-    <footer className="glass border-t py-12">
-      <div className="container mx-auto px-4">
-        {/* SEO-rich footer text */}
-        <div className="text-center mb-8 max-w-3xl mx-auto">
-          <p className="text-sm text-muted-foreground">
-            <strong>juraab.shop</strong> is your premier online shopping destination in Pakistan for 
-            premium <strong>home decor</strong>, elegant <strong>wallets</strong>, stylish <strong>furniture</strong>, 
-            quality <strong>accessories</strong>, and beautiful <strong>garden decorations</strong>. 
-            Shop with confidence and enjoy fast delivery nationwide.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          <div>
-            <img src={logo} alt="Juraab - Online Shopping in Pakistan" className="h-16 w-auto mb-4" />
-            <p className="text-sm mb-4">Premium lifestyle products for the discerning customer.</p>
-            <div className="flex space-x-4">
-              <a href="https://www.facebook.com/share/1EgybenFiL/" target="_blank" rel="noopener noreferrer" className="hover:text-accent transition-colors" aria-label="Visit our Facebook page">
-                <Facebook className="h-5 w-5" />
-              </a>
-              <a href="https://www.instagram.com/juraab.official?igsh=MTMzbGd3ZXhvMHFvbA==" target="_blank" rel="noopener noreferrer" className="hover:text-accent transition-colors" aria-label="Visit our Instagram page">
-                <Instagram className="h-5 w-5" />
-              </a>
+    <footer className="mt-12 border-t border-white/60 bg-primary text-primary-foreground">
+      <div className="page-wrap py-14 sm:py-20">
+        <div className="grid gap-12 border-b border-white/15 pb-14 lg:grid-cols-[1.4fr_.7fr_.7fr_.8fr]">
+          <div className="max-w-md">
+            <Link to="/" onClick={handleLinkClick} className="inline-flex items-center gap-3">
+              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 font-display text-2xl italic ring-1 ring-white/20">J</span>
+              <span className="text-xl font-semibold tracking-[0.24em]">JURAAB</span>
+            </Link>
+            <h2 className="mt-8 font-display text-3xl font-normal leading-tight sm:text-4xl">Quietly beautiful objects for everyday life.</h2>
+            <p className="mt-5 max-w-sm text-sm leading-7 text-white/62">A considered collection of home, personal, and gifting pieces—selected for quality, character, and lasting appeal.</p>
+            <div className="mt-7 flex gap-2">
+              <a href="https://www.facebook.com/share/1EgybenFiL/" target="_blank" rel="noopener noreferrer" className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 transition-colors hover:bg-white hover:text-primary" aria-label="Juraab on Facebook"><Facebook className="h-4 w-4" /></a>
+              <a href="https://www.instagram.com/juraab.official?igsh=MTMzbGd3ZXhvMHFvbA==" target="_blank" rel="noopener noreferrer" className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 transition-colors hover:bg-white hover:text-primary" aria-label="Juraab on Instagram"><Instagram className="h-4 w-4" /></a>
             </div>
           </div>
+
           <div>
-            <h4 className="font-semibold mb-4">Quick Links</h4>
-            <ul className="space-y-2 text-sm">
-              <li><Link to="/shop" onClick={handleLinkClick} className="hover:text-accent transition-colors">Shop All Products</Link></li>
-              <li><Link to="/blog" onClick={handleLinkClick} className="hover:text-accent transition-colors">Blog</Link></li>
-              <li><Link to="/about" onClick={handleLinkClick} className="hover:text-accent transition-colors">About Us</Link></li>
-              <li><Link to="/contact" onClick={handleLinkClick} className="hover:text-accent transition-colors">Contact</Link></li>
+            <h3 className="font-sans text-xs font-semibold uppercase tracking-[0.2em] text-white/45">Explore</h3>
+            <ul className="mt-6 space-y-4 text-sm text-white/72">
+              <li><Link to="/shop" onClick={handleLinkClick} className="hover:text-white">Shop all</Link></li>
+              <li><Link to="/shop?category=home-decor" onClick={handleLinkClick} className="hover:text-white">Home decor</Link></li>
+              <li><Link to="/shop?category=furniture" onClick={handleLinkClick} className="hover:text-white">Furniture</Link></li>
+              <li><Link to="/shop?category=accessories" onClick={handleLinkClick} className="hover:text-white">Accessories</Link></li>
+              <li><Link to="/blog" onClick={handleLinkClick} className="hover:text-white">Journal</Link></li>
             </ul>
           </div>
+
           <div>
-            <h4 className="font-semibold mb-4">Shop by Category</h4>
-            <ul className="space-y-2 text-sm">
-              <li><Link to="/shop?category=home-decor" onClick={handleLinkClick} className="hover:text-accent transition-colors">Home Decor</Link></li>
-              <li><Link to="/shop?category=furniture" onClick={handleLinkClick} className="hover:text-accent transition-colors">Furniture</Link></li>
-              <li><Link to="/shop?category=mens-wallets" onClick={handleLinkClick} className="hover:text-accent transition-colors">Men's Wallets</Link></li>
-              <li><Link to="/shop?category=womens-wallets" onClick={handleLinkClick} className="hover:text-accent transition-colors">Women's Wallets</Link></li>
-              <li><Link to="/shop?category=accessories" onClick={handleLinkClick} className="hover:text-accent transition-colors">Accessories</Link></li>
-              <li><Link to="/shop?category=garden-decorations" onClick={handleLinkClick} className="hover:text-accent transition-colors">Garden Decorations</Link></li>
+            <h3 className="font-sans text-xs font-semibold uppercase tracking-[0.2em] text-white/45">Customer care</h3>
+            <ul className="mt-6 space-y-4 text-sm text-white/72">
+              <li><Link to="/orders" onClick={handleLinkClick} className="hover:text-white">Track your order</Link></li>
+              <li><Link to="/contact" onClick={handleLinkClick} className="hover:text-white">Delivery & returns</Link></li>
+              <li><Link to="/contact" onClick={handleLinkClick} className="hover:text-white">Contact us</Link></li>
+              <li><Link to="/about" onClick={handleLinkClick} className="hover:text-white">Our story</Link></li>
             </ul>
           </div>
-          <div>
-            <h4 className="font-semibold mb-4">Customer Service</h4>
-            <ul className="space-y-2 text-sm">
-              <li><Link to="/contact" onClick={handleLinkClick} className="hover:text-accent transition-colors">Contact Us</Link></li>
-            </ul>
+
+          <div className="rounded-[26px] border border-white/15 bg-white/[.06] p-6">
+            <Mail className="h-5 w-5 text-accent" />
+            <h3 className="mt-5 font-display text-2xl font-normal">Need a little help?</h3>
+            <p className="mt-3 text-sm leading-6 text-white/62">Our team can help you choose, order, or track any item.</p>
+            <Link to="/contact" className="mt-6 inline-flex min-h-11 items-center gap-2 rounded-full bg-white px-5 text-sm font-semibold text-primary transition-transform hover:-translate-y-0.5">Talk to us <ArrowUpRight className="h-4 w-4" /></Link>
           </div>
         </div>
-        <div className="border-t border-primary-foreground/20 mt-8 pt-8 text-center text-sm">
-          <p>&copy; 2025 Juraab. All rights reserved.</p>
+
+        <div className="flex flex-col gap-3 pt-7 text-xs text-white/45 sm:flex-row sm:items-center sm:justify-between">
+          <p>&copy; {new Date().getFullYear()} Juraab. All rights reserved.</p>
+          <p>Secure checkout · Cash on delivery · Thoughtful service</p>
         </div>
       </div>
     </footer>
